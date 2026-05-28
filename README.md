@@ -199,8 +199,7 @@ betterlibmanan/
 
 ## Contributors
 
-- iyanski - Project creator and maintainer
-- Nicu Listana - Contributor
+- enzox0 - Project creator and maintainer
 
 ## Contributing
 
