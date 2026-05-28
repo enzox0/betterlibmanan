@@ -7,7 +7,7 @@ Thank you for your interest in contributing to BetterLibmanan.org! This civic-te
 ### Prerequisites
 
 - Node.js v18 or higher
-- npm v9 or higher
+- pnpm v8 or higher
 - Git
 
 ### Setup
@@ -15,11 +15,14 @@ Thank you for your interest in contributing to BetterLibmanan.org! This civic-te
 ```bash
 git clone https://github.com/enzox0/betterlibmanan.git
 cd betterlibmanan
-npm install
-npm run dev
+npm install -g pnpm@8.15.0
+pnpm install
+pnpm run dev
 ```
 
-Open http://localhost:5173 in your browser.
+Open in your browser:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
 
 ## How to Contribute
 
@@ -47,7 +50,11 @@ Open http://localhost:5173 in your browser.
    git checkout -b feature/your-feature-name
    ```
 3. **Make** your changes
-4. **Test** on multiple browsers (Chrome, Firefox, Safari, Edge)
+4. **Test** your changes
+   ```bash
+   pnpm run lint
+   pnpm run build
+   ```
 5. **Commit** with a descriptive message
    ```bash
    git commit -m "Add: brief description of changes"
@@ -85,29 +92,33 @@ Types:
 | Data               | Verify and update statistics         |
 | Documentation      | Improve guides and comments          |
 | API Integration    | Connect real-time data sources       |
+| Backend API        | Enhance Express.js backend           |
+| Frontend UI        | Improve React frontend               |
 | Data Visualization | Enhance charts and graphs            |
 
 ## Code Guidelines
 
-### HTML
+### Frontend (React + TypeScript)
 
-- Use semantic HTML5 elements
-- Include proper ARIA labels for accessibility
-- Validate HTML before submitting
-
-### CSS
-
-- Follow existing naming conventions
-- Use Tailwind CSS classes
-- Ensure responsive design
-- Test on mobile devices
-
-### TypeScript
-
-- Follow existing code style
 - Use meaningful variable and function names
 - Add comments for complex logic
 - Ensure type safety
+- Use Tailwind CSS classes
+- Ensure responsive design
+
+### Backend (Express.js + TypeScript)
+
+- Follow REST API best practices
+- Use proper error handling
+- Document API endpoints
+- Ensure type safety
+- Follow existing code patterns
+
+### Shared Packages
+
+- Use `@betterlibmanan/types` for shared types
+- Use `@betterlibmanan/utils` for shared utilities
+- Keep packages focused and reusable
 
 ### Accessibility
 
@@ -142,6 +153,7 @@ Pull requests are reviewed for:
 - Mobile responsiveness
 - Data accuracy (for content changes)
 - Security considerations
+- Proper use of shared packages
 
 ## Community
 
