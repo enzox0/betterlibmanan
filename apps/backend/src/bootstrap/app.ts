@@ -6,7 +6,7 @@ import { logger } from '@/shared/logger';
 import { errorHandler } from '@/shared/middleware/error-handler';
 import { requestLogger } from '@/shared/middleware/request-logger';
 
-const app = express();
+const app: express.Express = express();
 
 // Trust proxy
 app.set('trust proxy', 1);
