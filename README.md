@@ -74,7 +74,7 @@ A modern, multilingual, and accessible enterprise monolith designed specifically
    ```
 
 7. Open your browser and navigate to:
-   - Frontend: http://localhost:5173
+   - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000
 
 ## Documentation
