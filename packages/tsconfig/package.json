@@ -1,0 +1,6 @@
+{
+  "name": "@betterlibmanan/tsconfig",
+  "version": "1.0.0",
+  "license": "MIT",
+  "files": ["base.json", "react.json", "node.json"]
+}

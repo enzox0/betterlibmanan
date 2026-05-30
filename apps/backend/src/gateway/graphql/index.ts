@@ -1,0 +1,2 @@
+// GraphQL coming soon
+export {}

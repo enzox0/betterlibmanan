@@ -1,0 +1,2 @@
+// Assets coming soon
+export {}
