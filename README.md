@@ -1,3 +1,5 @@
+<img width="2560" height="423" alt="github_betterlibmanan" src="https://github.com/user-attachments/assets/84aafadb-ca9d-46af-a52c-78e02ea64051" />
+
 # BetterLibmanan
 
 Enterprise-Grade Local Government Monolith for Libmanan
