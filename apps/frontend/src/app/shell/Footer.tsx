@@ -1,0 +1,168 @@
+import { Link } from 'react-router-dom';
+import { FaFacebook, FaLinkedin, FaDiscord, FaEnvelope, FaGithub, FaMoneyBillWave } from 'react-icons/fa';
+import { SiReact } from 'react-icons/si';
+
+export function Footer() {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <footer className="bg-[#1A1A1A] text-gray-300 py-12 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+          {/* Logo & Tagline */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <img 
+                src="/betterlibmanan.png" 
+                alt="Better Libmanan Logo" 
+                className="h-16" 
+              />
+            </div>
+            <p className="text-gray-400 mb-6">
+              Empowering the people of Libmanan with transparent access to the services, programs, and public funds of LGU Libmanan.
+            </p>
+            <div className="flex gap-4">
+              <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                <FaFacebook size={18} />
+              </a>
+              <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                <FaLinkedin size={18} />
+              </a>
+              <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                <FaDiscord size={18} />
+              </a>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-sm tracking-wider">Quick Links</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link to="/quiz" className="hover:text-white transition-colors">
+                  Libmanan Quiz
+                </Link>
+              </li>
+              <li>
+                <Link to="/sitemap" className="hover:text-white transition-colors">
+                  Sitemap
+                </Link>
+              </li>
+              <li>
+                <Link to="/charter" className="hover:text-white transition-colors">
+                  Citizen's Charter
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="hover:text-white transition-colors">
+                  Terms of Use
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/accessibility" className="hover:text-white transition-colors">
+                  Accessibility
+                </Link>
+              </li>
+              <li>
+                <Link to="/faq" className="hover:text-white transition-colors">
+                  FAQ
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-sm tracking-wider">Resources</h3>
+            <ul className="space-y-3">
+              <li>
+                <a href="https://data.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Open Data Philippines
+                </a>
+              </li>
+              <li>
+                <a href="https://foi.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Freedom of Information
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-white transition-colors">
+                  Official LGU Libmanan Portal
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-white transition-colors">
+                  Sangguniang Bayan
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-white transition-colors">
+                  LGU Libmanan Facebook
+                </a>
+              </li>
+              <li>
+                <a href="https://blgf.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  BLGF Portal
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-white transition-colors">
+                  CMCI DTI Portal
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Right Section */}
+          <div className="flex flex-col items-start">
+            <div className="bg-emerald-900/40 text-emerald-300 px-4 py-2 rounded-lg text-sm mb-4 flex items-center gap-2">
+              <span>Cost to the People of Libmanan = </span>
+              <span className="font-semibold text-emerald-400">₱0</span>
+            </div>
+            <div className="flex flex-col gap-3 mb-6">
+              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700">
+                <FaEnvelope size={14} />
+                <span className="text-sm">Volunteer with us</span>
+              </a>
+              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700">
+                <FaGithub size={14} />
+                <span className="text-sm">Contribute code with us</span>
+              </a>
+            </div>
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col items-center gap-1">
+                <a 
+                  href="https://bettergov.ph/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="opacity-70 hover:opacity-100 transition-opacity duration-300"
+                >
+                  <img 
+                    src="/bettergov-logo.svg" 
+                    alt="Better Gov" 
+                    className="h-24"
+                  />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-gray-500 text-sm text-center md:text-left">
+            © {currentYear} BetterLibmanan.org | MIT | CC BY 4.0. All public information sourced from official government portals.
+          </p>
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <span>Ver. 0.0.0</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

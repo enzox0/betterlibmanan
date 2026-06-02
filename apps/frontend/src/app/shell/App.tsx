@@ -1,10 +1,10 @@
 import { BrowserRouter } from 'react-router-dom';
-import { Layout } from './Layout.tsx';
+import { AppRouter } from '../router';
 
 export function App() {
   return (
     <BrowserRouter>
-      <Layout />
+      <AppRouter />
     </BrowserRouter>
   );
 }

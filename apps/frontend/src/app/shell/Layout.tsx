@@ -1,10 +1,20 @@
-export function Layout() {
+import { TopUtilityBar } from './TopUtilityBar';
+import { Navbar } from './Navbar';
+import { BottomUtilityBar } from './BottomUtilityBar';
+import { Footer } from './Footer';
+import { BackToTopButton } from './BackToTopButton';
+import { MiniFloatingNav } from '../../modules/landing/sections/MiniFloatingNav';
+
+export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">BetterLibmanan</h1>
-        <p className="text-xl text-gray-600">Coming soon</p>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      <MiniFloatingNav />
+      <TopUtilityBar />
+      <Navbar />
+      <BottomUtilityBar />
+      <main className="flex-1">{children}</main>
+      <Footer />
+      <BackToTopButton />
     </div>
   );
 }
