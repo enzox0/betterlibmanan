@@ -32,7 +32,7 @@ export function BackToTopButton() {
     >
       <button
         onClick={scrollToTop}
-        className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+        className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
         aria-label="Back to top"
       >
         <FaArrowUp size={16} />

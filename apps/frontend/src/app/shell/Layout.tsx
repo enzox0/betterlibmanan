@@ -1,9 +1,9 @@
-import { TopUtilityBar } from './TopUtilityBar';
-import { Navbar } from './Navbar';
-import { BottomUtilityBar } from './BottomUtilityBar';
-import { Footer } from './Footer';
-import { BackToTopButton } from './BackToTopButton';
-import { MiniFloatingNav } from '../../modules/landing/sections/MiniFloatingNav';
+import { TopUtilityBar } from '@/app/shell/TopUtilityBar';
+import { Navbar } from '@/app/shell/Navbar';
+import { BottomUtilityBar } from '@/app/shell/BottomUtilityBar';
+import { Footer } from '@/app/shell/Footer';
+import { BackToTopButton } from '@/app/shell/BackToTopButton';
+import { MiniFloatingNav } from '@/modules/landing/sections/MiniFloatingNav';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

@@ -8,17 +8,17 @@ export function Footer() {
   return (
     <footer className="bg-[#1A1A1A] text-gray-300 py-12 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Logo & Tagline */}
-          <div>
+          <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <img 
                 src="/betterlibmanan.png" 
                 alt="Better Libmanan Logo" 
-                className="h-16" 
+                className="h-12 sm:h-16" 
               />
             </div>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-400 mb-6 text-sm sm:text-base">
               Empowering the people of Libmanan with transparent access to the services, programs, and public funds of LGU Libmanan.
             </p>
             <div className="flex gap-4">
@@ -36,40 +36,40 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-sm tracking-wider">Quick Links</h3>
+            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">Quick Links</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/quiz" className="hover:text-white transition-colors">
+                <Link to="/quiz" className="hover:text-white transition-colors text-sm">
                   Libmanan Quiz
                 </Link>
               </li>
               <li>
-                <Link to="/sitemap" className="hover:text-white transition-colors">
+                <Link to="/sitemap" className="hover:text-white transition-colors text-sm">
                   Sitemap
                 </Link>
               </li>
               <li>
-                <Link to="/charter" className="hover:text-white transition-colors">
+                <Link to="/charter" className="hover:text-white transition-colors text-sm">
                   Citizen's Charter
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="hover:text-white transition-colors">
+                <Link to="/terms" className="hover:text-white transition-colors text-sm">
                   Terms of Use
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="hover:text-white transition-colors">
+                <Link to="/privacy" className="hover:text-white transition-colors text-sm">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/accessibility" className="hover:text-white transition-colors">
+                <Link to="/accessibility" className="hover:text-white transition-colors text-sm">
                   Accessibility
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="hover:text-white transition-colors">
+                <Link to="/faq" className="hover:text-white transition-colors text-sm">
                   FAQ
                 </Link>
               </li>
@@ -78,40 +78,40 @@ export function Footer() {
 
           {/* Resources */}
           <div>
-            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-sm tracking-wider">Resources</h3>
+            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">Resources</h3>
             <ul className="space-y-3">
               <li>
-                <a href="https://data.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                <a href="https://data.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-sm">
                   Open Data Philippines
                 </a>
               </li>
               <li>
-                <a href="https://foi.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                <a href="https://foi.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-sm">
                   Freedom of Information
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-white transition-colors text-sm">
                   Official LGU Libmanan Portal
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-white transition-colors text-sm">
                   Sangguniang Bayan
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-white transition-colors text-sm">
                   LGU Libmanan Facebook
                 </a>
               </li>
               <li>
-                <a href="https://blgf.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                <a href="https://blgf.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-sm">
                   BLGF Portal
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-white transition-colors text-sm">
                   CMCI DTI Portal
                 </a>
               </li>
@@ -119,19 +119,19 @@ export function Footer() {
           </div>
 
           {/* Right Section */}
-          <div className="flex flex-col items-start">
-            <div className="bg-emerald-900/40 text-emerald-300 px-4 py-2 rounded-lg text-sm mb-4 flex items-center gap-2">
+          <div className="flex flex-col items-start sm:col-span-2 lg:col-span-1">
+            <div className="bg-emerald-900/40 text-emerald-300 px-4 py-2 rounded-lg text-xs sm:text-sm mb-4 flex items-center gap-2">
               <span>Cost to the People of Libmanan = </span>
               <span className="font-semibold text-emerald-400">₱0</span>
             </div>
-            <div className="flex flex-col gap-3 mb-6">
-              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700">
+            <div className="flex flex-col gap-3 mb-6 w-full">
+              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700 text-sm">
                 <FaEnvelope size={14} />
-                <span className="text-sm">Volunteer with us</span>
+                <span>Volunteer with us</span>
               </a>
-              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700">
+              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700 text-sm">
                 <FaGithub size={14} />
-                <span className="text-sm">Contribute code with us</span>
+                <span>Contribute code with us</span>
               </a>
             </div>
             <div className="flex items-center gap-8">
@@ -145,7 +145,7 @@ export function Footer() {
                   <img 
                     src="/bettergov-logo.svg" 
                     alt="Better Gov" 
-                    className="h-24"
+                    className="h-20 sm:h-24"
                   />
                 </a>
               </div>
@@ -154,11 +154,11 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-500 text-sm text-center md:text-left">
+        <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
+          <p className="text-gray-500 text-xs sm:text-sm text-center md:text-left">
             © {currentYear} BetterLibmanan.org | MIT | CC BY 4.0. All public information sourced from official government portals.
           </p>
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
+          <div className="flex items-center gap-2 text-gray-500 text-xs sm:text-sm">
             <span>Ver. 0.0.0</span>
           </div>
         </div>
