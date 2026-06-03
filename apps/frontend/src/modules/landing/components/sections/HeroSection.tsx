@@ -1,19 +1,9 @@
 import { motion } from 'framer-motion';
-import heroBg from '../../../assets/image/hero-bg.png';
 
 export function HeroSection() {
   return (
-    <section 
-      className="relative overflow-hidden"
-      style={{
-        backgroundImage: `url(${heroBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-white/50 to-transparent lg:bg-gradient-to-r"></div>
+    <section className="relative overflow-hidden bg-gray-900">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent"></div>
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -22,19 +12,19 @@ export function HeroSection() {
         <div className="relative z-10 mx-auto flex items-center max-w-7xl min-h-[70vh] sm:min-h-[80vh] px-4 pb-12 pt-10 sm:px-6 lg:px-8 lg:pb-16 lg:pt-12">
           <div className="grid items-center gap-8 lg:grid-cols-2">
             <div className="text-center lg:text-left">
-              <h1 className="mb-6 text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-neutral-900">
-                Welcome to <span className="text-yellow-300">Better</span><span className="text-blue-700">Libmanan</span>.org
+              <h1 className="mb-6 text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white">
+                Welcome to <span className="text-yellow-400">Better</span><span className="text-blue-400">Libmanan</span>.org
               </h1>
-              <p className="mb-8 max-w-2xl text-base sm:text-lg lg:text-xl leading-relaxed text-neutral-600">
+              <p className="mb-8 max-w-2xl text-base sm:text-lg lg:text-xl leading-relaxed text-gray-300">
                 Access government services, information, and resources for the people of Libmanan,
                 Camarines Sur.
               </p>
 
               <div className="flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-                <button className="rounded-xl bg-neutral-900 px-4 sm:px-5 py-1.5 text-sm sm:text-base font-semibold text-white transition-colors hover:bg-neutral-800">
+                <button className="rounded-xl bg-blue-600 px-4 sm:px-5 py-1.5 text-sm sm:text-base font-semibold text-white transition-colors hover:bg-blue-700 shadow-lg">
                   Browse Services
                 </button>
-                <button className="rounded-xl border border-neutral-900 px-4 sm:px-5 py-1.5 text-sm sm:text-base font-semibold text-neutral-900 transition-colors hover:bg-neutral-900 hover:text-white">
+                <button className="rounded-xl border border-white px-4 sm:px-5 py-1.5 text-sm sm:text-base font-semibold text-white transition-colors hover:bg-white hover:text-gray-900">
                   Contact Us
                 </button>
               </div>
