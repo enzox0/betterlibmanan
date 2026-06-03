@@ -78,44 +78,116 @@ export function BottomUtilityBar() {
   const CurrencyIcon = currentCurrency.icon;
 
   return (
-    <div className="bg-blue-900 text-white py-2">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap justify-end items-center gap-6 text-sm">
-        <div className="flex items-center gap-2 h-6 overflow-hidden">
-          <div
-            key={currentCurrencyIndex}
-            className="flex items-center gap-2 animate-slide-up"
-          >
-            <CurrencyIcon size={14} />
+    <div className="bg-blue-900 text-white py-2 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="hidden sm:flex flex-wrap justify-end items-center gap-6 text-sm">
+          <div className="flex items-center gap-2 h-6 overflow-hidden">
+            <div
+              key={currentCurrencyIndex}
+              className="flex items-center gap-2 animate-slide-up"
+            >
+              <CurrencyIcon size={14} />
+              <span>
+                {currentCurrency.label} {currencyRates ? currencyRates[currentCurrency.code as keyof CurrencyRates].toFixed(2) : currentCurrency.code === 'USD' ? '57.00' : currentCurrency.code === 'EUR' ? '62.00' : '0.39'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaThermometerHalf size={14} />
+            <span>Libmanan Camarines Sur {temperature !== null ? `${temperature}°C` : '25°C'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaCalendarAlt size={14} />
             <span>
-              {currentCurrency.label} {currencyRates ? currencyRates[currentCurrency.code as keyof CurrencyRates].toFixed(2) : currentCurrency.code === 'USD' ? '57.00' : currentCurrency.code === 'EUR' ? '62.00' : '0.39'}
+              {currentDateTime.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })}
             </span>
+            <span>•</span>
+            <FaClock size={14} />
+            <span>
+              {currentDateTime.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: 'Asia/Manila'
+              })}
+            </span>
+            <span>PHT</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <FaThermometerHalf size={14} />
-          <span>Libmanan Camarines Sur {temperature !== null ? `${temperature}°C` : '25°C'}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <FaCalendarAlt size={14} />
-          <span>
-            {currentDateTime.toLocaleDateString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            })}
-          </span>
-          <span>•</span>
-          <FaClock size={14} />
-          <span>
-            {currentDateTime.toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-              timeZone: 'Asia/Manila'
-            })}
-          </span>
-          <span>PHT</span>
+        <div className="sm:hidden whitespace-nowrap overflow-hidden">
+          <div className="inline-block animate-marquee">
+            <div className="flex items-center gap-8 text-sm">
+              <div className="flex items-center gap-2">
+                <CurrencyIcon size={14} />
+                <span>
+                  {currentCurrency.label} {currencyRates ? currencyRates[currentCurrency.code as keyof CurrencyRates].toFixed(2) : currentCurrency.code === 'USD' ? '57.00' : currentCurrency.code === 'EUR' ? '62.00' : '0.39'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaThermometerHalf size={14} />
+                <span>Libmanan Camarines Sur {temperature !== null ? `${temperature}°C` : '25°C'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaCalendarAlt size={14} />
+                <span>
+                  {currentDateTime.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </span>
+                <span>•</span>
+                <FaClock size={14} />
+                <span>
+                  {currentDateTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Asia/Manila'
+                  })}
+                </span>
+                <span>PHT</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CurrencyIcon size={14} />
+                <span>
+                  {currentCurrency.label} {currencyRates ? currencyRates[currentCurrency.code as keyof CurrencyRates].toFixed(2) : currentCurrency.code === 'USD' ? '57.00' : currentCurrency.code === 'EUR' ? '62.00' : '0.39'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaThermometerHalf size={14} />
+                <span>Libmanan Camarines Sur {temperature !== null ? `${temperature}°C` : '25°C'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaCalendarAlt size={14} />
+                <span>
+                  {currentDateTime.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </span>
+                <span>•</span>
+                <FaClock size={14} />
+                <span>
+                  {currentDateTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Asia/Manila'
+                  })}
+                </span>
+                <span>PHT</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <style>{`
@@ -131,6 +203,17 @@ export function BottomUtilityBar() {
         }
         .animate-slide-up {
           animation: slideUp 0.5s ease-out forwards;
+        }
+        @keyframes marquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        .animate-marquee {
+          animation: marquee 20s linear infinite;
         }
       `}</style>
     </div>
