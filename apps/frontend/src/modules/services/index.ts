@@ -1,0 +1,11 @@
+export { ServicesPage, default } from './pages/ServicesPage';
+export { CertificatesPage } from './pages/CertificatesPage';
+export { BusinessPage } from './pages/BusinessPage';
+export { TaxPaymentsPage } from './pages/TaxPaymentsPage';
+export { SocialServicesPage } from './pages/SocialServicesPage';
+export { HealthPage } from './pages/HealthPage';
+export { AgriculturePage } from './pages/AgriculturePage';
+export { InfrastructurePage } from './pages/InfrastructurePage';
+export { EducationPage } from './pages/EducationPage';
+export { PublicSafetyPage } from './pages/PublicSafetyPage';
+export { EnvironmentPage } from './pages/EnvironmentPage';
