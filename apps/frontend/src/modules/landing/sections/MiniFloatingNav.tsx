@@ -95,7 +95,7 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
           : { duration: 0.75, ease: [0.4, 0, 0.2, 1] }
       }
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {navItems.map((item, index) => (
           <NavButton
             key={item.id}
@@ -141,8 +141,8 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
 
   // Calculate height based on label length (approx 16px per character + padding)
   const expandedHeight = useMemo(() => {
-    const baseHeight = 80;
-    const charHeight = 14;
+    const baseHeight = 60;
+    const charHeight = 12;
     return `${baseHeight + item.label.length * charHeight}px`;
   }, [item.label.length]);
 
@@ -165,17 +165,17 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
           )}
           style={{ transformOrigin: "center" }}
           animate={{
-            height: expanded ? expandedHeight : "56px",
+            height: expanded ? expandedHeight : "44px",
           }}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
         >
-          <div className="p-2 flex flex-col items-center justify-center gap-2">
+          <div className="p-1.5 flex flex-col items-center justify-center gap-1.5">
             <motion.div
               animate={{ scale: expanded ? 1.15 : 1 }}
               transition={{ duration: 0.3 }}
             >
               <Icon
-                size={18}
+                size={14}
                 className={cn(
                   expanded ? "text-white" : "text-neutral-700",
                   !isMobile ? "group-hover:scale-110" : "",
@@ -224,7 +224,7 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
               top: mousePos.y + 10,
             }}
           >
-            <div className="bg-neutral-900 text-white px-3 py-2 shadow-lg whitespace-nowrap text-xs font-medium rounded-lg border border-neutral-700">
+            <div className="bg-neutral-900 text-white px-2 py-1.5 shadow-lg whitespace-nowrap text-xs font-medium rounded-lg border border-neutral-700">
               {item.description}
             </div>
           </motion.div>

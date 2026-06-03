@@ -1,5 +1,6 @@
 import { FaPlay } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { Skeleton, SkeletonCard } from '../../../shared/ui';
 
 export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
@@ -26,7 +27,15 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
             </SkeletonCard>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white px-6 py-10 sm:px-8 lg:px-10">
-              <div className="flex justify-center">
+              <div className="grid items-center gap-8 lg:grid-cols-[30%_70%]">
+                <div className="flex justify-center">
+                  <DotLottieReact
+                    src="/edu.lottie"
+                    loop
+                    autoplay
+                    className="w-full max-w-sm h-auto"
+                  />
+                </div>
                 <div>
                   <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">Libmanan Quiz</h2>
                   <p className="mt-2 text-base font-semibold text-neutral-800">
