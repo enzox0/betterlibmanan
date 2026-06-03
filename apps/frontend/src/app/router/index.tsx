@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
-import { lazyLoad, LazyLoader } from './lazy-loader';
-import { Layout } from '../shell/Layout';
+import { lazyLoad, LazyLoader } from '@/app/router/lazy-loader';
+import { Layout } from '@/app/shell/Layout';
 
-const HomePage = lazyLoad(() => import('../../modules/landing'));
-const NotFoundPage = lazyLoad(() => import('../../modules/errors').then(m => ({ default: m.NotFoundPage })));
-const ComingSoonPage = lazyLoad(() => import('../../modules/common'));
+const HomePage = lazyLoad(() => import('@/modules/landing'));
+const NotFoundPage = lazyLoad(() => import('@/modules/errors').then(m => ({ default: m.NotFoundPage })));
+const ComingSoonPage = lazyLoad(() => import('@/modules/common'));
 
 export function AppRouter() {
   return (
