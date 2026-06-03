@@ -1,10 +1,12 @@
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 import { FaBars, FaTimes, FaChevronDown } from 'react-icons/fa';
 
 export function Navbar() {
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const dropdownTimeoutRef = useRef<number | null>(null);
   
   const navItems = [
     { name: 'Home', path: '/' },
@@ -50,6 +52,28 @@ export function Navbar() {
     setActiveDropdown(activeDropdown === name ? null : name);
   };
 
+  const handleDropdownMouseEnter = (name: string) => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setActiveDropdown(name);
+  };
+
+  const handleDropdownMouseLeave = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 150);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) {
+        clearTimeout(dropdownTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-[999999]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -70,17 +94,22 @@ export function Navbar() {
               <div
                 key={item.name}
                 className="relative"
-                onMouseEnter={() => item.hasDropdown && setActiveDropdown(item.name)}
-                onMouseLeave={() => item.hasDropdown && setActiveDropdown(null)}
+                onMouseEnter={() => item.hasDropdown && handleDropdownMouseEnter(item.name)}
+                onMouseLeave={() => item.hasDropdown && handleDropdownMouseLeave()}
               >
                 {item.hasDropdown ? (
-                  <button
-                    onClick={() => toggleDropdown(item.name)}
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1"
+                  <Link
+                    to={item.path}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate(item.path);
+                    }}
+                    onMouseEnter={() => handleDropdownMouseEnter(item.name)}
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-pointer"
                   >
                     {item.name}
                     <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
-                  </button>
+                  </Link>
                 ) : (
                   <Link
                     to={item.path}
@@ -92,7 +121,11 @@ export function Navbar() {
                 
                 {/* Dropdown Menu */}
                 {item.hasDropdown && activeDropdown === item.name && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  <div 
+                    className="absolute top-full left-0 mt-0 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 pt-2"
+                    onMouseEnter={() => handleDropdownMouseEnter(item.name)}
+                    onMouseLeave={handleDropdownMouseLeave}
+                  >
                     {item.dropdownItems?.map((dropdownItem) => (
                       <Link
                         key={dropdownItem.name}

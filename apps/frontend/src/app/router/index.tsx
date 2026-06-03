@@ -4,9 +4,24 @@ import { Layout } from '@/app/shell/Layout';
 
 const HomePage = lazyLoad(() => import('@/modules/landing'));
 const NotFoundPage = lazyLoad(() => import('@/modules/errors').then(m => ({ default: m.NotFoundPage })));
-const ComingSoonPage = lazyLoad(() => import('@/modules/common'));
 const ContactPage = lazyLoad(() => import('@/modules/contact'));
 const TransparencyPage = lazyLoad(() => import('@/modules/transparency'));
+const GovernmentPage = lazyLoad(() => import('@/modules/government'));
+const StatisticsPage = lazyLoad(() => import('@/modules/statistics'));
+const LegislativePage = lazyLoad(() => import('@/modules/legislative'));
+const OrdinanceFrameworkPage = lazyLoad(() => import('@/modules/legislative').then(m => ({ default: m.OrdinanceFrameworkPage })));
+const ResolutionFrameworkPage = lazyLoad(() => import('@/modules/legislative').then(m => ({ default: m.ResolutionFrameworkPage })));
+const ServicesPage = lazyLoad(() => import('@/modules/services'));
+const CertificatesPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.CertificatesPage })));
+const BusinessPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.BusinessPage })));
+const TaxPaymentsPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.TaxPaymentsPage })));
+const SocialServicesPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.SocialServicesPage })));
+const HealthPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.HealthPage })));
+const AgriculturePage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.AgriculturePage })));
+const InfrastructurePage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.InfrastructurePage })));
+const EducationPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.EducationPage })));
+const PublicSafetyPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.PublicSafetyPage })));
+const EnvironmentPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.EnvironmentPage })));
 
 export function AppRouter() {
   return (
@@ -25,7 +40,7 @@ export function AppRouter() {
           path="/services"
           element={
             <Layout>
-              <ComingSoonPage title="Services Coming Soon" subtitle="Our services directory is currently under development." />
+              <ServicesPage />
             </Layout>
           }
         />
@@ -33,7 +48,7 @@ export function AppRouter() {
           path="/services/certificates"
           element={
             <Layout>
-              <ComingSoonPage title="Certificates Coming Soon" subtitle="Certificate application services are under construction." />
+              <CertificatesPage />
             </Layout>
           }
         />
@@ -41,7 +56,7 @@ export function AppRouter() {
           path="/services/business"
           element={
             <Layout>
-              <ComingSoonPage title="Business Services Coming Soon" subtitle="Business registration and permits are coming soon!" />
+              <BusinessPage />
             </Layout>
           }
         />
@@ -49,7 +64,7 @@ export function AppRouter() {
           path="/services/tax-payments"
           element={
             <Layout>
-              <ComingSoonPage title="Tax Payments Coming Soon" subtitle="Online tax payment services are under development." />
+              <TaxPaymentsPage />
             </Layout>
           }
         />
@@ -57,7 +72,7 @@ export function AppRouter() {
           path="/services/social-services"
           element={
             <Layout>
-              <ComingSoonPage title="Social Services Coming Soon" subtitle="Social services directory is coming soon!" />
+              <SocialServicesPage />
             </Layout>
           }
         />
@@ -65,7 +80,7 @@ export function AppRouter() {
           path="/services/health"
           element={
             <Layout>
-              <ComingSoonPage title="Health Services Coming Soon" subtitle="Healthcare services information is under construction." />
+              <HealthPage />
             </Layout>
           }
         />
@@ -73,7 +88,7 @@ export function AppRouter() {
           path="/services/agriculture"
           element={
             <Layout>
-              <ComingSoonPage title="Agriculture Services Coming Soon" subtitle="Agricultural programs and services are coming soon!" />
+              <AgriculturePage />
             </Layout>
           }
         />
@@ -81,7 +96,7 @@ export function AppRouter() {
           path="/services/infrastructure"
           element={
             <Layout>
-              <ComingSoonPage title="Infrastructure Coming Soon" subtitle="Infrastructure project information is under development." />
+              <InfrastructurePage />
             </Layout>
           }
         />
@@ -89,7 +104,7 @@ export function AppRouter() {
           path="/services/education"
           element={
             <Layout>
-              <ComingSoonPage title="Education Services Coming Soon" subtitle="Educational programs and scholarships are coming soon!" />
+              <EducationPage />
             </Layout>
           }
         />
@@ -97,7 +112,7 @@ export function AppRouter() {
           path="/services/public-safety"
           element={
             <Layout>
-              <ComingSoonPage title="Public Safety Coming Soon" subtitle="Public safety services and information is under construction." />
+              <PublicSafetyPage />
             </Layout>
           }
         />
@@ -105,7 +120,7 @@ export function AppRouter() {
           path="/services/environment"
           element={
             <Layout>
-              <ComingSoonPage title="Environment Services Coming Soon" subtitle="Environmental programs are coming soon!" />
+              <EnvironmentPage />
             </Layout>
           }
         />
@@ -114,7 +129,7 @@ export function AppRouter() {
           path="/legislative"
           element={
             <Layout>
-              <ComingSoonPage title="Legislative Coming Soon" subtitle="Legislative information is currently under development." />
+              <LegislativePage />
             </Layout>
           }
         />
@@ -122,7 +137,7 @@ export function AppRouter() {
           path="/legislative/ordinances"
           element={
             <Layout>
-              <ComingSoonPage title="Ordinance Framework Coming Soon" subtitle="Ordinance documentation is under construction." />
+              <OrdinanceFrameworkPage />
             </Layout>
           }
         />
@@ -130,7 +145,7 @@ export function AppRouter() {
           path="/legislative/resolutions"
           element={
             <Layout>
-              <ComingSoonPage title="Resolution Framework Coming Soon" subtitle="Resolution documentation is coming soon!" />
+              <ResolutionFrameworkPage />
             </Layout>
           }
         />
@@ -139,7 +154,7 @@ export function AppRouter() {
           path="/government"
           element={
             <Layout>
-              <ComingSoonPage title="Government Coming Soon" subtitle="Government official information is under construction." />
+              <GovernmentPage />
             </Layout>
           }
         />
@@ -147,7 +162,7 @@ export function AppRouter() {
           path="/statistics"
           element={
             <Layout>
-              <ComingSoonPage title="Statistics Coming Soon" subtitle="Municipal statistics and data are coming soon!" />
+              <StatisticsPage />
             </Layout>
           }
         />
