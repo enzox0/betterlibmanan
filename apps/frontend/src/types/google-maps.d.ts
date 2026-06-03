@@ -8,6 +8,7 @@ declare global {
           mapDiv: HTMLElement,
           opts?: google.maps.MapOptions
         ) => google.maps.Map;
+        Data: new (opts?: { map?: google.maps.Map }) => google.maps.Data;
       };
     };
   }
@@ -34,6 +35,27 @@ declare global {
     interface LatLngLiteral {
       lat: number;
       lng: number;
+    }
+
+    interface DataFeature {
+      getProperty(name: string): any;
+    }
+
+    interface DataMouseEvent {
+      feature: DataFeature;
+    }
+
+    interface DataStyleOptions {
+      fillColor?: string;
+      fillOpacity?: number;
+      strokeColor?: string;
+      strokeWeight?: number;
+    }
+
+    interface Data {
+      addGeoJson(geoJson: any): void;
+      setStyle(style: DataStyleOptions | ((feature: DataFeature) => DataStyleOptions)): void;
+      addListener(eventName: string, handler: (event: DataMouseEvent) => void): void;
     }
   }
 }
