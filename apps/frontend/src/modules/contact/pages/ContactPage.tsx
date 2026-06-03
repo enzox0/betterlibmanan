@@ -1,22 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  FaPhone,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaClock,
-  FaFax,
-  FaFacebook,
-  FaTwitter,
-  FaInstagram,
-  FaYoutube,
-  FaShieldAlt,
-  FaHospital,
-  FaFire,
-  FaBuilding,
-  FaExclamationTriangle,
-  FaBroadcastTower
-} from 'react-icons/fa';
+import { FaPhone } from 'react-icons/fa';
+import { mockContactData } from '../data/mockData';
 
 interface ContactFormData {
   name: string;
@@ -71,96 +56,14 @@ export function ContactPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const contactInfo = [
-    {
-      icon: FaPhone,
-      title: 'Phone',
-      value: '0917 595 1931',
-      href: 'tel:09175951931',
-      description: 'Mon-Fri: 8:00 AM - 5:00 PM'
-    },
-    {
-      icon: FaFax,
-      title: 'Fax',
-      value: '(054) 871-2345',
-      href: '#',
-      description: 'Available 24/7'
-    },
-    {
-      icon: FaEnvelope,
-      title: 'Email',
-      value: 'lgulibmanan@gmail.com',
-      href: 'mailto:lgulibmanan@gmail.com',
-      description: "We'll respond within 24 hours"
-    },
-    {
-      icon: FaMapMarkerAlt,
-      title: 'Address',
-      value: 'Municipal Hall, Poblacion, Libmanan, Camarines Sur 4418',
-      href: '#',
-      description: 'Visit us during office hours'
-    }
-  ];
-
-  const departments = [
-    { value: 'general', label: 'General Inquiry' },
-    { value: 'mayor', label: "Mayor's Office - 0917 595 1931" },
-    { value: 'vice-mayor', label: "Vice Mayor's Office - 0918 123 4567" },
-    { value: 'treasurer', label: 'Municipal Treasurer - 0919 234 5678' },
-    { value: 'assessor', label: 'Municipal Assessor - 0920 345 6789' },
-    { value: 'engineering', label: 'Engineering Office - 0921 456 7890' },
-    { value: 'health', label: 'Rural Health Unit - 0922 567 8901' },
-    { value: 'agriculture', label: 'Agriculture Office - 0923 678 9012' },
-    { value: 'social', label: 'MSWDO - 0916 284 0885' },
-    { value: 'planning', label: 'Municipal Planning Office - 0925 890 1234' },
-    { value: 'business', label: 'Business Permits - 0926 901 2345' },
-    { value: 'civil-registrar', label: 'Civil Registrar - 0927 012 3456' },
-    { value: 'accounting', label: 'Accounting Office - 0928 123 4567' },
-    { value: 'budget', label: 'Budget Office - 0929 234 5678' },
-    { value: 'hrmo', label: 'HRMO - 0930 345 6789' },
-    { value: 'it', label: 'IT Support - 0931 456 7890' }
-  ];
-
-  const emergencyContacts = [
-    { icon: FaShieldAlt, name: 'PNP Libmanan', number: '0927 400 8033', description: 'Police Emergency' },
-    { icon: FaExclamationTriangle, name: 'MDRRMO Libmanan', number: '0926 383 3744', description: 'Disaster Response' },
-    { icon: FaHospital, name: 'MSWDO Libmanan', number: '0916 284 0885', description: 'Social Welfare' },
-    { icon: FaFire, name: 'BFP Libmanan', number: '0936 062 0305', description: 'Fire Emergency' },
-    { icon: FaBuilding, name: 'DILG Libmanan', number: '0906 188 0868', description: 'Local Government' },
-    { icon: FaBroadcastTower, name: 'R2TMC', number: '0906 819 5569', description: 'Traffic Management' }
-  ];
-
-  const medicalEmergencyContacts = [
-    { icon: FaHospital, name: 'RHU Libmanan', number: '0967 910 3054', description: 'Rural Health Unit' },
-    { icon: FaHospital, name: 'Libmanan District Hospital', number: '0947 498 1746', description: 'District Hospital' },
-    { icon: FaHospital, name: 'Red Cross Libmanan', number: '0917 507 9950', description: 'Red Cross Services' }
-  ];
-
-  const municipalOffices = [
-    { name: "Mayor's Office", number: '0917 595 1931' },
-    { name: "Vice Mayor's Office", number: '0918 123 4567' },
-    { name: 'Sangguniang Bayan', number: '0919 234 5678' },
-    { name: 'Municipal Secretary', number: '0920 345 6789' },
-    { name: 'Municipal Treasurer', number: '0919 234 5678' },
-    { name: 'Municipal Assessor', number: '0920 345 6789' },
-    { name: 'Municipal Accountant', number: '0928 123 4567' },
-    { name: 'Municipal Budget Officer', number: '0929 234 5678' },
-    { name: 'Municipal Planning Officer', number: '0925 890 1234' },
-    { name: 'Municipal Engineer', number: '0921 456 7890' },
-    { name: 'Municipal Agriculturist', number: '0923 678 9012' },
-    { name: 'Municipal Civil Registrar', number: '0927 012 3456' },
-    { name: 'Municipal Social Welfare Officer', number: '0916 284 0885' },
-    { name: 'Municipal Health Officer', number: '0922 567 8901' },
-    { name: 'HRMO', number: '0930 345 6789' },
-    { name: 'Business Permits & Licensing', number: '0926 901 2345' }
-  ];
-
-  const socialLinks = [
-    { icon: FaFacebook, name: 'Facebook', href: '#', color: 'hover:text-blue-600' },
-    { icon: FaTwitter, name: 'Twitter', href: '#', color: 'hover:text-blue-400' },
-    { icon: FaInstagram, name: 'Instagram', href: '#', color: 'hover:text-pink-600' },
-    { icon: FaYoutube, name: 'YouTube', href: '#', color: 'hover:text-red-600' }
-  ];
+  const {
+    contactInfo,
+    departments,
+    emergencyContacts,
+    medicalEmergencyContacts,
+    municipalOffices,
+    socialLinks
+  } = mockContactData;
 
   return (
     <div className="bg-gray-50">
