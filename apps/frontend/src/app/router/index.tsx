@@ -5,6 +5,8 @@ import { Layout } from '@/app/shell/Layout';
 const HomePage = lazyLoad(() => import('@/modules/landing'));
 const NotFoundPage = lazyLoad(() => import('@/modules/errors').then(m => ({ default: m.NotFoundPage })));
 const ComingSoonPage = lazyLoad(() => import('@/modules/common'));
+const ContactPage = lazyLoad(() => import('@/modules/contact'));
+const TransparencyPage = lazyLoad(() => import('@/modules/transparency'));
 
 export function AppRouter() {
   return (
@@ -153,7 +155,7 @@ export function AppRouter() {
           path="/transparency"
           element={
             <Layout>
-              <ComingSoonPage title="Transparency Coming Soon" subtitle="Transparency and accountability information is under development." />
+              <TransparencyPage />
             </Layout>
           }
         />
@@ -161,7 +163,7 @@ export function AppRouter() {
           path="/contact"
           element={
             <Layout>
-              <ComingSoonPage title="Contact Coming Soon" subtitle="Contact information is under construction." />
+              <ContactPage />
             </Layout>
           }
         />
