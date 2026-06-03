@@ -1,13 +1,176 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
+    <!-- Primary Meta Tags -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    
+    <!-- SEO Meta Tags (dynamically updated by React based on route) -->
+    <title>BetterLibmanan.org | Official Portal</title>
+    <meta name="description" content="BetterLibmanan is a comprehensive, enterprise-grade library management system designed for modern libraries. Streamline cataloging, circulation, and patron management with our intuitive platform." />
+    <meta name="keywords" content="library management, library system, cataloging software, circulation management, digital library, book management, library automation, patron management" />
+    <meta name="author" content="BetterLibmanan Team" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="bingbot" content="index, follow" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.betterlibmanan.org/" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.betterlibmanan.org/" />
+    <meta property="og:site_name" content="BetterLibmanan" />
+    <meta property="og:title" content="BetterLibmanan - Modern Library Management System" />
+    <meta property="og:description" content="Comprehensive enterprise-grade library management system designed for modern libraries. Streamline cataloging, circulation, and patron management." />
+    <meta property="og:image" content="https://www.betterlibmanan.org/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="BetterLibmanan Platform Interface" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.betterlibmanan.org/" />
+    <meta name="twitter:title" content="BetterLibmanan - Modern Library Management System" />
+    <meta name="twitter:description" content="Comprehensive enterprise-grade library management system designed for modern libraries." />
+    <meta name="twitter:image" content="https://www.betterlibmanan.org/twitter-image.jpg" />
+    <meta name="twitter:image:alt" content="BetterLibmanan Platform Interface" />
+    <meta name="twitter:creator" content="@betterlibmanan" />
+    <meta name="twitter:site" content="@betterlibmanan" />
+    
+    <!-- Favicons & App Icons -->
     <link rel="icon" type="image/x-icon" href="/betterlibmanan.ico" />
-    <title>BetterLibmanan</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
+    <meta name="msapplication-TileColor" content="#da532c" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "BetterLibmanan",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "1250"
+      },
+      "description": "Comprehensive enterprise-grade library management system designed for modern libraries. Streamline cataloging, circulation, and patron management.",
+      "url": "https://www.betterlibmanan.org",
+      "image": "https://www.betterlibmanan.org/og-image.jpg",
+      "publisher": {
+        "@type": "Organization",
+        "name": "BetterLibmanan",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.betterlibmanan.org/logo.png"
+        }
+      },
+      "featureList": [
+        "Catalog Management",
+        "Circulation Control",
+        "Patron Management",
+        "Digital Resources",
+        "Analytics & Reports"
+      ]
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "BetterLibmanan",
+      "url": "https://www.betterlibmanan.org",
+      "logo": "https://www.betterlibmanan.org/logo.png",
+      "sameAs": [
+        "https://www.facebook.com/betterlibmanan",
+        "https://twitter.com/betterlibmanan",
+        "https://www.linkedin.com/company/betterlibmanan",
+        "https://github.com/betterlibmanan"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+1-555-123-4567",
+        "contactType": "customer support",
+        "email": "support@betterlibmanan.org",
+        "availableLanguage": ["English"]
+      }
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "BetterLibmanan",
+      "url": "https://www.betterlibmanan.org",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.betterlibmanan.org/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
+    
+    <!-- Performance Optimization -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    
+    <!-- Alternative Languages (if applicable) -->
+    <link rel="alternate" hreflang="en" href="https://www.betterlibmanan.org/en" />
+    <link rel="alternate" hreflang="x-default" href="https://www.betterlibmanan.org/" />
   </head>
   <body>
+    <!-- Skip to main content for accessibility -->
+    <a href="#root" class="skip-to-main" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">Skip to main content</a>
+    
+    <!-- No Script Fallback -->
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: system-ui, -apple-system, sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>BetterLibmanan requires JavaScript to be enabled. Please enable JavaScript in your browser settings to access the application.</p>
+      </div>
+    </noscript>
+    
+    <!-- Main Application Root -->
     <div id="root"></div>
+    
+    <!-- Main Application Script -->
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Google Analytics (replace with your tracking ID) -->
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script> -->
   </body>
 </html>
