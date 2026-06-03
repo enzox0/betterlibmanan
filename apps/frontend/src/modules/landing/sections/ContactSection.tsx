@@ -1,6 +1,6 @@
 import { FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '../../../shared/ui';
+import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
   const contactInfo = [
@@ -44,7 +44,7 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
               </>
             ) : (
               <>
-                <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">Contact Information</h2>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">Contact Information</h2>
                 <p className="mt-2 max-w-2xl text-sm text-neutral-500">
                   Get in touch with us for inquiries, concerns, or assistance
                 </p>

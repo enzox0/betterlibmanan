@@ -1,6 +1,6 @@
 import { FaFileAlt, FaBriefcase, FaMoneyBill, FaUsers, FaHeartbeat, FaThLarge } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '../../../shared/ui';
+import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function PopularServicesSection({ isLoading = false }: { isLoading?: boolean }) {
   const popularServices = [
@@ -59,7 +59,7 @@ export function PopularServicesSection({ isLoading = false }: { isLoading?: bool
               </>
             ) : (
               <>
-                <h2 className="mb-2 text-2xl font-bold text-neutral-900 lg:text-3xl">Popular Services</h2>
+                <h2 className="mb-2 text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">Popular Services</h2>
                 <p className="text-sm text-neutral-500">
                   Quick access to frequently requested municipal services
                 </p>

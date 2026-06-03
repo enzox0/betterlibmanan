@@ -1,4 +1,4 @@
-import LogoLoop from '../components/LogoLoop';
+import LogoLoop from '@/modules/landing/components/LogoLoop';
 
 // LGU Logos from /betterLGUs folder
 const LGU_LOGOS = [
@@ -16,20 +16,20 @@ const LGU_LOGOS = [
 
 export default function PartnerLogos() {
   return (
-    <section className="py-10 bg-surface border-y border-border/40 overflow-hidden">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10">
-        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+    <section className="py-10 bg-neutral-100 border-y border-border/40 overflow-hidden">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
           <div className="flex items-center gap-4">
             <img 
               src="/bettergov-logo.svg" 
               alt="Better Gov Logo" 
-              className="h-10 w-auto opacity-70"
+              className="h-8 sm:h-10 w-auto opacity-70"
             />
             <div className="flex-shrink-0 text-center md:text-left">
-              <p className="text-[10px] font-medium text-primary uppercase tracking-[0.15em] mb-1">
+              <p className="text-[10px] sm:text-xs font-medium text-primary uppercase tracking-[0.15em] mb-1">
                 Better Gov • Better LGU
               </p>
-              <h3 className="text-sm font-medium text-text-muted">
+              <h3 className="text-sm sm:text-base font-medium text-text-muted">
                 Empowering local governance
               </h3>
             </div>
@@ -40,8 +40,8 @@ export default function PartnerLogos() {
               logos={LGU_LOGOS}
               speed={30}
               direction="left"
-              logoHeight={48}
-              gap={40}
+              logoHeight={40}
+              gap={32}
               hoverSpeed={0}
               scaleOnHover
               fadeOut

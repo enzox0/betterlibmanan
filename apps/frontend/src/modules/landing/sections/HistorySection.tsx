@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FaChurch, FaSeedling, FaSchool } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '../../../shared/ui';
+import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -215,7 +215,7 @@ export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
                       <button
                         type="button"
                         onClick={() => setIsExpanded((current) => !current)}
-                        className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:text-neutral-900"
+                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:text-neutral-900"
                       >
                         {isExpanded ? 'View Less' : 'View More'}
                       </button>

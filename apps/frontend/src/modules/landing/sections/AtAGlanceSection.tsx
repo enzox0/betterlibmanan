@@ -1,6 +1,6 @@
 import { FaUsers, FaBuilding, FaAward, FaMapMarkedAlt } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Skeleton } from '../../../shared/ui';
+import { Skeleton } from '@/shared/ui';
 
 export function AtAGlanceSection({ isLoading = false }: { isLoading?: boolean }) {
   const statistics = [
@@ -48,7 +48,7 @@ export function AtAGlanceSection({ isLoading = false }: { isLoading?: boolean })
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">Libmanan at a Glance</h2>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">Libmanan at a Glance</h2>
                   <p className="mt-2 text-sm text-neutral-500">
                     Key facts and figures about our municipality
                   </p>

@@ -1,7 +1,7 @@
 import { FaPlay } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { Skeleton, SkeletonCard } from '../../../shared/ui';
+import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
   return (
@@ -46,7 +46,7 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
                     through a short interactive quiz designed to highlight the municipality's history and
                     significance.
                   </p>
-                  <button className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
+                  <button className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
                     <FaPlay className="text-xs" />
                     Take the Quiz
                   </button>

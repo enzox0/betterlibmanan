@@ -100,7 +100,7 @@ export function AppointmentSection() {
                 </li>
               </ul>
 
-              <button className="rounded-xl bg-neutral-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
+              <button className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
                 Schedule an Appointment
               </button>
             </div>

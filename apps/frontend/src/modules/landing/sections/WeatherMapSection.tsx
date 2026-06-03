@@ -1,7 +1,7 @@
 import { FaCloud, FaTint, FaWind } from 'react-icons/fa';
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '../../../shared/ui';
+import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function WeatherMapSection({ isLoading = false }: { isLoading?: boolean }) {
   const mapRef = useRef<HTMLDivElement>(null);

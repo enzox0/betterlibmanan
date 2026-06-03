@@ -1,6 +1,6 @@
 import { FaEnvelope, FaPhone, FaUserTie } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '../../../shared/ui';
+import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }) {
   const officials = [
