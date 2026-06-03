@@ -1,5 +1,6 @@
 import { FaFileAlt, FaBriefcase, FaMoneyBill, FaUsers, FaHeartbeat, FaThLarge } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function PopularServicesSection({ isLoading = false }: { isLoading?: boolean }) {
@@ -8,37 +9,43 @@ export function PopularServicesSection({ isLoading = false }: { isLoading?: bool
       icon: FaFileAlt,
       title: 'Certificates',
       description: 'Birth, marriage, death certificates',
-      featured: false
+      featured: false,
+      path: '/services/certificates'
     },
     {
       icon: FaBriefcase,
       title: 'Business Permits',
       description: 'New permits and renewals',
-      featured: false
+      featured: false,
+      path: '/services/business'
     },
     {
       icon: FaMoneyBill,
       title: 'Tax Payments',
       description: 'Property and business taxes',
-      featured: false
+      featured: false,
+      path: '/services/tax-payments'
     },
     {
       icon: FaUsers,
       title: 'Social Services',
       description: 'Senior citizen & PWD services',
-      featured: false
+      featured: false,
+      path: '/services/social-services'
     },
     {
       icon: FaHeartbeat,
       title: 'Health Services',
       description: 'Medical assistance & programs',
-      featured: false
+      featured: false,
+      path: '/services/health'
     },
     {
       icon: FaThLarge,
       title: 'View All Services',
       description: 'Browse complete directory',
-      featured: true
+      featured: true,
+      path: '/services'
     }
   ];
 
@@ -83,8 +90,9 @@ export function PopularServicesSection({ isLoading = false }: { isLoading?: bool
               : popularServices.map((service) => {
                   const Icon = service.icon;
                   return (
-                    <div
+                    <Link
                       key={service.title}
+                      to={service.path}
                       className={[
                         'group flex items-center gap-3 rounded-xl border p-5 transition-all duration-200',
                         service.featured
@@ -121,7 +129,7 @@ export function PopularServicesSection({ isLoading = false }: { isLoading?: bool
                           {service.description}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
           </div>
