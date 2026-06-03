@@ -22,7 +22,7 @@ import {
   FaChevronRight
 } from 'react-icons/fa';
 import React from 'react';
-import { Project, ProjectSummary, fetchProjects } from './api';
+import { Project, ProjectSummary, fetchProjects } from '../api';
 
 const categoryIcons: Record<string, any> = {
   'Roads': FaRoad,
@@ -153,19 +153,19 @@ export function TransparencyPage() {
             transition={{ duration: 0.6 }}
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
-            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-500">Total Projects</p>
                   <p className="mt-1 text-2xl font-bold text-gray-900">{filteredProjects.length}</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition-all duration-300 hover:bg-blue-100 hover:text-blue-600">
                   <FaBuilding className="text-base" />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-500">Completed</p>
@@ -173,13 +173,13 @@ export function TransparencyPage() {
                     {filteredProjects.filter(p => p.status === 'Completed').length}
                   </p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white transition-all duration-300 hover:bg-blue-600">
                   <FaCheckCircle className="text-base" />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">On-Going</p>
@@ -187,13 +187,13 @@ export function TransparencyPage() {
                     {filteredProjects.filter(p => p.status === 'On-Going').length}
                   </p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white transition-all duration-300 hover:bg-blue-700">
                   <FaSpinner className="text-base" />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-500">Total Budget</p>
@@ -201,7 +201,7 @@ export function TransparencyPage() {
                     {formatCurrency(filteredProjects.reduce((sum, p) => sum + p.budget, 0))}
                   </p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 text-gray-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 text-gray-700 transition-all duration-300 hover:bg-blue-100 hover:text-blue-600">
                   <FaMoneyBillWave className="text-base" />
                 </div>
               </div>
@@ -295,29 +295,50 @@ export function TransparencyPage() {
       </section>
 
       {/* Projects Grid */}
-      <section className="py-8">
+      <section className="py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center py-24">
               <div className="text-center">
-                <FaSpinner className="mx-auto h-12 w-12 animate-spin text-blue-600" />
-                <p className="mt-4 text-gray-600">Loading projects...</p>
+                <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-100 flex items-center justify-center">
+                  <FaSpinner className="h-8 w-8 animate-spin text-gray-600" />
+                </div>
+                <p className="text-base text-gray-600 font-medium">Loading projects...</p>
+                <p className="text-xs text-gray-500 mt-1">This may take a few moments</p>
               </div>
             </div>
           ) : error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
-              <p className="text-red-800">{error}</p>
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-10 text-center">
+              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-200 flex items-center justify-center">
+                <svg className="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-lg font-semibold text-gray-800">Oops! Something went wrong</p>
+              <p className="text-gray-700 mt-2">{error}</p>
+              <button 
+                onClick={loadProjects}
+                className="mt-6 px-6 py-2.5 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors"
+              >
+                Try Again
+              </button>
             </div>
           ) : filteredProjects.length === 0 ? (
-            <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-              <p className="text-gray-600">No projects found matching your criteria.</p>
+            <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center">
+              <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No projects found</h3>
+              <p className="text-gray-600">Try adjusting your filters or search criteria</p>
             </div>
           ) : (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className={viewMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-3'}
+              className={viewMode === 'grid' ? 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}
             >
               {currentProjects.map((project, index) => {
                 const Icon = categoryIcons[project.category] || FaBuilding;
@@ -327,70 +348,74 @@ export function TransparencyPage() {
                   return (
                     <motion.div
                       key={project.contractId}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, x: -30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: index * 0.02 }}
+                      transition={{ duration: 0.5, delay: index * 0.03 }}
                       onClick={() => setSelectedProject(project)}
-                      className="group cursor-pointer rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-blue-300 hover:shadow-lg"
+                      className="group cursor-pointer rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-gray-400 hover:shadow-xl hover:-translate-y-1"
                     >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         {/* Left: Icon and Content */}
-                        <div className="flex flex-1 gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
-                            <Icon className="text-base" />
+                        <div className="flex flex-1 gap-5">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gray-100 text-gray-700 group-hover:bg-gray-200 transition-all duration-300">
+                            <Icon className="text-xl" />
                           </div>
                           
                           <div className="flex-1 min-w-0">
-                            <div className="mb-2 flex items-center gap-2">
-                              <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                              <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
                                 {project.status}
                               </span>
                               {project.progress > 0 && (
-                                <span className="text-xs font-medium text-gray-600">{project.progress}%</span>
+                                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+                                  {project.progress}% Complete
+                                </span>
                               )}
                             </div>
                             
-                            <h3 className="mb-2 text-sm font-semibold text-gray-900 line-clamp-2">
+                            <h3 className="mb-3 text-lg font-bold text-gray-900 leading-snug">
                               {project.description}
                             </h3>
                             
-                            <div className="grid gap-1.5 text-xs text-gray-600 sm:grid-cols-2 lg:grid-cols-4">
-                              <div className="flex items-center gap-1.5">
-                                <FaMoneyBillWave className="text-gray-400 shrink-0 text-xs" />
-                                <span className="font-semibold text-gray-900 truncate text-xs">{formatCurrency(project.budget)}</span>
+                            <div className="grid gap-3 text-sm text-gray-600 sm:grid-cols-2 lg:grid-cols-4">
+                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
+                                <FaMoneyBillWave className="text-gray-600" />
+                                <span className="font-bold text-gray-900 truncate">{formatCurrency(project.budget)}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <FaHardHat className="text-gray-400 shrink-0 text-xs" />
-                                <span className="truncate text-xs">{project.contractor.split('(')[0].trim()}</span>
+                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
+                                <FaHardHat className="text-gray-600" />
+                                <span className="truncate">{project.contractor.split('(')[0].trim()}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <FaCalendarAlt className="text-gray-400 shrink-0 text-xs" />
-                                <span className="text-xs">{formatDate(project.startDate)}</span>
+                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
+                                <FaCalendarAlt className="text-gray-600" />
+                                <span>{formatDate(project.startDate)}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <FaMapMarkerAlt className="text-gray-400 shrink-0 text-xs" />
-                                <span className="truncate text-xs">{project.location.province}</span>
+                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
+                                <FaMapMarkerAlt className="text-gray-600" />
+                                <span className="truncate">{project.location.province}</span>
                               </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Right: Action */}
-                        <div className="flex items-center justify-end sm:justify-start">
-                          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-900 group-hover:text-blue-600">
+                        <div className="flex items-center justify-end lg:justify-start lg:ml-4">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 group-hover:text-gray-600 transition-colors">
                             <span>View Details</span>
-                            <FaExternalLinkAlt className="text-xs" />
+                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
                           </div>
                         </div>
                       </div>
 
                       {/* Progress Bar for list view */}
                       {project.progress > 0 && (
-                        <div className="mt-3">
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
                             <div
-                              className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                              className="h-full rounded-full bg-gray-600 transition-all duration-500"
                               style={{ width: `${project.progress}%` }}
                             />
                           </div>
@@ -403,64 +428,74 @@ export function TransparencyPage() {
                 return (
                   <motion.div
                     key={project.contractId}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.05 }}
+                    transition={{ duration: 0.5, delay: index * 0.06 }}
                     onClick={() => setSelectedProject(project)}
-                    className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-blue-300 hover:shadow-lg"
+                    className="group cursor-pointer rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all duration-300 hover:border-gray-400 hover:shadow-2xl hover:-translate-y-2"
                   >
-                    {/* Header */}
-                    <div className="mb-3 flex items-start justify-between">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
-                        <Icon className="text-base" />
-                      </div>
-                      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
-                        {project.status}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-900">
-                      {project.description}
-                    </h3>
-
-                    {/* Progress Bar */}
-                    {project.progress > 0 && (
-                      <div className="mb-3">
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-600">Progress</span>
-                          <span className="text-xs font-bold text-blue-600">{project.progress}%</span>
+                    {/* Top Bar */}
+                    <div className="h-2 bg-gray-800"></div>
+                    
+                    <div className="p-6">
+                      {/* Header */}
+                      <div className="mb-4 flex items-start justify-between">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-700 group-hover:bg-gray-200 transition-all duration-300">
+                          <Icon className="text-xl" />
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-                          <div
-                            className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                            style={{ width: `${project.progress}%` }}
-                          />
+                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
+                          {project.status}
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <h3 className="mb-4 line-clamp-3 text-base font-bold text-gray-900 leading-snug group-hover:text-gray-600 transition-colors">
+                        {project.description}
+                      </h3>
+
+                      {/* Progress Bar */}
+                      {project.progress > 0 && (
+                        <div className="mb-5">
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className="text-sm font-semibold text-gray-700">Progress</span>
+                            <span className="text-sm font-bold text-gray-700">{project.progress}%</span>
+                          </div>
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+                            <div
+                              className="h-full rounded-full bg-gray-600 transition-all duration-500"
+                              style={{ width: `${project.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Details */}
+                      <div className="space-y-2.5 text-sm text-gray-600 mb-5">
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl">
+                          <FaMoneyBillWave className="text-gray-600 shrink-0" />
+                        <span className="font-bold text-gray-900 truncate">{formatCurrency(project.budget)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl">
+                        <FaHardHat className="text-gray-600 shrink-0" />
+                        <span className="truncate">{project.contractor.split('(')[0].trim()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl">
+                        <FaCalendarAlt className="text-gray-600 shrink-0" />
+                          <span>{formatDate(project.startDate)}</span>
                         </div>
                       </div>
-                    )}
 
-                    {/* Details */}
-                    <div className="space-y-1.5 text-xs text-gray-600">
-                      <div className="flex items-center gap-1.5">
-                        <FaMoneyBillWave className="text-gray-400 text-xs" />
-                        <span className="font-semibold text-gray-900 text-xs">{formatCurrency(project.budget)}</span>
+                      {/* View Details */}
+                      <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Contract ID: {project.contractId}</span>
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 group-hover:text-gray-600 transition-colors">
+                          <span>View</span>
+                          <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <FaHardHat className="text-gray-400 text-xs" />
-                        <span className="line-clamp-1 text-xs">{project.contractor.split('(')[0].trim()}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <FaCalendarAlt className="text-gray-400 text-xs" />
-                        <span className="text-xs">{formatDate(project.startDate)}</span>
-                      </div>
-                    </div>
-
-                    {/* View Details */}
-                    <div className="mt-3 flex items-center justify-end text-xs font-medium text-gray-900 group-hover:text-blue-600">
-                      <span>View Details</span>
-                      <FaExternalLinkAlt className="ml-1 text-xs" />
                     </div>
                   </motion.div>
                 );
@@ -470,19 +505,19 @@ export function TransparencyPage() {
 
           {/* Pagination */}
           {!loading && !error && filteredProjects.length > 0 && (
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
               {/* Previous Button */}
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-all hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-300"
+                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:bg-white"
               >
-                <FaChevronLeft className="text-xs" />
+                <FaChevronLeft className="w-4 h-4" />
                 Previous
               </button>
 
               {/* Page Numbers */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum;
                   if (totalPages <= 5) {
@@ -499,10 +534,10 @@ export function TransparencyPage() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`h-8 w-8 rounded-lg text-xs font-medium transition-all ${
+                      className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${
                         currentPage === pageNum
-                          ? 'bg-gray-900 text-white'
-                          : 'border border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                          ? 'bg-gray-900 text-white shadow-lg'
+                          : 'border border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
                       {pageNum}
@@ -511,10 +546,10 @@ export function TransparencyPage() {
                 })}
                 {totalPages > 5 && currentPage < totalPages - 2 && (
                   <>
-                    <span className="text-gray-500 text-xs">...</span>
+                    <span className="text-gray-500 text-sm font-medium px-2">...</span>
                     <button
                       onClick={() => setCurrentPage(totalPages)}
-                      className="h-8 w-8 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-gray-400"
+                      className="h-10 w-10 rounded-xl border border-gray-300 bg-white text-sm font-bold text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all"
                     >
                       {totalPages}
                     </button>
@@ -526,30 +561,32 @@ export function TransparencyPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-all hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-300"
+                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:bg-white"
               >
                 Next
-                <FaChevronRight className="text-xs" />
+                <FaChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}
 
           {/* Source Attribution */}
           {!loading && !error && filteredProjects.length > 0 && (
-            <div className="mt-8 flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-600 bg-white">
-                  <span className="text-xs font-bold text-blue-600">i</span>
+            <div className="mt-10 flex items-center justify-center">
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4 max-w-2xl">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-800 shadow-lg">
+                  <span className="text-lg font-bold text-white">i</span>
                 </div>
-                <span className="font-medium text-gray-700">Source:</span>
-                <a
-                  href="https://www.dpwh.gov.ph/dpwh/transparency"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-                >
-                  DPWH Transparency Portal
-                </a>
+                <div className="text-center sm:text-left">
+                  <p className="text-sm font-semibold text-gray-800 mb-1">Data Source</p>
+                  <a
+                    href="https://www.dpwh.gov.ph/dpwh/transparency"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-700 font-bold hover:text-gray-900 hover:underline transition-colors"
+                  >
+                    DPWH Transparency Portal
+                  </a>
+                </div>
               </div>
             </div>
           )}
@@ -568,10 +605,10 @@ export function TransparencyPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
+            className="relative z-10 w-full max-w-4xl max-h-[90vh] rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 border-b border-gray-200 bg-white p-6">
+            <div className="flex-shrink-0 border-b border-gray-200 bg-white p-6 rounded-t-2xl">
               <button 
                 className="absolute right-4 top-4 p-2 text-gray-500 hover:text-gray-900 transition-colors"
                 onClick={() => setSelectedProject(null)}
@@ -594,8 +631,8 @@ export function TransparencyPage() {
               </div>
             </div>
 
-            {/* Content */}
-            <div className="p-6">
+            {/* Content - scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 rounded-b-2xl">
               {/* Progress */}
               {selectedProject.progress > 0 && (
                 <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
