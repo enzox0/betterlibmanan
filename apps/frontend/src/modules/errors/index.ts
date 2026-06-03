@@ -1,4 +1,4 @@
 
-export { NotFoundPage } from './NotFoundPage';
-export { ErrorPage } from './ErrorPage';
+export { NotFoundPage } from './pages/NotFoundPage';
+export { ErrorPage } from './pages/ErrorPage';
 
