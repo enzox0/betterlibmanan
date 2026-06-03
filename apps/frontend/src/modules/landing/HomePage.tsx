@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { lazyLoad, LazyLoader } from '../../app/router/lazy-loader';
+import { lazyLoad, LazyLoader } from '@/app/router/lazy-loader';
 
 const HeroSection = lazyLoad(() => import('./sections/HeroSection'));
 const PartnerLogos = lazyLoad(() => import('./sections/PartnerLogos'));
