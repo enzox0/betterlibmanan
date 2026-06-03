@@ -125,11 +125,11 @@ export function Footer() {
               <span className="font-semibold text-emerald-400">₱0</span>
             </div>
             <div className="flex flex-col gap-3 mb-6 w-full">
-              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700 text-sm">
+              <a href="#" className="flex items-center gap-2 px-4 py-2 text-sm">
                 <FaEnvelope size={14} />
                 <span>Volunteer with us</span>
               </a>
-              <a href="#" className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 transition-colors border border-gray-700 text-sm">
+              <a href="#" className="flex items-center gap-2 px-4 py-2 text-sm">
                 <FaGithub size={14} />
                 <span>Contribute code with us</span>
               </a>
@@ -145,7 +145,7 @@ export function Footer() {
                   <img 
                     src="/bettergov-logo.svg" 
                     alt="Better Gov" 
-                    className="h-20 sm:h-24"
+                    className="h-16 sm:h-20"
                   />
                 </a>
               </div>

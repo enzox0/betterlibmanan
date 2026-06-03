@@ -51,7 +51,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header className="bg-white shadow-sm sticky top-0 z-[999999]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
@@ -76,7 +76,7 @@ export function Navbar() {
                 {item.hasDropdown ? (
                   <button
                     onClick={() => toggleDropdown(item.name)}
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-base lg:text-lg flex items-center gap-1"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1"
                   >
                     {item.name}
                     <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
@@ -84,7 +84,7 @@ export function Navbar() {
                 ) : (
                   <Link
                     to={item.path}
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-base lg:text-lg"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm"
                   >
                     {item.name}
                   </Link>
@@ -97,7 +97,7 @@ export function Navbar() {
                       <Link
                         key={dropdownItem.name}
                         to={dropdownItem.path}
-                        className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         onClick={() => setActiveDropdown(null)}
                       >
                         {dropdownItem.name}
@@ -144,10 +144,10 @@ export function Navbar() {
                     <>
                       <button
                         onClick={() => toggleDropdown(item.name)}
-                        className="w-full text-left text-gray-700 hover:text-blue-600 font-medium transition-colors text-lg py-2 flex items-center justify-between"
+                        className="w-full text-left text-gray-700 hover:text-blue-600 font-medium transition-colors text-base py-2 flex items-center justify-between"
                       >
                         {item.name}
-                        <FaChevronDown className={`text-sm transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
+                        <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
                       </button>
                       
                       {/* Mobile Dropdown */}
@@ -157,7 +157,7 @@ export function Navbar() {
                             <Link
                               key={dropdownItem.name}
                               to={dropdownItem.path}
-                              className="text-gray-600 hover:text-blue-600 font-medium transition-colors py-1"
+                              className="text-gray-600 hover:text-blue-600 font-medium transition-colors text-sm py-1"
                               onClick={() => {
                                 setIsMobileMenuOpen(false);
                                 setActiveDropdown(null);
@@ -172,7 +172,7 @@ export function Navbar() {
                   ) : (
                     <Link
                       to={item.path}
-                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-lg py-2"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-base py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {item.name}

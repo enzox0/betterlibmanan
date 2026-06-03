@@ -27,9 +27,9 @@ export function TopUtilityBar() {
             <a
               key={`${contact.name}-${index}`}
               href={`tel:${contact.number.replace(/\s/g, '')}`}
-              className="flex items-center gap-2 mx-12 hover:text-yellow-300 transition-colors text-sm font-medium"
+              className="flex items-center gap-2 mx-12 hover:text-yellow-300 transition-colors text-xs font-medium"
             >
-              <Icon size={16} />
+              <Icon size={14} />
               <span>{contact.name}: {contact.number}</span>
             </a>
           );
