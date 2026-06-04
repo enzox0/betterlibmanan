@@ -10,7 +10,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.js
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 COPY apps/worker/package.json ./apps/worker/
-COPY packages/ ./packages/ 2>/dev/null || true
+COPY packages/ ./packages/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -37,7 +37,7 @@ COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/frontend/dist ./apps/frontend/dist
 COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
 COPY --from=builder /app/apps/worker/package.json ./apps/worker/
-COPY --from=builder /app/packages/ ./packages/ 2>/dev/null || true
+COPY --from=builder /app/packages/ ./packages/
 COPY package.json ./
 
 # Copy PM2 ecosystem file
