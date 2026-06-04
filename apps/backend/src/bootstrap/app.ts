@@ -15,28 +15,32 @@ const app: express.Express = express();
 // CONFIGURATION
 // =============================================================================
 
-// Determine frontend dist path
+// Determine frontend dist path with clear priority
 const getFrontendDistPath = (): string => {
-  if (process.env.NODE_ENV === 'production') {
-    // Docker path
-    const dockerPath = '/app/apps/frontend/dist';
-    if (fs.existsSync(dockerPath)) {
-      return dockerPath;
+  // Priority order:
+  // 1. Docker production path (Render/Docker deployment)
+  // 2. Build directory (monorepo build output)
+  // 3. Legacy dist directory (fallback)
+  
+  const possiblePaths = [
+    '/app/apps/frontend/dist',                                    // Docker production
+    path.resolve(__dirname, '../../../build/frontend'),           // Monorepo build
+    path.resolve(__dirname, '../../../frontend/dist'),            // Legacy fallback
+  ];
+  
+  for (const testPath of possiblePaths) {
+    if (fs.existsSync(testPath)) {
+      const indexExists = fs.existsSync(path.join(testPath, 'index.html'));
+      if (indexExists) {
+        logger.info(`[SPA] Selected frontend path: ${testPath}`);
+        return testPath;
+      }
     }
-    // Fallback for non-Docker production (new build directory)
-    const buildPath = path.resolve(__dirname, '../../../build/frontend');
-    if (fs.existsSync(buildPath)) {
-      return buildPath;
-    }
-    // Legacy fallback
-    return path.resolve(__dirname, '../../../frontend/dist');
   }
-  // Development: check build first, then legacy
-  const buildPath = path.resolve(__dirname, '../../../build/frontend');
-  if (fs.existsSync(buildPath)) {
-    return buildPath;
-  }
-  return path.resolve(__dirname, '../../../frontend/dist');
+  
+  // If nothing found, return first path and let validation below handle it
+  logger.warn('[SPA] No valid frontend dist found, using default path');
+  return possiblePaths[0];
 };
 
 const frontendDistPath = getFrontendDistPath();
@@ -259,20 +263,32 @@ const getMimeType = (filePath: string): string | null => {
 app.use('/assets', (req, res, next) => {
   const filePath = path.join(assetsPath, req.path);
   
+  // Security: prevent directory traversal
+  const normalizedPath = path.normalize(filePath);
+  if (!normalizedPath.startsWith(assetsPath)) {
+    logger.error(`[ASSETS] Security: Path traversal attempt blocked: ${req.path}`);
+    return res.status(403).type('text/plain').send('Forbidden');
+  }
+  
   // Check if file exists
   if (!fs.existsSync(filePath)) {
-    logger.error(`[ASSETS] 404: ${req.path}`);
+    logger.error(`[ASSETS] 404: ${req.path} (full path: ${filePath})`);
     return res.status(404).type('text/plain').send('Asset not found');
   }
   
   // Check if it's a file (not a directory)
-  const stats = fs.statSync(filePath);
-  if (!stats.isFile()) {
-    logger.error(`[ASSETS] Not a file: ${req.path}`);
-    return res.status(404).type('text/plain').send('Asset not found');
+  try {
+    const stats = fs.statSync(filePath);
+    if (!stats.isFile()) {
+      logger.error(`[ASSETS] Not a file: ${req.path}`);
+      return res.status(404).type('text/plain').send('Asset not found');
+    }
+  } catch (err) {
+    logger.error(`[ASSETS] Error checking file ${req.path}:`, err);
+    return res.status(500).type('text/plain').send('Failed to load asset');
   }
   
-  // Set MIME type
+  // Set MIME type explicitly
   const mimeType = getMimeType(filePath);
   if (mimeType) {
     res.setHeader('Content-Type', mimeType);
@@ -281,11 +297,19 @@ app.use('/assets', (req, res, next) => {
     if (filePath.endsWith('.js') || filePath.endsWith('.mjs') || filePath.endsWith('.css')) {
       res.setHeader('X-Content-Type-Options', 'nosniff');
     }
+  } else {
+    // Default to binary if unknown type
+    res.setHeader('Content-Type', 'application/octet-stream');
   }
   
   // Aggressive caching for content-hashed files
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Log successful asset serves (useful for debugging)
+  if (process.env.NODE_ENV === 'production') {
+    logger.debug(`[ASSETS] ✓ ${req.path} (${mimeType || 'unknown'})`);
+  }
   
   // Serve the file
   res.sendFile(filePath, (err) => {
@@ -294,8 +318,6 @@ app.use('/assets', (req, res, next) => {
       if (!res.headersSent) {
         res.status(500).type('text/plain').send('Failed to load asset');
       }
-    } else {
-      logger.debug(`[ASSETS] ✓ ${req.path}`);
     }
   });
 });

@@ -12,6 +12,8 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "turbo run build",
+    "verify": "node scripts/verify-production-build.js",
+    "build:verify": "pnpm run build && pnpm run verify",
     "start": "concurrently \"pnpm run start:backend\" \"pnpm run start:worker\"",
     "start:backend": "node build/backend/main.js",
     "start:worker": "node build/worker/main.js",

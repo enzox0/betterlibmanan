@@ -39,6 +39,11 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/packages/ ./packages/
 COPY --from=builder /app/package.json ./
 
+# CRITICAL FIX: Create the directory structure that Express expects in Docker
+# The app.ts checks for /app/apps/frontend/dist in production
+RUN mkdir -p /app/apps/frontend/dist
+COPY --from=builder /app/build/frontend /app/apps/frontend/dist
+
 # Install process manager (concurrently) globally
 RUN npm install -g concurrently@10.0.3
 
@@ -48,4 +53,4 @@ EXPOSE 5000
 ENV NODE_ENV=production
 
 # Start both backend and worker
-CMD ["concurrently", "-n", "backend,worker", "node build/backend/main.js", "node build/worker/main.js"]
+CMD ["concurrently", "-n", "backend,worker", "-k", "-c", "blue,green", "node build/backend/main.js", "node build/worker/main.js"]
