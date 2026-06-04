@@ -18,9 +18,10 @@ RUN pnpm install --frozen-lockfile
 # Copy all source files
 COPY . .
 
-# Build frontend, backend, and worker
-RUN pnpm run build --filter=@betterlibmanan/backend
+# Build frontend first, then backend and worker
 RUN pnpm run build --filter=@betterlibmanan/frontend
+RUN echo "Frontend build complete, checking dist..." && ls -la apps/frontend/dist/ || echo "Frontend dist not found!"
+RUN pnpm run build --filter=@betterlibmanan/backend
 RUN pnpm run build --filter=@betterlibmanan/worker
 
 FROM node:20-alpine AS runner
@@ -44,6 +45,9 @@ COPY package.json ./
 
 # Copy PM2 ecosystem file
 COPY infrastructure/docker/ecosystem.config.js ./
+
+# Verify frontend dist was copied
+RUN echo "Verifying frontend dist in runner..." && ls -la /app/apps/frontend/dist/ || echo "ERROR: Frontend dist not found in runner stage!"
 
 # Expose port (Render expects you to use $PORT env var)
 EXPOSE 5000

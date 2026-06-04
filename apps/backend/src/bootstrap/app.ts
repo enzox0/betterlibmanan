@@ -13,8 +13,11 @@ const app: express.Express = express();
 // Trust proxy
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet());
+// Security middleware with CSP adjusted for SPA
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable for SPA serving
+  crossOriginEmbedderPolicy: false
+}));
 
 // CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -89,8 +92,13 @@ app.use('/api', (req, res) => {
 // Serve frontend static files
 // In production Docker: /app/apps/frontend/dist
 // __dirname in compiled code: /app/apps/backend/dist
-// So we go up 2 levels: dist -> backend, then into ../frontend/dist
-const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+// Absolute path approach to avoid any path resolution issues
+const frontendDistPath = process.env.NODE_ENV === 'production' 
+  ? path.join('/app/apps/frontend/dist')
+  : path.join(__dirname, '../../frontend/dist');
+  
+logger.info(`[APP] __dirname: ${__dirname}`);
+logger.info(`[APP] Frontend dist path: ${frontendDistPath}`);
 app.use(express.static(frontendDistPath));
 
 // Catch-all route: serve index.html for React SPA
