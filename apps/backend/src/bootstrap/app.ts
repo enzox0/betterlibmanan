@@ -87,13 +87,23 @@ app.use('/api', (req, res) => {
 });
 
 // Serve frontend static files
-const frontendDistPath = path.join(__dirname, '../../../../apps/frontend/dist');
+// In production Docker: /app/apps/frontend/dist
+// __dirname in compiled code: /app/apps/backend/dist
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
 // Catch-all route: serve index.html for React SPA
 app.get('*', (req, res) => {
   const indexPath = path.join(frontendDistPath, 'index.html');
-  res.sendFile(indexPath);
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      logger.error('Error serving index.html:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to load application'
+      });
+    }
+  });
 });
 
 // Error handler
