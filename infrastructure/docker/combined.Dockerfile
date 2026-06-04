@@ -30,11 +30,13 @@ WORKDIR /app
 # Install PM2 for process management
 RUN npm install -g pm2
 
-# Copy necessary files
+# Copy necessary files from builder
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/frontend/dist ./apps/frontend/dist
+COPY --from=builder /app/apps/worker/node_modules ./apps/worker/node_modules
 COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
 COPY --from=builder /app/apps/worker/package.json ./apps/worker/
 COPY --from=builder /app/packages/ ./packages/
