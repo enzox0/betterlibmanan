@@ -32,13 +32,13 @@ services:
           type: web
           name: betterlibmanan
           property: host
+  - type: redis
+    name: betterlibmanan-redis
+    plan: starter
+    ipAllowList: []
 databases:
   - name: betterlibmanan-mongodb
     databaseName: betterlibmanan
     user: betterlibmanan
-    plan: starter
-    ipAllowList: []
-  - name: betterlibmanan-redis
-    type: redis
     plan: starter
     ipAllowList: []
