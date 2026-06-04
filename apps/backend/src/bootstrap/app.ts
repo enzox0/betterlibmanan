@@ -13,19 +13,22 @@ const app: express.Express = express();
 // Trust proxy
 app.set('trust proxy', 1);
 
-// Security middleware with CSP configured for SPA
+// Security middleware with CSP configured for SPA and Vite
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", 'data:'],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:", "data:"],
+      scriptSrcElem: ["'self'", "'unsafe-inline'", "blob:", "data:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "blob:", "data:"],
+      styleSrcElem: ["'self'", "'unsafe-inline'", "blob:", "data:"],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: ["'self'", 'https:', 'wss:', 'ws:'],
+      fontSrc: ["'self'", 'data:', 'blob:'],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
+      mediaSrc: ["'self'", 'blob:', 'data:'],
       frameSrc: ["'none'"],
+      workerSrc: ["'self'", 'blob:', 'data:'],
     },
   },
   crossOriginEmbedderPolicy: false,
@@ -111,12 +114,27 @@ const frontendDistPath = process.env.NODE_ENV === 'production'
   : path.join(__dirname, '../../frontend/dist');
   
 logger.info(`[APP] __dirname: ${__dirname}`);
+logger.info(`[APP] NODE_ENV: ${process.env.NODE_ENV}`);
 logger.info(`[APP] Frontend dist path: ${frontendDistPath}`);
 
-// Serve static files with proper MIME types
+// Check if frontend dist exists
+const fs = require('fs');
+if (fs.existsSync(frontendDistPath)) {
+  logger.info(`[APP] ✓ Frontend dist directory exists`);
+  try {
+    const files = fs.readdirSync(frontendDistPath);
+    logger.info(`[APP] Frontend dist contains ${files.length} items: ${files.slice(0, 10).join(', ')}${files.length > 10 ? '...' : ''}`);
+  } catch (err) {
+    logger.error(`[APP] Error reading frontend dist:`, err);
+  }
+} else {
+  logger.error(`[APP] ✗ Frontend dist directory NOT FOUND at: ${frontendDistPath}`);
+}
+
+// Serve static files with proper MIME types and fallback prevention
 app.use(express.static(frontendDistPath, {
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js')) {
+    if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     } else if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
@@ -124,18 +142,37 @@ app.use(express.static(frontendDistPath, {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
     } else if (filePath.endsWith('.svg')) {
       res.setHeader('Content-Type', 'image/svg+xml');
+    } else if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.endsWith('.woff')) {
+      res.setHeader('Content-Type', 'font/woff');
+    } else if (filePath.endsWith('.woff2')) {
+      res.setHeader('Content-Type', 'font/woff2');
     }
-  }
+    // Add cache control for static assets
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+  },
+  fallthrough: true, // Allow next middleware to handle 404s
+  index: false // Don't serve index.html automatically
 }));
 
 // Catch-all route: serve index.html for React SPA
 // Only for non-API routes and non-static-file requests
-app.get('*', (req, res) => {
-  // Don't handle API routes or static asset requests
-  if (req.path.startsWith('/api') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot)$/)) {
+app.get('*', (req, res, next) => {
+  // Don't handle API routes
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  
+  // Don't handle static asset extensions - let them 404
+  if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map)$/)) {
+    logger.warn(`Static asset not found: ${req.path}`);
     return res.status(404).send('Not found');
   }
   
+  // Serve index.html for all other routes (SPA routing)
   const indexPath = path.join(frontendDistPath, 'index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
