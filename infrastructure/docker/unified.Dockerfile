@@ -33,19 +33,30 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Copy node_modules, build, and necessary files from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/packages/ ./packages/
+# Install pnpm in production image (needed for node module resolution)
+RUN npm install -g pnpm@9.15.9
+
+# Copy package files for proper module resolution
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/pnpm-lock.yaml ./
+COPY --from=builder /app/apps/backend/package.json ./apps/backend/
+COPY --from=builder /app/apps/worker/package.json ./apps/worker/
+COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
+COPY --from=builder /app/packages/ ./packages/
+
+# Copy node_modules (pnpm structure with .pnpm store)
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy build output
+COPY --from=builder /app/build ./build
 
 # CRITICAL FIX: Create the directory structure that Express expects in Docker
-# The app.ts checks for /app/apps/frontend/dist in production
 RUN mkdir -p /app/apps/frontend/dist
 COPY --from=builder /app/build/frontend /app/apps/frontend/dist
 
-# Install process manager (concurrently) globally
-RUN npm install -g concurrently@10.0.3
+# Install concurrently globally (use version 9.x for Node 20 compatibility)
+RUN npm install -g concurrently@9.0.1
 
 EXPOSE 5000
 
