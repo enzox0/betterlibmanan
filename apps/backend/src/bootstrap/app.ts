@@ -2,9 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { logger } from '@/shared/logger';
 import { errorHandler } from '@/shared/middleware/error-handler';
 import { requestLogger } from '@/shared/middleware/request-logger';
+import { mailer } from '@/shared/mailer';
 
 const app: express.Express = express();
 
@@ -47,12 +49,41 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Health error report endpoint
+app.post('/api/health/report', async (req, res) => {
+  try {
+    const errorDetails = req.body;
+    logger.error('Health check error reported:', errorDetails);
+    await mailer.sendHealthErrorReport(errorDetails);
+    res.json({
+      success: true,
+      message: 'Health error report sent'
+    });
+  } catch (error) {
+    logger.error('Failed to process health error report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send health error report'
+    });
+  }
+});
+
 // API routes
 app.use('/api', (req, res) => {
   res.json({
     success: true,
     message: 'Coming soon'
   });
+});
+
+// Serve frontend static files
+const frontendDistPath = path.join(__dirname, '../../../frontend/dist');
+app.use(express.static(frontendDistPath));
+
+// Catch-all route: serve index.html for React SPA
+app.get('*', (req, res) => {
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  res.sendFile(indexPath);
 });
 
 // Error handler
