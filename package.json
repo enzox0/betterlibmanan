@@ -25,7 +25,8 @@
     "db:seed": "turbo run db:seed --filter=@betterlibmanan/backend",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:build": "docker-compose build"
+    "docker:build": "docker-compose build",
+    "test:combined": "node scripts/test-combined.js"
   },
   "devDependencies": {
     "concurrently": "^10.0.3",
