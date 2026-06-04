@@ -107,11 +107,24 @@ app.use('/api', (req, res) => {
 
 // Serve frontend static files
 // In production Docker: /app/apps/frontend/dist
-// __dirname in compiled code: /app/apps/backend/dist
+// __dirname in compiled code: /app/apps/backend/dist/bootstrap (Docker) or local path (Windows)
 const fs = require('fs');
-const frontendDistPath = process.env.NODE_ENV === 'production' 
-  ? '/app/apps/frontend/dist'
-  : path.join(__dirname, '../../frontend/dist');
+
+// Determine frontend dist path based on environment
+let frontendDistPath: string;
+if (process.env.NODE_ENV === 'production') {
+  // Try Docker path first
+  const dockerPath = '/app/apps/frontend/dist';
+  if (fs.existsSync(dockerPath)) {
+    frontendDistPath = dockerPath;
+  } else {
+    // Fallback to relative path for Windows production
+    frontendDistPath = path.resolve(__dirname, '../../../frontend/dist');
+  }
+} else {
+  // Development mode
+  frontendDistPath = path.resolve(__dirname, '../../../frontend/dist');
+}
   
 logger.info(`[APP] __dirname: ${__dirname}`);
 logger.info(`[APP] NODE_ENV: ${process.env.NODE_ENV}`);
@@ -148,27 +161,37 @@ app.use(express.static(frontendDistPath, {
     // Log every static file request for debugging
     logger.debug(`[STATIC] Serving: ${filePath}`);
     
-    if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
+    // Force correct MIME types - critical for modules
+    const ext = path.extname(filePath).toLowerCase();
+    
+    if (ext === '.js' || ext === '.mjs') {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    } else if (filePath.endsWith('.css')) {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    } else if (ext === '.css') {
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
-    } else if (filePath.endsWith('.json')) {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    } else if (ext === '.json') {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    } else if (filePath.endsWith('.svg')) {
+    } else if (ext === '.svg') {
       res.setHeader('Content-Type', 'image/svg+xml');
-    } else if (filePath.endsWith('.png')) {
+    } else if (ext === '.png') {
       res.setHeader('Content-Type', 'image/png');
-    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+    } else if (ext === '.jpg' || ext === '.jpeg') {
       res.setHeader('Content-Type', 'image/jpeg');
-    } else if (filePath.endsWith('.woff')) {
+    } else if (ext === '.webp') {
+      res.setHeader('Content-Type', 'image/webp');
+    } else if (ext === '.woff') {
       res.setHeader('Content-Type', 'font/woff');
-    } else if (filePath.endsWith('.woff2')) {
+    } else if (ext === '.woff2') {
       res.setHeader('Content-Type', 'font/woff2');
-    } else if (filePath.endsWith('.ico')) {
+    } else if (ext === '.ico') {
       res.setHeader('Content-Type', 'image/x-icon');
-    } else if (filePath.endsWith('.html')) {
+    } else if (ext === '.html') {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    } else if (ext === '.lottie') {
+      res.setHeader('Content-Type', 'application/json');
     }
+    
     // Cache control for assets
     if (filePath.includes('/assets/')) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -177,7 +200,10 @@ app.use(express.static(frontendDistPath, {
     }
   },
   fallthrough: true,
-  index: false
+  index: false,
+  etag: true,
+  lastModified: true,
+  redirect: false
 }));
 
 // Catch-all route: serve index.html for React SPA
