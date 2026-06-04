@@ -20,7 +20,37 @@ COPY . .
 
 # Build frontend first, then backend and worker
 RUN pnpm run build --filter=@betterlibmanan/frontend
-RUN echo "Frontend build complete, checking dist..." && ls -la apps/frontend/dist/ || echo "Frontend dist not found!"
+
+# Verify frontend build output
+RUN echo "=== Frontend Build Verification ===" && \
+    if [ -d "apps/frontend/dist" ]; then \
+      echo "✓ Frontend dist directory exists"; \
+      ls -lah apps/frontend/dist/; \
+      echo ""; \
+      echo "Checking for index.html..."; \
+      if [ -f "apps/frontend/dist/index.html" ]; then \
+        echo "✓ index.html exists"; \
+        echo "Contents:"; \
+        head -50 apps/frontend/dist/index.html | grep -E "script|link.*stylesheet"; \
+      else \
+        echo "✗ ERROR: index.html NOT found"; \
+        exit 1; \
+      fi; \
+      echo ""; \
+      echo "Checking for assets directory..."; \
+      if [ -d "apps/frontend/dist/assets" ]; then \
+        echo "✓ assets/ directory exists"; \
+        echo "Asset files:"; \
+        ls -lah apps/frontend/dist/assets/ | head -30; \
+      else \
+        echo "✗ ERROR: assets/ directory NOT found"; \
+        exit 1; \
+      fi; \
+    else \
+      echo "✗ ERROR: Frontend dist NOT found"; \
+      exit 1; \
+    fi
+
 RUN pnpm run build --filter=@betterlibmanan/backend
 RUN pnpm run build --filter=@betterlibmanan/worker
 
@@ -49,28 +79,11 @@ COPY package.json ./
 # Copy PM2 ecosystem file and startup script
 COPY infrastructure/docker/ecosystem.config.js ./
 COPY infrastructure/docker/startup.sh ./
-RUN chmod +x startup.sh
+COPY infrastructure/docker/verify-build.sh ./
+RUN chmod +x startup.sh verify-build.sh
 
-# Verify frontend dist was copied and show contents
-RUN echo "=== Verifying frontend dist in runner ===" && \
-    if [ -d "/app/apps/frontend/dist" ]; then \
-      echo "✓ Frontend dist directory exists"; \
-      ls -lah /app/apps/frontend/dist/; \
-      if [ -f "/app/apps/frontend/dist/index.html" ]; then \
-        echo "✓ index.html found"; \
-      else \
-        echo "✗ ERROR: index.html NOT found"; \
-      fi; \
-      if [ -d "/app/apps/frontend/dist/assets" ]; then \
-        echo "✓ assets directory found"; \
-        ls -lah /app/apps/frontend/dist/assets/ | head -20; \
-      else \
-        echo "✗ ERROR: assets directory NOT found"; \
-      fi; \
-    else \
-      echo "✗ ERROR: Frontend dist not found in runner stage!"; \
-      exit 1; \
-    fi
+# Run build verification
+RUN ./verify-build.sh
 
 # Expose port (Render expects you to use $PORT env var)
 EXPOSE 5000

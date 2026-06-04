@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import fs from 'fs';
 import { logger } from '@/shared/logger';
 import { errorHandler } from '@/shared/middleware/error-handler';
 import { requestLogger } from '@/shared/middleware/request-logger';
@@ -70,11 +71,20 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(requestLogger);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
+  // Verify frontend assets are available
+  const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
+  const assetsExists = fs.existsSync(path.join(frontendDistPath, 'assets'));
+  
   res.json({
     success: true,
     message: 'Server is healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    frontend: {
+      distPath: frontendDistPath,
+      indexHtml: indexExists,
+      assetsDir: assetsExists
+    }
   });
 });
 
@@ -97,18 +107,9 @@ app.post('/api/health/report', async (req, res) => {
   }
 });
 
-// API routes
-app.use('/api', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Coming soon'
-  });
-});
-
-// Serve frontend static files
+// Serve frontend static files BEFORE API routes to prevent conflicts
 // In production Docker: /app/apps/frontend/dist
 // __dirname in compiled code: /app/apps/backend/dist/bootstrap (Docker) or local path (Windows)
-const fs = require('fs');
 
 // Determine frontend dist path based on environment
 let frontendDistPath: string;
@@ -155,14 +156,14 @@ if (fs.existsSync(frontendDistPath)) {
   logger.error(`[APP] ✗ Frontend dist directory NOT FOUND at: ${frontendDistPath}`);
 }
 
-// Serve static files with explicit MIME types
-app.use(express.static(frontendDistPath, {
+// Explicit route handler for static assets with proper MIME types
+// This MUST come before the catch-all route to prevent interception
+app.use('/assets', express.static(path.join(frontendDistPath, 'assets'), {
   setHeaders: (res, filePath) => {
-    // Log every static file request for debugging
-    logger.debug(`[STATIC] Serving: ${filePath}`);
-    
     // Force correct MIME types - critical for modules
     const ext = path.extname(filePath).toLowerCase();
+    
+    logger.info(`[ASSETS] Serving ${filePath} with extension ${ext}`);
     
     if (ext === '.js' || ext === '.mjs') {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
@@ -172,7 +173,28 @@ app.use(express.static(frontendDistPath, {
       res.setHeader('X-Content-Type-Options', 'nosniff');
     } else if (ext === '.json') {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    } else if (ext === '.svg') {
+    } else if (ext === '.map') {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    }
+    
+    // Aggressive caching for hashed assets
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  },
+  fallthrough: false, // Return 404 if not found, don't pass to next middleware
+  index: false,
+  etag: true,
+  lastModified: true,
+  redirect: false
+}));
+
+// Serve other static files from root (images, fonts, etc.)
+app.use(express.static(frontendDistPath, {
+  setHeaders: (res, filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    
+    logger.debug(`[STATIC] Serving: ${filePath}`);
+    
+    if (ext === '.svg') {
       res.setHeader('Content-Type', 'image/svg+xml');
     } else if (ext === '.png') {
       res.setHeader('Content-Type', 'image/png');
@@ -186,18 +208,12 @@ app.use(express.static(frontendDistPath, {
       res.setHeader('Content-Type', 'font/woff2');
     } else if (ext === '.ico') {
       res.setHeader('Content-Type', 'image/x-icon');
-    } else if (ext === '.html') {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
     } else if (ext === '.lottie') {
       res.setHeader('Content-Type', 'application/json');
     }
     
-    // Cache control for assets
-    if (filePath.includes('/assets/')) {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    } else {
-      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-    }
+    // Short cache for non-hashed assets
+    res.setHeader('Cache-Control', 'public, max-age=3600');
   },
   fallthrough: true,
   index: false,
@@ -206,32 +222,44 @@ app.use(express.static(frontendDistPath, {
   redirect: false
 }));
 
-// Catch-all route: serve index.html for React SPA
-app.get('*', (req, res, next) => {
-  // Don't handle API routes
-  if (req.path.startsWith('/api')) {
-    return next();
-  }
+// API routes - MUST come after static file handling but before catch-all
+app.use('/api', (_req, res) => {
+  res.json({
+    success: true,
+    message: 'Coming soon'
+  });
+});
+
+// Catch-all route: serve index.html for React SPA routing
+// This should be the LAST route
+app.get('*', (req, res) => {
+  // Log all requests that reach the catch-all
+  logger.info(`[CATCHALL] SPA route request: ${req.path}`);
   
-  // Log all requests that reach here
-  logger.debug(`[CATCHALL] Request for: ${req.path}`);
-  
-  // Don't handle static asset extensions - return 404
+  // If it looks like a static asset, something went wrong
   if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map)$/)) {
-    logger.warn(`[CATCHALL] Static asset not found: ${req.path}`);
+    logger.error(`[CATCHALL] Static asset reached catch-all (should have been handled earlier): ${req.path}`);
     return res.status(404).type('text/plain').send('Asset not found');
   }
   
-  // Serve index.html for all other routes (SPA routing)
+  // Serve index.html for all SPA routes
   const indexPath = path.join(frontendDistPath, 'index.html');
-  logger.debug(`[CATCHALL] Serving index.html from: ${indexPath}`);
   
   res.sendFile(indexPath, (err) => {
     if (err) {
       logger.error('[CATCHALL] Error serving index.html:', err);
-      res.status(500).type('text/plain').send('Failed to load application');
+      return res.status(500).type('text/plain').send('Failed to load application');
     }
   });
+});
+
+// 404 handler for assets that truly don't exist
+app.use((req, res, next) => {
+  if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map)$/)) {
+    logger.error(`[404] Asset not found: ${req.path}`);
+    return res.status(404).type('text/plain').send('Asset not found');
+  }
+  next();
 });
 
 // Error handler
