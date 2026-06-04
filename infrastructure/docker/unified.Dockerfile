@@ -36,10 +36,11 @@ WORKDIR /app
 # Install pnpm (needed for installing production dependencies)
 RUN npm install -g pnpm@9.15.9
 
-# Copy package files
+# Copy package files and workspace configuration
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/pnpm-lock.yaml ./
+COPY --from=builder /app/turbo.json ./
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/worker/package.json ./apps/worker/
 COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
@@ -47,6 +48,11 @@ COPY --from=builder /app/packages/ ./packages/
 
 # Install production dependencies only (this will set up proper node_modules structure)
 RUN pnpm install --prod --frozen-lockfile
+
+# Copy built node_modules from builder to ensure all dependencies are available
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --from=builder /app/apps/worker/node_modules ./apps/worker/node_modules
 
 # Copy build output
 COPY --from=builder /app/build ./build
