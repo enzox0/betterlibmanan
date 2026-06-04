@@ -89,8 +89,8 @@ app.use('/api', (req, res) => {
 // Serve frontend static files
 // In production Docker: /app/apps/frontend/dist
 // __dirname in compiled code: /app/apps/backend/dist
-// So we need to go up 3 levels: dist -> backend -> apps, then into apps/frontend/dist
-const frontendDistPath = path.join(__dirname, '../../../apps/frontend/dist');
+// So we go up 2 levels: dist -> backend, then into ../frontend/dist
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
 // Catch-all route: serve index.html for React SPA
