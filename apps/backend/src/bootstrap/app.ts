@@ -17,8 +17,18 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 // CORS
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:5000'];
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -77,7 +87,7 @@ app.use('/api', (req, res) => {
 });
 
 // Serve frontend static files
-const frontendDistPath = path.join(__dirname, '../../../frontend/dist');
+const frontendDistPath = path.join(__dirname, '../../../../apps/frontend/dist');
 app.use(express.static(frontendDistPath));
 
 // Catch-all route: serve index.html for React SPA
