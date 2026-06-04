@@ -12,6 +12,9 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "turbo run build",
+    "start": "concurrently \"pnpm run start:backend\" \"pnpm run start:worker\"",
+    "start:backend": "node build/backend/main.js",
+    "start:worker": "node build/worker/main.js",
     "dev": "node scripts/dev.js",
     "dev:turbo": "turbo run dev",
     "dev:frontend": "turbo run dev --filter=@betterlibmanan/frontend",
@@ -20,7 +23,7 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules",
+    "clean": "turbo run clean && rm -rf node_modules && rm -rf build",
     "db:migrate": "turbo run db:migrate --filter=@betterlibmanan/backend",
     "db:seed": "turbo run db:seed --filter=@betterlibmanan/backend",
     "docker:up": "docker-compose up -d",

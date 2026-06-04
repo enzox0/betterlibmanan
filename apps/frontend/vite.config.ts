@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/',
   build: {
-    outDir: 'dist',
+    outDir: '../../build/frontend',
     emptyOutDir: true,
     assetsDir: 'assets',
     sourcemap: false,

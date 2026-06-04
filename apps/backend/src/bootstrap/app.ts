@@ -23,10 +23,19 @@ const getFrontendDistPath = (): string => {
     if (fs.existsSync(dockerPath)) {
       return dockerPath;
     }
-    // Fallback for non-Docker production
+    // Fallback for non-Docker production (new build directory)
+    const buildPath = path.resolve(__dirname, '../../../build/frontend');
+    if (fs.existsSync(buildPath)) {
+      return buildPath;
+    }
+    // Legacy fallback
     return path.resolve(__dirname, '../../../frontend/dist');
   }
-  // Development
+  // Development: check build first, then legacy
+  const buildPath = path.resolve(__dirname, '../../../build/frontend');
+  if (fs.existsSync(buildPath)) {
+    return buildPath;
+  }
   return path.resolve(__dirname, '../../../frontend/dist');
 };
 

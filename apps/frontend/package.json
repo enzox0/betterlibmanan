@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "vite preview",
+    "start": "vite preview --outDir ../../build/frontend",
     "test": "echo \"Tests coming soon\"",
     "test:coverage": "echo \"Coverage coming soon\"",
     "lint": "echo \"Lint coming soon\""

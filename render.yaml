@@ -2,34 +2,43 @@ services:
   - type: web
     name: betterlibmanan
     env: docker
-    dockerfilePath: infrastructure/docker/combined.Dockerfile
     plan: starter
-    healthCheckPath: /health
+    dockerfilePath: ./infrastructure/docker/unified.Dockerfile
+    dockerContext: .
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: "5000"
+        value: 5000
       - key: MONGODB_URI
         fromDatabase:
           name: betterlibmanan-mongodb
           property: connectionString
       - key: REDIS_URL
-        fromDatabase:
+        fromService:
           name: betterlibmanan-redis
+          type: redis
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: ALLOWED_ORIGINS
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_EXPIRE
+        value: 30d
+      - key: CORS_ORIGIN
         fromService:
           type: web
           name: betterlibmanan
           property: host
-
 databases:
   - name: betterlibmanan-mongodb
     databaseName: betterlibmanan
     user: betterlibmanan
+    plan: starter
     ipAllowList: []
   - name: betterlibmanan-redis
+    type: redis
+    plan: starter
     ipAllowList: []

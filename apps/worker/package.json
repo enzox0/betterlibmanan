@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "BetterLibmanan Background Worker",
-  "main": "dist/main.js",
+  "main": "../../build/worker/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc && tsc-alias -p tsconfig.json --resolve-full-paths",
-    "start": "node dist/main.js",
+    "start": "node ../../build/worker/main.js",
     "test": "echo \"Tests coming soon\""
   },
   "dependencies": {
