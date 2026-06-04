@@ -33,10 +33,10 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install pnpm in production image (needed for node module resolution)
+# Install pnpm (needed for installing production dependencies)
 RUN npm install -g pnpm@9.15.9
 
-# Copy package files for proper module resolution
+# Copy package files
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/pnpm-lock.yaml ./
@@ -45,8 +45,8 @@ COPY --from=builder /app/apps/worker/package.json ./apps/worker/
 COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
 COPY --from=builder /app/packages/ ./packages/
 
-# Copy node_modules (pnpm structure with .pnpm store)
-COPY --from=builder /app/node_modules ./node_modules
+# Install production dependencies only (this will set up proper node_modules structure)
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy build output
 COPY --from=builder /app/build ./build
