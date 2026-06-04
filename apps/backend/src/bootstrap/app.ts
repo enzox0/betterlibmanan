@@ -19,13 +19,13 @@ const app: express.Express = express();
 const getFrontendDistPath = (): string => {
   // Priority order:
   // 1. Docker production path (Render/Docker deployment)
-  // 2. Build directory (monorepo build output)
-  // 3. Legacy dist directory (fallback)
+  // 2. Monorepo build directory
+  // 3. Local frontend dist (development)
   
   const possiblePaths = [
     '/app/apps/frontend/dist',                                    // Docker production
     path.resolve(__dirname, '../../../build/frontend'),           // Monorepo build
-    path.resolve(__dirname, '../../../frontend/dist'),            // Legacy fallback
+    path.resolve(__dirname, '../../../frontend/dist'),            // Local development
   ];
   
   for (const testPath of possiblePaths) {
@@ -38,9 +38,9 @@ const getFrontendDistPath = (): string => {
     }
   }
   
-  // If nothing found, return first path and let validation below handle it
-  logger.warn('[SPA] No valid frontend dist found, using default path');
-  return possiblePaths[0];
+  // If nothing found, return development path and let validation below handle it
+  logger.warn('[SPA] No valid frontend dist found, using development fallback');
+  return path.resolve(__dirname, '../../../frontend/dist');
 };
 
 const frontendDistPath = getFrontendDistPath();
@@ -57,10 +57,16 @@ logger.info(`[SPA] Frontend dist: ${frontendDistPath}`);
 logger.info(`[SPA] Assets path: ${assetsPath}`);
 
 // Verify frontend dist exists
+const isDevelopment = process.env.NODE_ENV !== 'production';
 if (!fs.existsSync(frontendDistPath)) {
-  logger.error(`[SPA] ✗ CRITICAL: Frontend dist NOT FOUND at: ${frontendDistPath}`);
-  logger.error(`[SPA] ✗ Application will fail to serve frontend!`);
-  process.exit(1); // Exit if frontend is missing in production
+  if (isDevelopment) {
+    logger.info(`[SPA] Frontend dist not found (development mode - API only)`);
+    logger.info(`[SPA] To serve frontend, run: npm run build`);
+  } else {
+    logger.error(`[SPA] ✗ CRITICAL: Frontend dist NOT FOUND at: ${frontendDistPath}`);
+    logger.error(`[SPA] ✗ Application will fail to serve frontend!`);
+    process.exit(1); // Exit only in production if frontend is missing
+  }
 } else {
   const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
   const assetsExists = fs.existsSync(assetsPath);
@@ -70,8 +76,12 @@ if (!fs.existsSync(frontendDistPath)) {
   logger.info(`[SPA] ✓ assets/: ${assetsExists ? 'Found' : 'MISSING'}`);
   
   if (!indexExists || !assetsExists) {
-    logger.error(`[SPA] ✗ CRITICAL: Frontend build incomplete!`);
-    process.exit(1);
+    if (isDevelopment) {
+      logger.info(`[SPA] Frontend build incomplete (continuing in development mode)`);
+    } else {
+      logger.error(`[SPA] ✗ CRITICAL: Frontend build incomplete!`);
+      process.exit(1);
+    }
   }
   
   // Log sample assets for verification
@@ -168,8 +178,9 @@ app.use((req, res, next) => {
 
 // Health check with comprehensive frontend verification
 app.get('/health', (_req, res) => {
-  const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
-  const assetsExists = fs.existsSync(assetsPath);
+  const frontendExists = fs.existsSync(frontendDistPath);
+  const indexExists = frontendExists && fs.existsSync(path.join(frontendDistPath, 'index.html'));
+  const assetsExists = frontendExists && fs.existsSync(assetsPath);
   
   const status = {
     success: true,
@@ -190,8 +201,10 @@ app.get('/health', (_req, res) => {
     }
   };
   
-  // Return 503 if frontend is not ready
-  if (!status.frontend.ready) {
+  // In production, return 503 if frontend is not ready
+  // In development, always return 200 (backend can run standalone)
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  if (!status.frontend.ready && !isDevelopment) {
     return res.status(503).json({ ...status, success: false, message: 'Frontend not ready' });
   }
   
