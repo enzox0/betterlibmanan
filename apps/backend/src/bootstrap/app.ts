@@ -18,34 +18,62 @@ const app: express.Express = express();
 // Determine frontend dist path
 const getFrontendDistPath = (): string => {
   if (process.env.NODE_ENV === 'production') {
+    // Docker path
     const dockerPath = '/app/apps/frontend/dist';
     if (fs.existsSync(dockerPath)) {
       return dockerPath;
     }
+    // Fallback for non-Docker production
     return path.resolve(__dirname, '../../../frontend/dist');
   }
+  // Development
   return path.resolve(__dirname, '../../../frontend/dist');
 };
 
 const frontendDistPath = getFrontendDistPath();
+const assetsPath = path.join(frontendDistPath, 'assets');
 
-// Log configuration
-logger.info(`[SPA] Initializing SPA server`);
+// Log configuration on startup
+logger.info(`[SPA] ========================================`);
+logger.info(`[SPA] Initializing Production SPA Server`);
+logger.info(`[SPA] ========================================`);
 logger.info(`[SPA] Environment: ${process.env.NODE_ENV}`);
-logger.info(`[SPA] Frontend dist: ${frontendDistPath}`);
+logger.info(`[SPA] Port: ${process.env.PORT || 5000}`);
 logger.info(`[SPA] __dirname: ${__dirname}`);
+logger.info(`[SPA] Frontend dist: ${frontendDistPath}`);
+logger.info(`[SPA] Assets path: ${assetsPath}`);
 
-// Verify frontend dist
+// Verify frontend dist exists
 if (!fs.existsSync(frontendDistPath)) {
-  logger.error(`[SPA] ✗ Frontend dist NOT FOUND at: ${frontendDistPath}`);
-  logger.error(`[SPA] Application will not serve frontend properly!`);
+  logger.error(`[SPA] ✗ CRITICAL: Frontend dist NOT FOUND at: ${frontendDistPath}`);
+  logger.error(`[SPA] ✗ Application will fail to serve frontend!`);
+  process.exit(1); // Exit if frontend is missing in production
 } else {
   const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
-  const assetsExists = fs.existsSync(path.join(frontendDistPath, 'assets'));
-  logger.info(`[SPA] ✓ Frontend dist exists`);
-  logger.info(`[SPA] ✓ index.html: ${indexExists}`);
-  logger.info(`[SPA] ✓ assets/: ${assetsExists}`);
+  const assetsExists = fs.existsSync(assetsPath);
+  
+  logger.info(`[SPA] ✓ Frontend dist directory exists`);
+  logger.info(`[SPA] ✓ index.html: ${indexExists ? 'Found' : 'MISSING'}`);
+  logger.info(`[SPA] ✓ assets/: ${assetsExists ? 'Found' : 'MISSING'}`);
+  
+  if (!indexExists || !assetsExists) {
+    logger.error(`[SPA] ✗ CRITICAL: Frontend build incomplete!`);
+    process.exit(1);
+  }
+  
+  // Log sample assets for verification
+  if (assetsExists) {
+    try {
+      const assetFiles = fs.readdirSync(assetsPath);
+      const jsFiles = assetFiles.filter(f => f.endsWith('.js'));
+      const cssFiles = assetFiles.filter(f => f.endsWith('.css'));
+      logger.info(`[SPA] ✓ Assets: ${jsFiles.length} JS, ${cssFiles.length} CSS`);
+    } catch (err) {
+      logger.error(`[SPA] Error reading assets:`, err);
+    }
+  }
 }
+logger.info(`[SPA] ========================================`);
 
 // =============================================================================
 // MIDDLEWARE - SECURITY & PARSING
@@ -53,7 +81,10 @@ if (!fs.existsSync(frontendDistPath)) {
 
 app.set('trust proxy', 1);
 
-// Security headers for SPA
+// Disable X-Powered-By header
+app.disable('x-powered-by');
+
+// Security headers optimized for SPA
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -82,9 +113,13 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      logger.warn(`[CORS] Blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -93,9 +128,11 @@ app.use(cors({
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
-  message: { success: false, message: 'Too many requests from this IP' }
+  message: { success: false, message: 'Too many requests from this IP' },
+  standardHeaders: true,
+  legacyHeaders: false
 });
 app.use(limiter);
 
@@ -103,29 +140,49 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging
-app.use(requestLogger);
+// Request logging (skip static assets in production for performance)
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/assets')) {
+    requestLogger(req, res, next);
+  } else {
+    next();
+  }
+});
 
 // =============================================================================
-// API ROUTES - Before static file serving
+// API ROUTES - Must come BEFORE static file serving
 // =============================================================================
 
-// Health check with frontend verification
+// Health check with comprehensive frontend verification
 app.get('/health', (_req, res) => {
   const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
-  const assetsExists = fs.existsSync(path.join(frontendDistPath, 'assets'));
+  const assetsExists = fs.existsSync(assetsPath);
   
-  res.json({
+  const status = {
     success: true,
     message: 'Server is healthy',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
+    server: {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: process.version
+    },
     frontend: {
       distPath: frontendDistPath,
+      assetsPath: assetsPath,
       indexHtml: indexExists,
-      assetsDir: assetsExists
+      assetsDir: assetsExists,
+      ready: indexExists && assetsExists
     }
-  });
+  };
+  
+  // Return 503 if frontend is not ready
+  if (!status.frontend.ready) {
+    return res.status(503).json({ ...status, success: false, message: 'Frontend not ready' });
+  }
+  
+  res.json(status);
 });
 
 // Health error reporting
@@ -141,24 +198,31 @@ app.post('/api/health/report', async (req, res) => {
   }
 });
 
-// API placeholder
+// API routes placeholder
 app.use('/api', (_req, res) => {
-  res.json({ success: true, message: 'API coming soon' });
+  res.json({ success: true, message: 'API coming soon', version: '1.0.0' });
 });
 
 // =============================================================================
-// STATIC FILE SERVING - SPA Assets
+// STATIC FILE SERVING - CRITICAL SECTION
 // =============================================================================
 
-// Helper function to set MIME types
-const setMimeType = (res: express.Response, filePath: string): void => {
+// MIME type helper - Comprehensive and explicit
+const getMimeType = (filePath: string): string | null => {
   const ext = path.extname(filePath).toLowerCase();
   const mimeTypes: Record<string, string> = {
+    // JavaScript
     '.js': 'application/javascript; charset=utf-8',
     '.mjs': 'application/javascript; charset=utf-8',
+    
+    // Stylesheets
     '.css': 'text/css; charset=utf-8',
+    
+    // Data
     '.json': 'application/json; charset=utf-8',
     '.map': 'application/json; charset=utf-8',
+    
+    // Images
     '.svg': 'image/svg+xml',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
@@ -166,91 +230,170 @@ const setMimeType = (res: express.Response, filePath: string): void => {
     '.webp': 'image/webp',
     '.gif': 'image/gif',
     '.ico': 'image/x-icon',
+    '.avif': 'image/avif',
+    
+    // Fonts
     '.woff': 'font/woff',
     '.woff2': 'font/woff2',
     '.ttf': 'font/ttf',
+    '.otf': 'font/otf',
     '.eot': 'application/vnd.ms-fontobject',
-    '.lottie': 'application/json'
-  };
-
-  if (mimeTypes[ext]) {
-    res.setHeader('Content-Type', mimeTypes[ext]);
     
-    // Add security header for JS and CSS
-    if (ext === '.js' || ext === '.mjs' || ext === '.css') {
+    // Other
+    '.lottie': 'application/json; charset=utf-8'
+  };
+  
+  return mimeTypes[ext] || null;
+};
+
+// CRITICAL: Serve /assets/* with explicit MIME types and error handling
+app.use('/assets', (req, res, next) => {
+  const filePath = path.join(assetsPath, req.path);
+  
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    logger.error(`[ASSETS] 404: ${req.path}`);
+    return res.status(404).type('text/plain').send('Asset not found');
+  }
+  
+  // Check if it's a file (not a directory)
+  const stats = fs.statSync(filePath);
+  if (!stats.isFile()) {
+    logger.error(`[ASSETS] Not a file: ${req.path}`);
+    return res.status(404).type('text/plain').send('Asset not found');
+  }
+  
+  // Set MIME type
+  const mimeType = getMimeType(filePath);
+  if (mimeType) {
+    res.setHeader('Content-Type', mimeType);
+    
+    // Security header for JS and CSS
+    if (filePath.endsWith('.js') || filePath.endsWith('.mjs') || filePath.endsWith('.css')) {
       res.setHeader('X-Content-Type-Options', 'nosniff');
     }
   }
-};
+  
+  // Aggressive caching for content-hashed files
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Serve the file
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      logger.error(`[ASSETS] Error serving ${req.path}:`, err);
+      if (!res.headersSent) {
+        res.status(500).type('text/plain').send('Failed to load asset');
+      }
+    } else {
+      logger.debug(`[ASSETS] ✓ ${req.path}`);
+    }
+  });
+});
 
-// Serve /assets directory with aggressive caching (content-hashed files)
-app.use('/assets', express.static(path.join(frontendDistPath, 'assets'), {
-  setHeaders: (res, filePath) => {
-    logger.debug(`[ASSETS] ${path.basename(filePath)}`);
-    setMimeType(res, filePath);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  },
-  fallthrough: false, // Don't continue to next middleware if asset not found
-  index: false,
-  etag: true,
-  lastModified: true
-}));
-
-// Serve other static files (images, fonts, etc.) with moderate caching
-app.use(express.static(frontendDistPath, {
-  setHeaders: (res, filePath) => {
-    const fileName = path.basename(filePath);
-    
-    // Don't serve index.html here - it's handled by SPA catch-all
-    if (fileName === 'index.html') {
-      return;
+// Serve other static files (images, fonts, etc.) from root
+app.use((req, res, next) => {
+  // Skip index.html and API routes
+  if (req.path === '/index.html' || req.path.startsWith('/api')) {
+    return next();
+  }
+  
+  // Check if file exists in dist
+  const filePath = path.join(frontendDistPath, req.path);
+  
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const mimeType = getMimeType(filePath);
+    if (mimeType) {
+      res.setHeader('Content-Type', mimeType);
     }
     
-    logger.debug(`[STATIC] ${fileName}`);
-    setMimeType(res, filePath);
-    
-    // Shorter cache for non-hashed assets
     res.setHeader('Cache-Control', 'public, max-age=3600');
-  },
-  fallthrough: true,
-  index: false, // Don't auto-serve index.html
-  etag: true,
-  lastModified: true
-}));
+    
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        logger.error(`[STATIC] Error serving ${req.path}:`, err);
+        if (!res.headersSent) {
+          next();
+        }
+      } else {
+        logger.debug(`[STATIC] ✓ ${req.path}`);
+      }
+    });
+  } else {
+    next();
+  }
+});
 
 // =============================================================================
-// SPA ROUTING - Catch-all for client-side routing
+// SPA CATCH-ALL - Must be LAST
 // =============================================================================
 
 app.get('*', (req, res) => {
-  // If request looks like a static asset that wasn't found, return 404
-  if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map|lottie)$/)) {
-    logger.warn(`[SPA] Asset not found: ${req.path}`);
-    return res.status(404).type('text/plain').send('Asset not found');
+  // If it looks like a static asset that wasn't found, return 404
+  if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|otf|eot|webp|avif|map|lottie)$/)) {
+    logger.warn(`[SPA] 404 - Asset-like path: ${req.path}`);
+    return res.status(404).type('text/plain').send('Not found');
   }
   
   // Serve index.html for all SPA routes
   const indexPath = path.join(frontendDistPath, 'index.html');
   
-  logger.debug(`[SPA] Serving route: ${req.path}`);
+  logger.debug(`[SPA] Serving: ${req.path}`);
   
   res.sendFile(indexPath, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-cache, no-store, must-revalidate'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
   }, (err) => {
     if (err) {
       logger.error(`[SPA] Failed to serve index.html:`, err);
-      res.status(500).type('text/plain').send('Failed to load application');
+      // Send plain text error, NOT JSON
+      if (!res.headersSent) {
+        res.status(500).type('text/plain').send('Failed to load application');
+      }
     }
   });
 });
 
 // =============================================================================
-// ERROR HANDLING
+// ERROR HANDLING - Last middleware
 // =============================================================================
 
-app.use(errorHandler);
+// Custom error handler that doesn't interfere with static assets
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Log the error
+  logger.error('[ERROR]', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
+  
+  // If headers already sent, delegate to default Express error handler
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  // For asset requests, send plain text errors
+  if (req.path.startsWith('/assets') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico)$/)) {
+    return res.status(500).type('text/plain').send('Internal server error');
+  }
+  
+  // For API requests, send JSON
+  if (req.path.startsWith('/api')) {
+    return res.status(500).json({
+      success: false,
+      message: process.env.NODE_ENV === 'production' 
+        ? 'Internal server error' 
+        : err.message
+    });
+  }
+  
+  // For everything else, send plain text
+  res.status(500).type('text/plain').send('Internal server error');
+});
 
 export { app };
