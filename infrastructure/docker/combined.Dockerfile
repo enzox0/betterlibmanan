@@ -31,6 +31,9 @@ WORKDIR /app
 # Install PM2 for process management
 RUN npm install -g pm2
 
+# Create logs directory
+RUN mkdir -p ./logs
+
 # Copy necessary files from builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
@@ -43,14 +46,34 @@ COPY --from=builder /app/apps/worker/package.json ./apps/worker/
 COPY --from=builder /app/packages/ ./packages/
 COPY package.json ./
 
-# Copy PM2 ecosystem file
+# Copy PM2 ecosystem file and startup script
 COPY infrastructure/docker/ecosystem.config.js ./
+COPY infrastructure/docker/startup.sh ./
+RUN chmod +x startup.sh
 
-# Verify frontend dist was copied
-RUN echo "Verifying frontend dist in runner..." && ls -la /app/apps/frontend/dist/ || echo "ERROR: Frontend dist not found in runner stage!"
+# Verify frontend dist was copied and show contents
+RUN echo "=== Verifying frontend dist in runner ===" && \
+    if [ -d "/app/apps/frontend/dist" ]; then \
+      echo "✓ Frontend dist directory exists"; \
+      ls -lah /app/apps/frontend/dist/; \
+      if [ -f "/app/apps/frontend/dist/index.html" ]; then \
+        echo "✓ index.html found"; \
+      else \
+        echo "✗ ERROR: index.html NOT found"; \
+      fi; \
+      if [ -d "/app/apps/frontend/dist/assets" ]; then \
+        echo "✓ assets directory found"; \
+        ls -lah /app/apps/frontend/dist/assets/ | head -20; \
+      else \
+        echo "✗ ERROR: assets directory NOT found"; \
+      fi; \
+    else \
+      echo "✗ ERROR: Frontend dist not found in runner stage!"; \
+      exit 1; \
+    fi
 
 # Expose port (Render expects you to use $PORT env var)
 EXPOSE 5000
 
-# Start all services with PM2
-CMD ["pm2-runtime", "start", "ecosystem.config.js"]
+# Start all services with PM2 via startup script
+CMD ["./startup.sh"]

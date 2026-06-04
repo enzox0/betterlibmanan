@@ -108,7 +108,7 @@ app.use('/api', (req, res) => {
 // Serve frontend static files
 // In production Docker: /app/apps/frontend/dist
 // __dirname in compiled code: /app/apps/backend/dist
-// Absolute path approach to avoid any path resolution issues
+const fs = require('fs');
 const frontendDistPath = process.env.NODE_ENV === 'production' 
   ? '/app/apps/frontend/dist'
   : path.join(__dirname, '../../frontend/dist');
@@ -118,12 +118,23 @@ logger.info(`[APP] NODE_ENV: ${process.env.NODE_ENV}`);
 logger.info(`[APP] Frontend dist path: ${frontendDistPath}`);
 
 // Check if frontend dist exists
-const fs = require('fs');
 if (fs.existsSync(frontendDistPath)) {
   logger.info(`[APP] ✓ Frontend dist directory exists`);
   try {
     const files = fs.readdirSync(frontendDistPath);
     logger.info(`[APP] Frontend dist contains ${files.length} items: ${files.slice(0, 10).join(', ')}${files.length > 10 ? '...' : ''}`);
+    
+    // Check for critical files
+    const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
+    const assetsExists = fs.existsSync(path.join(frontendDistPath, 'assets'));
+    logger.info(`[APP] index.html exists: ${indexExists}`);
+    logger.info(`[APP] assets/ exists: ${assetsExists}`);
+    
+    if (assetsExists) {
+      const assetFiles = fs.readdirSync(path.join(frontendDistPath, 'assets'));
+      logger.info(`[APP] Assets directory contains ${assetFiles.length} files`);
+      logger.info(`[APP] Sample assets: ${assetFiles.slice(0, 5).join(', ')}`);
+    }
   } catch (err) {
     logger.error(`[APP] Error reading frontend dist:`, err);
   }
@@ -131,9 +142,12 @@ if (fs.existsSync(frontendDistPath)) {
   logger.error(`[APP] ✗ Frontend dist directory NOT FOUND at: ${frontendDistPath}`);
 }
 
-// Serve static files with proper MIME types and fallback prevention
+// Serve static files with explicit MIME types
 app.use(express.static(frontendDistPath, {
   setHeaders: (res, filePath) => {
+    // Log every static file request for debugging
+    logger.debug(`[STATIC] Serving: ${filePath}`);
+    
     if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     } else if (filePath.endsWith('.css')) {
@@ -150,34 +164,46 @@ app.use(express.static(frontendDistPath, {
       res.setHeader('Content-Type', 'font/woff');
     } else if (filePath.endsWith('.woff2')) {
       res.setHeader('Content-Type', 'font/woff2');
+    } else if (filePath.endsWith('.ico')) {
+      res.setHeader('Content-Type', 'image/x-icon');
+    } else if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
     }
-    // Add cache control for static assets
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    // Cache control for assets
+    if (filePath.includes('/assets/')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    }
   },
-  fallthrough: true, // Allow next middleware to handle 404s
-  index: false // Don't serve index.html automatically
+  fallthrough: true,
+  index: false
 }));
 
 // Catch-all route: serve index.html for React SPA
-// Only for non-API routes and non-static-file requests
 app.get('*', (req, res, next) => {
   // Don't handle API routes
   if (req.path.startsWith('/api')) {
     return next();
   }
   
-  // Don't handle static asset extensions - let them 404
+  // Log all requests that reach here
+  logger.debug(`[CATCHALL] Request for: ${req.path}`);
+  
+  // Don't handle static asset extensions - return 404
   if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map)$/)) {
-    logger.warn(`Static asset not found: ${req.path}`);
-    return res.status(404).send('Not found');
+    logger.warn(`[CATCHALL] Static asset not found: ${req.path}`);
+    return res.status(404).type('text/plain').send('Asset not found');
   }
   
   // Serve index.html for all other routes (SPA routing)
   const indexPath = path.join(frontendDistPath, 'index.html');
+  logger.debug(`[CATCHALL] Serving index.html from: ${indexPath}`);
+  
   res.sendFile(indexPath, (err) => {
     if (err) {
-      logger.error('Error serving index.html:', err);
-      res.status(500).send('Failed to load application');
+      logger.error('[CATCHALL] Error serving index.html:', err);
+      res.status(500).type('text/plain').send('Failed to load application');
     }
   });
 });
