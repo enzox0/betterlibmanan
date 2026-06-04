@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
@@ -9,7 +11,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "allowImportingTsExtensions": false,
-    "moduleResolution": "Node10"
+    "esModuleInterop": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
