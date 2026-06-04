@@ -11,10 +11,49 @@ import { mailer } from '@/shared/mailer';
 
 const app: express.Express = express();
 
-// Trust proxy
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
+
+// Determine frontend dist path
+const getFrontendDistPath = (): string => {
+  if (process.env.NODE_ENV === 'production') {
+    const dockerPath = '/app/apps/frontend/dist';
+    if (fs.existsSync(dockerPath)) {
+      return dockerPath;
+    }
+    return path.resolve(__dirname, '../../../frontend/dist');
+  }
+  return path.resolve(__dirname, '../../../frontend/dist');
+};
+
+const frontendDistPath = getFrontendDistPath();
+
+// Log configuration
+logger.info(`[SPA] Initializing SPA server`);
+logger.info(`[SPA] Environment: ${process.env.NODE_ENV}`);
+logger.info(`[SPA] Frontend dist: ${frontendDistPath}`);
+logger.info(`[SPA] __dirname: ${__dirname}`);
+
+// Verify frontend dist
+if (!fs.existsSync(frontendDistPath)) {
+  logger.error(`[SPA] ✗ Frontend dist NOT FOUND at: ${frontendDistPath}`);
+  logger.error(`[SPA] Application will not serve frontend properly!`);
+} else {
+  const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
+  const assetsExists = fs.existsSync(path.join(frontendDistPath, 'assets'));
+  logger.info(`[SPA] ✓ Frontend dist exists`);
+  logger.info(`[SPA] ✓ index.html: ${indexExists}`);
+  logger.info(`[SPA] ✓ assets/: ${assetsExists}`);
+}
+
+// =============================================================================
+// MIDDLEWARE - SECURITY & PARSING
+// =============================================================================
+
 app.set('trust proxy', 1);
 
-// Security middleware with CSP configured for SPA and Vite
+// Security headers for SPA
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -36,7 +75,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS
+// CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : ['http://localhost:3000', 'http://localhost:5000'];
@@ -56,23 +95,23 @@ app.use(cors({
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: {
-    success: false,
-    message: 'Too many requests from this IP'
-  }
+  message: { success: false, message: 'Too many requests from this IP' }
 });
 app.use(limiter);
 
-// Parse JSON requests
+// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging
 app.use(requestLogger);
 
-// Health check endpoint
+// =============================================================================
+// API ROUTES - Before static file serving
+// =============================================================================
+
+// Health check with frontend verification
 app.get('/health', (_req, res) => {
-  // Verify frontend assets are available
   const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
   const assetsExists = fs.existsSync(path.join(frontendDistPath, 'assets'));
   
@@ -80,6 +119,7 @@ app.get('/health', (_req, res) => {
     success: true,
     message: 'Server is healthy',
     timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
     frontend: {
       distPath: frontendDistPath,
       indexHtml: indexExists,
@@ -88,181 +128,129 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// Health error report endpoint
+// Health error reporting
 app.post('/api/health/report', async (req, res) => {
   try {
     const errorDetails = req.body;
-    logger.error('Health check error reported:', errorDetails);
+    logger.error('[API] Health error reported:', errorDetails);
     await mailer.sendHealthErrorReport(errorDetails);
-    res.json({
-      success: true,
-      message: 'Health error report sent'
-    });
+    res.json({ success: true, message: 'Health error report sent' });
   } catch (error) {
-    logger.error('Failed to process health error report:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to send health error report'
-    });
+    logger.error('[API] Failed to process health error report:', error);
+    res.status(500).json({ success: false, message: 'Failed to send health error report' });
   }
 });
 
-// Serve frontend static files BEFORE API routes to prevent conflicts
-// In production Docker: /app/apps/frontend/dist
-// __dirname in compiled code: /app/apps/backend/dist/bootstrap (Docker) or local path (Windows)
+// API placeholder
+app.use('/api', (_req, res) => {
+  res.json({ success: true, message: 'API coming soon' });
+});
 
-// Determine frontend dist path based on environment
-let frontendDistPath: string;
-if (process.env.NODE_ENV === 'production') {
-  // Try Docker path first
-  const dockerPath = '/app/apps/frontend/dist';
-  if (fs.existsSync(dockerPath)) {
-    frontendDistPath = dockerPath;
-  } else {
-    // Fallback to relative path for Windows production
-    frontendDistPath = path.resolve(__dirname, '../../../frontend/dist');
-  }
-} else {
-  // Development mode
-  frontendDistPath = path.resolve(__dirname, '../../../frontend/dist');
-}
-  
-logger.info(`[APP] __dirname: ${__dirname}`);
-logger.info(`[APP] NODE_ENV: ${process.env.NODE_ENV}`);
-logger.info(`[APP] Frontend dist path: ${frontendDistPath}`);
+// =============================================================================
+// STATIC FILE SERVING - SPA Assets
+// =============================================================================
 
-// Check if frontend dist exists
-if (fs.existsSync(frontendDistPath)) {
-  logger.info(`[APP] ✓ Frontend dist directory exists`);
-  try {
-    const files = fs.readdirSync(frontendDistPath);
-    logger.info(`[APP] Frontend dist contains ${files.length} items: ${files.slice(0, 10).join(', ')}${files.length > 10 ? '...' : ''}`);
+// Helper function to set MIME types
+const setMimeType = (res: express.Response, filePath: string): void => {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    '.js': 'application/javascript; charset=utf-8',
+    '.mjs': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.map': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+    '.ico': 'image/x-icon',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+    '.eot': 'application/vnd.ms-fontobject',
+    '.lottie': 'application/json'
+  };
+
+  if (mimeTypes[ext]) {
+    res.setHeader('Content-Type', mimeTypes[ext]);
     
-    // Check for critical files
-    const indexExists = fs.existsSync(path.join(frontendDistPath, 'index.html'));
-    const assetsExists = fs.existsSync(path.join(frontendDistPath, 'assets'));
-    logger.info(`[APP] index.html exists: ${indexExists}`);
-    logger.info(`[APP] assets/ exists: ${assetsExists}`);
-    
-    if (assetsExists) {
-      const assetFiles = fs.readdirSync(path.join(frontendDistPath, 'assets'));
-      logger.info(`[APP] Assets directory contains ${assetFiles.length} files`);
-      logger.info(`[APP] Sample assets: ${assetFiles.slice(0, 5).join(', ')}`);
+    // Add security header for JS and CSS
+    if (ext === '.js' || ext === '.mjs' || ext === '.css') {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
     }
-  } catch (err) {
-    logger.error(`[APP] Error reading frontend dist:`, err);
   }
-} else {
-  logger.error(`[APP] ✗ Frontend dist directory NOT FOUND at: ${frontendDistPath}`);
-}
+};
 
-// Explicit route handler for static assets with proper MIME types
-// This MUST come before the catch-all route to prevent interception
+// Serve /assets directory with aggressive caching (content-hashed files)
 app.use('/assets', express.static(path.join(frontendDistPath, 'assets'), {
   setHeaders: (res, filePath) => {
-    // Force correct MIME types - critical for modules
-    const ext = path.extname(filePath).toLowerCase();
-    
-    logger.info(`[ASSETS] Serving ${filePath} with extension ${ext}`);
-    
-    if (ext === '.js' || ext === '.mjs') {
-      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-    } else if (ext === '.css') {
-      res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-    } else if (ext === '.json') {
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    } else if (ext === '.map') {
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    }
-    
-    // Aggressive caching for hashed assets
+    logger.debug(`[ASSETS] ${path.basename(filePath)}`);
+    setMimeType(res, filePath);
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   },
-  fallthrough: false, // Return 404 if not found, don't pass to next middleware
+  fallthrough: false, // Don't continue to next middleware if asset not found
   index: false,
   etag: true,
-  lastModified: true,
-  redirect: false
+  lastModified: true
 }));
 
-// Serve other static files from root (images, fonts, etc.)
+// Serve other static files (images, fonts, etc.) with moderate caching
 app.use(express.static(frontendDistPath, {
   setHeaders: (res, filePath) => {
-    const ext = path.extname(filePath).toLowerCase();
+    const fileName = path.basename(filePath);
     
-    logger.debug(`[STATIC] Serving: ${filePath}`);
-    
-    if (ext === '.svg') {
-      res.setHeader('Content-Type', 'image/svg+xml');
-    } else if (ext === '.png') {
-      res.setHeader('Content-Type', 'image/png');
-    } else if (ext === '.jpg' || ext === '.jpeg') {
-      res.setHeader('Content-Type', 'image/jpeg');
-    } else if (ext === '.webp') {
-      res.setHeader('Content-Type', 'image/webp');
-    } else if (ext === '.woff') {
-      res.setHeader('Content-Type', 'font/woff');
-    } else if (ext === '.woff2') {
-      res.setHeader('Content-Type', 'font/woff2');
-    } else if (ext === '.ico') {
-      res.setHeader('Content-Type', 'image/x-icon');
-    } else if (ext === '.lottie') {
-      res.setHeader('Content-Type', 'application/json');
+    // Don't serve index.html here - it's handled by SPA catch-all
+    if (fileName === 'index.html') {
+      return;
     }
     
-    // Short cache for non-hashed assets
+    logger.debug(`[STATIC] ${fileName}`);
+    setMimeType(res, filePath);
+    
+    // Shorter cache for non-hashed assets
     res.setHeader('Cache-Control', 'public, max-age=3600');
   },
   fallthrough: true,
-  index: false,
+  index: false, // Don't auto-serve index.html
   etag: true,
-  lastModified: true,
-  redirect: false
+  lastModified: true
 }));
 
-// API routes - MUST come after static file handling but before catch-all
-app.use('/api', (_req, res) => {
-  res.json({
-    success: true,
-    message: 'Coming soon'
-  });
-});
+// =============================================================================
+// SPA ROUTING - Catch-all for client-side routing
+// =============================================================================
 
-// Catch-all route: serve index.html for React SPA routing
-// This should be the LAST route
 app.get('*', (req, res) => {
-  // Log all requests that reach the catch-all
-  logger.info(`[CATCHALL] SPA route request: ${req.path}`);
-  
-  // If it looks like a static asset, something went wrong
-  if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map)$/)) {
-    logger.error(`[CATCHALL] Static asset reached catch-all (should have been handled earlier): ${req.path}`);
+  // If request looks like a static asset that wasn't found, return 404
+  if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map|lottie)$/)) {
+    logger.warn(`[SPA] Asset not found: ${req.path}`);
     return res.status(404).type('text/plain').send('Asset not found');
   }
   
   // Serve index.html for all SPA routes
   const indexPath = path.join(frontendDistPath, 'index.html');
   
-  res.sendFile(indexPath, (err) => {
+  logger.debug(`[SPA] Serving route: ${req.path}`);
+  
+  res.sendFile(indexPath, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    }
+  }, (err) => {
     if (err) {
-      logger.error('[CATCHALL] Error serving index.html:', err);
-      return res.status(500).type('text/plain').send('Failed to load application');
+      logger.error(`[SPA] Failed to serve index.html:`, err);
+      res.status(500).type('text/plain').send('Failed to load application');
     }
   });
 });
 
-// 404 handler for assets that truly don't exist
-app.use((req, res, next) => {
-  if (req.path.match(/\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|webp|avif|map)$/)) {
-    logger.error(`[404] Asset not found: ${req.path}`);
-    return res.status(404).type('text/plain').send('Asset not found');
-  }
-  next();
-});
+// =============================================================================
+// ERROR HANDLING
+// =============================================================================
 
-// Error handler
 app.use(errorHandler);
 
 export { app };
