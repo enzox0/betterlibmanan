@@ -1,13 +1,23 @@
+const path = require('path');
+const rootDir = __dirname;
+
 module.exports = {
   apps: [
     {
       name: 'betterlibmanan-backend',
       script: './build/backend/main.js',
+      cwd: rootDir,
       instances: 1,
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3000,
+        // Add paths to find pnpm modules
+        NODE_PATH: [
+          path.join(rootDir, 'node_modules'),
+          path.join(rootDir, 'apps/backend/node_modules'),
+          path.join(rootDir, 'node_modules/.pnpm/node_modules')
+        ].join(path.delimiter)
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
@@ -22,10 +32,17 @@ module.exports = {
     {
       name: 'betterlibmanan-worker',
       script: './build/worker/main.js',
+      cwd: rootDir,
       instances: 1,
       exec_mode: 'fork',
       env: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        // Add paths to find pnpm modules
+        NODE_PATH: [
+          path.join(rootDir, 'node_modules'),
+          path.join(rootDir, 'apps/worker/node_modules'),
+          path.join(rootDir, 'node_modules/.pnpm/node_modules')
+        ].join(path.delimiter)
       },
       error_file: './logs/worker-error.log',
       out_file: './logs/worker-out.log',
