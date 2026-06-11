@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import { lazyLoad, LazyLoader } from '@/app/router/lazy-loader';
+import { lazyLoad } from '@/app/router/lazy-loader';
 import { Layout } from '@/app/shell/Layout';
 
 const HomePage = lazyLoad(() => import('@/modules/landing'));
@@ -26,8 +26,7 @@ const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ de
 
 export function AppRouter() {
   return (
-    <LazyLoader>
-      <Routes>
+    <Routes>
         <Route
           path="/"
           element={
@@ -201,6 +200,5 @@ export function AppRouter() {
           }
         />
       </Routes>
-    </LazyLoader>
   );
 }
