@@ -83,11 +83,11 @@ export function StatisticsPage() {
 
           <div className="rounded-xl border border-gray-200 bg-white p-6 mb-6">
             <p className="text-lg font-semibold text-gray-900 mb-4">Income Composition</p>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               {data.finance.composition.map((item, index) => (
                 <div key={item.label} className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-xs sm:text-sm text-gray-700">
                     {item.label} {item.percentage}%
                   </p>
                 </div>
