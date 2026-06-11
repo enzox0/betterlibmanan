@@ -16,20 +16,20 @@ const LGU_LOGOS = [
 
 export default function PartnerLogos() {
   return (
-    <section className="py-10 bg-neutral-100 border-y border-border/40 overflow-hidden">
+    <section className="py-6 sm:py-10 bg-neutral-100 border-y border-border/40 overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:gap-10">
+          <div className="flex items-center gap-3 sm:gap-4">
             <img 
               src="/bettergov-logo.svg" 
               alt="Better Gov Logo" 
-              className="h-8 sm:h-10 w-auto opacity-70"
+              className="h-7 sm:h-10 w-auto opacity-70"
             />
             <div className="flex-shrink-0 text-center md:text-left">
               <p className="text-[10px] sm:text-xs font-medium text-primary uppercase tracking-[0.15em] mb-1">
                 Better Gov • Better LGU
               </p>
-              <h3 className="text-sm sm:text-base font-medium text-text-muted">
+              <h3 className="text-xs sm:text-base font-medium text-text-muted">
                 Empowering local governance
               </h3>
             </div>

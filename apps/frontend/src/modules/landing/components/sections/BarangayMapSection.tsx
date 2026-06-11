@@ -306,15 +306,15 @@ export function BarangayMapSection({ isLoading = false }: { isLoading?: boolean 
           <div className="relative">
             <div 
               ref={containerRef}
-              className="rounded-2xl border border-neutral-200 bg-white shadow-sm h-[500px] sm:h-[600px]"
+              className="rounded-2xl border border-neutral-200 bg-white shadow-sm h-[350px] xs:h-[420px] sm:h-[500px] lg:h-[600px]"
               onMouseMove={handleMouseMove}
             >
-              <div className="h-full overflow-x-auto overflow-y-hidden">
+              <div className="h-full overflow-hidden">
                 {geoJson ? (
                   <svg
                     ref={svgRef}
                     viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                    className="w-auto min-w-[800px] sm:w-full h-full"
+                    className="w-full h-full"
                     preserveAspectRatio="xMidYMid meet"
                   >
                     {/* Definitions for patterns */}

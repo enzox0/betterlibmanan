@@ -26,14 +26,14 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
               </div>
             </SkeletonCard>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white px-6 py-10 sm:px-8 lg:px-10">
-              <div className="grid items-center gap-8 lg:grid-cols-[30%_70%]">
+            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white px-4 py-8 sm:px-8 lg:px-10 lg:py-10">
+              <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-[30%_70%]">
                 <div className="flex justify-center">
                   <DotLottieReact
                     src="/edu.lottie"
                     loop
                     autoplay
-                    className="w-full max-w-sm h-auto"
+                    className="w-full max-w-[200px] sm:max-w-sm h-auto"
                   />
                 </div>
                 <div>

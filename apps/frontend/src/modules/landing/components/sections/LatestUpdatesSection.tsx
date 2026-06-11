@@ -43,7 +43,7 @@ export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolea
               </>
             )}
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading
               ? Array.from({ length: 3 }).map((_, index) => (
                   <SkeletonCard key={index} className="overflow-hidden p-0">
@@ -61,14 +61,14 @@ export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolea
                     key={index}
                     className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
                   >
-                    <div className="h-48 bg-gradient-to-br from-neutral-200 to-neutral-300"></div>
-                    <div className="p-6">
-                      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-4">
+                    <div className="h-36 sm:h-48 bg-gradient-to-br from-neutral-200 to-neutral-300"></div>
+                    <div className="p-4 sm:p-6">
+                      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
                         <FaCalendarAlt />
                         <span>{update.date}</span>
                       </div>
-                      <h3 className="text-xl font-semibold text-neutral-900 mb-3">{update.title}</h3>
-                      <p className="text-neutral-600">{update.excerpt}</p>
+                      <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">{update.title}</h3>
+                      <p className="text-sm text-neutral-600 line-clamp-2 sm:line-clamp-none">{update.excerpt}</p>
                     </div>
                   </div>
                 ))}

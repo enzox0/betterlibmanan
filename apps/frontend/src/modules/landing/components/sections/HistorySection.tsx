@@ -165,7 +165,7 @@ export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
             {isLoading ? (
               <>
                 <div className="space-y-4">

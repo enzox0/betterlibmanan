@@ -70,10 +70,10 @@ export function AppointmentSection() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 lg:text-3xl">
                 Book Municipal Appointments With Less Waiting
               </h2>
-              <p className="mt-4 text-sm leading-7 text-neutral-500">
+              <p className="mt-3 sm:mt-4 text-sm leading-6 sm:leading-7 text-neutral-500">
                 Schedule your visit online for certificates, permits, and other municipal services. The
                 platform helps residents choose a convenient time, prepare requirements early, and avoid
                 unnecessary queueing at the municipal hall.

@@ -82,7 +82,7 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
 
   return (
     <motion.nav
-      className="fixed left-2 md:left-6 top-[45%] -translate-y-1/2 z-[100]"
+      className="fixed left-2 lg:left-6 top-[45%] -translate-y-1/2 z-[100] hidden md:block"
       initial={false}
       animate={{
         opacity: shouldShowNav ? 1 : 0,
