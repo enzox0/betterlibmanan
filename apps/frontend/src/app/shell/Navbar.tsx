@@ -89,7 +89,7 @@ export function Navbar() {
           </div>
           
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
+          <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6">
             {navItems.map((item) => (
               <div
                 key={item.name}
@@ -143,7 +143,7 @@ export function Navbar() {
           </nav>
           
           {/* Desktop Language Buttons */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             {languageButtons.map((lang) => (
               <button
                 key={lang.code}
@@ -160,7 +160,7 @@ export function Navbar() {
           
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden flex items-center justify-center text-gray-700 p-2"
+            className="lg:hidden flex items-center justify-center text-gray-700 p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <FaTimes className="h-6 w-6" /> : <FaBars className="h-6 w-6" />}
@@ -169,8 +169,8 @@ export function Navbar() {
         
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden pb-4">
-            <nav className="flex flex-col gap-3 mb-4">
+          <div className="lg:hidden border-t border-gray-100 pt-4 pb-4 overflow-y-auto max-h-[calc(100dvh-80px)]">
+            <nav className="flex flex-col gap-1 mb-4">
               {navItems.map((item) => (
                 <div key={item.name}>
                   {item.hasDropdown ? (

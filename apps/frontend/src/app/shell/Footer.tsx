@@ -119,7 +119,7 @@ export function Footer() {
           </div>
 
           {/* Right Section */}
-          <div className="flex flex-col items-start sm:col-span-2 lg:col-span-1">
+          <div className="flex flex-col items-start">
             <div className="bg-emerald-900/40 text-emerald-300 px-4 py-2 rounded-lg text-xs sm:text-sm mb-4 flex items-center gap-2">
               <span>Cost to the People of Libmanan = </span>
               <span className="font-semibold text-emerald-400">₱0</span>

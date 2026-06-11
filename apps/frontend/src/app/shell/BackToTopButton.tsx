@@ -26,7 +26,7 @@ export function BackToTopButton() {
 
   return (
     <div
-      className={`fixed bottom-8 right-8 z-50 transition-all duration-300 transform ${
+      className={`fixed bottom-20 right-4 sm:bottom-8 sm:right-8 z-50 transition-all duration-300 transform ${
         isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-0 pointer-events-none'
       }`}
     >
