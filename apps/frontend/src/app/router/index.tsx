@@ -22,6 +22,7 @@ const InfrastructurePage = lazyLoad(() => import('@/modules/services').then(m =>
 const EducationPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.EducationPage })));
 const PublicSafetyPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.PublicSafetyPage })));
 const EnvironmentPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.EnvironmentPage })));
+const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ default: m.ComingSoonPage })));
 
 export function AppRouter() {
   return (
@@ -183,6 +184,14 @@ export function AppRouter() {
           }
         />
         {/* 404 Not Found */}
+        <Route
+          path="/coming-soon"
+          element={
+            <Layout>
+              <ComingSoonPage />
+            </Layout>
+          }
+        />
         <Route
           path="*"
           element={
