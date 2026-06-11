@@ -8,6 +8,7 @@ import { MiniFloatingNav } from '@/modules/landing/components/sections/MiniFloat
 import { AutoPageMetadata } from '@/app/components';
 import { LazyLoader } from '@/app/router/lazy-loader';
 
+/** Layout with Suspense/lazy-loading fallback — used for all code-split routes. */
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
@@ -19,6 +20,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">
         <LazyLoader>{children}</LazyLoader>
       </main>
+      <Footer />
+      <BackToTopButton />
+    </div>
+  );
+}
+
+/** Layout without Suspense — used for eagerly-loaded routes like Home. */
+export function LayoutEager({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <AutoPageMetadata />
+      <MiniFloatingNav />
+      <TopUtilityBar />
+      <Navbar />
+      <BottomUtilityBar />
+      <main className="flex-1">{children}</main>
       <Footer />
       <BackToTopButton />
     </div>

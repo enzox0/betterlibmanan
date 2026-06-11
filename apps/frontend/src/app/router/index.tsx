@@ -1,8 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { lazyLoad } from '@/app/router/lazy-loader';
-import { Layout } from '@/app/shell/Layout';
-
-const HomePage = lazyLoad(() => import('@/modules/landing'));
+import { Layout, LayoutEager } from '@/app/shell/Layout';
+import HomePage from '@/modules/landing';
 const NotFoundPage = lazyLoad(() => import('@/modules/errors').then(m => ({ default: m.NotFoundPage })));
 const ContactPage = lazyLoad(() => import('@/modules/contact'));
 const TransparencyPage = lazyLoad(() => import('@/modules/transparency'));
@@ -30,9 +29,9 @@ export function AppRouter() {
         <Route
           path="/"
           element={
-            <Layout>
+            <LayoutEager>
               <HomePage />
-            </Layout>
+            </LayoutEager>
           }
         />
         {/* Services Routes */}
