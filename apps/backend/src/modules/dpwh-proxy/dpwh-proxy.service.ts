@@ -1,10 +1,12 @@
 import { logger } from '@/shared/logger';
-// Type-only import — TypeScript erases this, so the CommonJS output never
-// `require()`s the ESM-only `got-scraping` package.
-import type {
-  gotScraping as GotScrapingFn,
-  Response as GotResponse
-} from 'got-scraping';
+
+interface GotResponse<BodyType = unknown> {
+  statusCode: number;
+  body: BodyType;
+  headers: Record<string, string | string[] | undefined>;
+}
+
+type GotScrapingFn = (options: Record<string, unknown>) => Promise<GotResponse<string>>;
 
 export interface DpwhProxyOptions {
   /**
@@ -53,10 +55,10 @@ const importEsm = new Function('specifier', 'return import(specifier)') as <T>(
   specifier: string
 ) => Promise<T>;
 
-let gotScrapingPromise: Promise<{ gotScraping: typeof GotScrapingFn }> | null = null;
-const getGotScraping = async (): Promise<typeof GotScrapingFn> => {
+let gotScrapingPromise: Promise<{ gotScraping: GotScrapingFn }> | null = null;
+const getGotScraping = async (): Promise<GotScrapingFn> => {
   if (!gotScrapingPromise) {
-    gotScrapingPromise = importEsm<{ gotScraping: typeof GotScrapingFn }>('got-scraping');
+    gotScrapingPromise = importEsm<{ gotScraping: GotScrapingFn }>('got-scraping');
   }
   return (await gotScrapingPromise).gotScraping;
 };
