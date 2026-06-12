@@ -571,22 +571,20 @@ export function TransparencyPage() {
 
           {/* Source Attribution */}
           {!loading && !error && filteredProjects.length > 0 && (
-            <div className="mt-10 flex items-center justify-center">
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4 max-w-2xl">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-800 shadow-lg">
-                  <span className="text-lg font-bold text-white">i</span>
-                </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-sm font-semibold text-gray-800 mb-1">Data Source</p>
-                  <a
-                    href="https://www.dpwh.gov.ph/dpwh/transparency"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-700 font-bold hover:text-gray-900 hover:underline transition-colors"
-                  >
-                    DPWH Transparency Portal
-                  </a>
-                </div>
+            <div className="mt-8 flex items-center justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-[10px] font-bold text-white">
+                  i
+                </span>
+                <span className="text-gray-600">Data Source:</span>
+                <a
+                  href="https://www.dpwh.gov.ph/dpwh/transparency"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-gray-800 hover:text-gray-900 hover:underline transition-colors"
+                >
+                  DPWH Transparency Portal
+                </a>
               </div>
             </div>
           )}
