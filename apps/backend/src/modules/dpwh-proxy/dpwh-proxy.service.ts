@@ -34,7 +34,16 @@ const getConfig = () => ({
   baseUrl: (process.env.DPWH_API_BASE_URL || 'https://api.transparency.dpwh.gov.ph').replace(/\/+$/, ''),
   apiKey: process.env.DPWH_API_KEY || '',
   apiToken: process.env.DPWH_API_TOKEN || '',
-  timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || '20000', 10),
+  timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || '12000', 10),
+  /**
+   * Optional outbound proxy (HTTP/HTTPS/SOCKS). The upstream sits behind
+   * Cloudflare bot mitigation that trusts residential IPs but challenges
+   * datacenter IPs. In production our server's IP is usually a datacenter
+   * one, so Cloudflare serves an interactive "Just a moment" JS challenge
+   * that `got-scraping` cannot solve. Routing through a residential/mobile
+   * proxy makes the request look trusted again. Leave unset in dev.
+   */
+  proxyUrl: process.env.DPWH_PROXY_URL || '',
   /**
    * Origin/Referer the upstream's CORS config whitelisted. We're talking
    * server-to-server, so CORS doesn't apply, but DPWH still seems to inspect
@@ -96,7 +105,7 @@ const buildQuery = (query: Record<string, string | string[] | undefined> = {}): 
  * the upstream call out-of-band.
  */
 export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Promise<DpwhProxyResult<T>> => {
-  const { baseUrl, apiKey, apiToken, timeoutMs, origin, referer } = getConfig();
+  const { baseUrl, apiKey, apiToken, timeoutMs, proxyUrl, origin, referer } = getConfig();
 
   if (!opts.path.startsWith('/')) {
     throw new Error(`DPWH proxy path must start with '/', received: ${opts.path}`);
@@ -125,8 +134,15 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
       method: 'GET',
       responseType: 'text',
       throwHttpErrors: false,
+      // Single attempt, no retry: a stuck upstream (Cloudflare challenge /
+      // slow datacenter-IP handshake) must not be retried, otherwise the
+      // total time can exceed the hosting gateway timeout and the edge
+      // returns its own 502 before we can respond cleanly.
       timeout: { request: timeoutMs },
-      retry: { limit: 1 },
+      retry: { limit: 0 },
+      // Route through a residential/mobile proxy when configured so Cloudflare
+      // treats the request as trusted (see getConfig().proxyUrl).
+      ...(proxyUrl ? { proxyUrl } : {}),
       headers,
       headerGeneratorOptions: {
         browsers: [{ name: 'chrome', minVersion: 120 }],
@@ -141,11 +157,14 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
       logger.error(`[DPWH] timeout after ${elapsed}ms: ${url}`);
       const error = new Error('Upstream DPWH API timed out');
       (error as any).statusCode = 504;
+      (error as any).reason = 'upstream_timeout';
       throw error;
     }
     logger.error(`[DPWH] request failed (${elapsed}ms): ${url}`, err);
     const error = new Error('Failed to reach upstream DPWH API');
     (error as any).statusCode = 502;
+    (error as any).reason = 'upstream_unreachable';
+    (error as any).cause = (err as Error).message;
     throw error;
   }
 
@@ -162,12 +181,15 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
 
   if (looksLikeCloudflareChallenge) {
     logger.error(
-      `[DPWH] Cloudflare challenge served (status=${response.statusCode}, ${elapsed}ms): ${url}`
+      `[DPWH] Cloudflare challenge served (status=${response.statusCode}, ${elapsed}ms): ${url}. ` +
+        `This usually means the server's IP is being challenged. Set DPWH_PROXY_URL to a ` +
+        `residential/mobile proxy to bypass it.`
     );
     const error = new Error(
       'Upstream DPWH API is currently behind a Cloudflare challenge that the proxy could not solve.'
     );
     (error as any).statusCode = 502;
+    (error as any).reason = 'cloudflare_challenge';
     throw error;
   }
 
@@ -179,6 +201,7 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
       logger.error(`[DPWH] Failed to parse JSON body from upstream: ${url}`, err);
       const error = new Error('Upstream DPWH API returned malformed JSON');
       (error as any).statusCode = 502;
+      (error as any).reason = 'malformed_json';
       throw error;
     }
   } else {

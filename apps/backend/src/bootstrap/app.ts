@@ -407,9 +407,19 @@ app.get('*', (req, res) => {
 
 // Custom error handler that doesn't interfere with static assets
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Errors thrown by our services may carry an explicit HTTP status and a
+  // machine-readable reason (e.g. the DPWH proxy uses 502/504 with reasons
+  // like 'cloudflare_challenge' or 'upstream_timeout').
+  const statusCode = (err as any).statusCode && Number.isInteger((err as any).statusCode)
+    ? (err as any).statusCode
+    : 500;
+  const reason = (err as any).reason as string | undefined;
+
   // Log the error
   logger.error('[ERROR]', {
     message: err.message,
+    reason,
+    statusCode,
     stack: err.stack,
     path: req.path,
     method: req.method
@@ -422,21 +432,23 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   
   // For asset requests, send plain text errors
   if (req.path.startsWith('/assets') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico)$/)) {
-    return res.status(500).type('text/plain').send('Internal server error');
+    return res.status(statusCode).type('text/plain').send('Internal server error');
   }
   
-  // For API requests, send JSON
+  // For API requests, send JSON. Surface the upstream status (e.g. 502/504)
+  // and reason so the client and logs aren't stuck guessing.
   if (req.path.startsWith('/api')) {
-    return res.status(500).json({
+    return res.status(statusCode).json({
       success: false,
-      message: process.env.NODE_ENV === 'production' 
-        ? 'Internal server error' 
+      reason,
+      message: process.env.NODE_ENV === 'production' && statusCode === 500
+        ? 'Internal server error'
         : err.message
     });
   }
   
   // For everything else, send plain text
-  res.status(500).type('text/plain').send('Internal server error');
+  res.status(statusCode).type('text/plain').send('Internal server error');
 });
 
 export { app };
