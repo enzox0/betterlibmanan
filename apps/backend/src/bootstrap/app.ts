@@ -8,6 +8,7 @@ import { logger } from '@/shared/logger';
 import { errorHandler } from '@/shared/middleware/error-handler';
 import { requestLogger } from '@/shared/middleware/request-logger';
 import { mailer } from '@/shared/mailer';
+import { apiRouter } from '@/bootstrap/routes';
 
 const app: express.Express = express();
 
@@ -224,10 +225,8 @@ app.post('/api/health/report', async (req, res) => {
   }
 });
 
-// API routes placeholder
-app.use('/api', (_req, res) => {
-  res.json({ success: true, message: 'API coming soon', version: '1.0.0' });
-});
+// API routes (must come before SPA static / catch-all)
+app.use('/api', apiRouter);
 
 // =============================================================================
 // STATIC FILE SERVING - CRITICAL SECTION

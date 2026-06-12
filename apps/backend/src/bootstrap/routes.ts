@@ -1,2 +1,25 @@
-// Routes bootstrap coming soon
-export {}
+import { Router } from 'express';
+import { dpwhProxyRouter } from '@/modules/dpwh-proxy';
+
+/**
+ * Central API router. Mount feature routers here as the backend grows so
+ * `app.ts` only has to deal with global middleware and the SPA catch-all.
+ */
+export const apiRouter: Router = Router();
+
+// Quick reachability probe for `/api`
+apiRouter.get('/', (_req, res) => {
+  res.json({ success: true, message: 'API ready', version: '1.0.0' });
+});
+
+// DPWH transparency proxy — bypasses the upstream's CORS restriction
+apiRouter.use('/dpwh', dpwhProxyRouter);
+
+// Fallback for unmatched /api routes — keeps the SPA catch-all from
+// accidentally serving index.html for unknown API paths.
+apiRouter.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.method} ${req.originalUrl}`
+  });
+});
