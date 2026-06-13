@@ -28,26 +28,26 @@ export interface DpwhProxyResult<T = unknown> {
 
 /**
  * Reads DPWH proxy configuration from environment.
- * Centralised so we get the same defaults everywhere.
+ *
+ * The production VM never reaches the upstream successfully — Cloudflare
+ * blocks datacenter IPs — so this module is exercised mainly by the offline
+ * `refresh-dpwh-cache` script running on a residential connection. The
+ * controller still calls it as a best-effort live fallback when the cache
+ * is empty, but a failure there is expected and gracefully handled.
  */
 const getConfig = () => ({
   baseUrl: (process.env.DPWH_API_BASE_URL || 'https://api.transparency.dpwh.gov.ph').replace(/\/+$/, ''),
-  apiKey: process.env.DPWH_API_KEY || '',
-  apiToken: process.env.DPWH_API_TOKEN || '',
-  timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || '12000', 10),
+  timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || '70000', 10),
   /**
-   * Optional outbound proxy (HTTP/HTTPS/SOCKS). The upstream sits behind
-   * Cloudflare bot mitigation that trusts residential IPs but challenges
-   * datacenter IPs. In production our server's IP is usually a datacenter
-   * one, so Cloudflare serves an interactive "Just a moment" JS challenge
-   * that `got-scraping` cannot solve. Routing through a residential/mobile
-   * proxy makes the request look trusted again. Leave unset in dev.
+   * Optional outbound proxy (HTTP/HTTPS/SOCKS). Only useful when running
+   * the refresh script from a network whose IP Cloudflare flags. Most
+   * residential connections don't need this.
    */
   proxyUrl: process.env.DPWH_PROXY_URL || '',
   /**
-   * Origin/Referer the upstream's CORS config whitelisted. We're talking
-   * server-to-server, so CORS doesn't apply, but DPWH still seems to inspect
-   * these headers, so we forward the whitelisted values by default.
+   * The upstream's CORS config whitelists `http://localhost:3000`. We're
+   * server-to-server so CORS doesn't apply, but DPWH still seems to inspect
+   * Origin/Referer, so we forward the whitelisted values.
    */
   origin: process.env.DPWH_ORIGIN || 'http://localhost:3000',
   referer: process.env.DPWH_REFERER || 'http://localhost:3000/'
@@ -92,20 +92,20 @@ const buildQuery = (query: Record<string, string | string[] | undefined> = {}): 
 };
 
 /**
- * Server-to-server fetch against the DPWH transparency API.
+ * Live server-to-server fetch against the DPWH transparency API.
  *
- * The upstream sits behind Cloudflare's bot mitigation, which 403s plain Node
- * `fetch` calls because the TLS / HTTP-2 fingerprint doesn't look like a real
- * browser. We use `got-scraping`, which impersonates Chrome at the header,
- * HTTP/2 and TLS levels, so the request looks indistinguishable from a normal
- * browser hit.
+ * Used by:
+ *   - `refresh-dpwh-cache.ts` running from a residential connection (the
+ *     primary user — succeeds because home IPs aren't Cloudflare-blocked)
+ *   - the controller as a best-effort live fallback when the cache is empty
+ *     (usually fails on datacenter VMs; that's fine, the controller handles
+ *     the failure cleanly)
  *
- * CORS is irrelevant here — that's a browser-only policy. The point of this
- * proxy is to give the SPA a same-origin endpoint to talk to, while we handle
- * the upstream call out-of-band.
+ * `got-scraping` impersonates Chrome's TLS / HTTP-2 / header fingerprint so
+ * the request looks like a real browser to Cloudflare.
  */
 export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Promise<DpwhProxyResult<T>> => {
-  const { baseUrl, apiKey, apiToken, timeoutMs, proxyUrl, origin, referer } = getConfig();
+  const { baseUrl, timeoutMs, proxyUrl, origin, referer } = getConfig();
 
   if (!opts.path.startsWith('/')) {
     throw new Error(`DPWH proxy path must start with '/', received: ${opts.path}`);
@@ -117,13 +117,11 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
 
   // got-scraping's header generator fills in realistic browser headers
   // (User-Agent, sec-ch-ua-*, Accept, Accept-Language, …). We only override
-  // the ones that need to match DPWH's whitelist plus optional credentials.
+  // the ones DPWH inspects via its CORS whitelist.
   const headers: Record<string, string> = {
     Origin: origin,
     Referer: referer
   };
-  if (apiKey) headers['x-api-key'] = apiKey;
-  if (apiToken) headers['Authorization'] = `Bearer ${apiToken}`;
 
   const startedAt = Date.now();
   let response: GotResponse<string>;
@@ -140,8 +138,6 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
       // returns its own 502 before we can respond cleanly.
       timeout: { request: timeoutMs },
       retry: { limit: 0 },
-      // Route through a residential/mobile proxy when configured so Cloudflare
-      // treats the request as trusted (see getConfig().proxyUrl).
       ...(proxyUrl ? { proxyUrl } : {}),
       headers,
       headerGeneratorOptions: {
@@ -153,18 +149,33 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
   } catch (err) {
     const elapsed = Date.now() - startedAt;
     const name = (err as Error).name;
+    const message = (err as Error).message;
+    const code = (err as any).code;
+
+    logger.error(
+      `[DPWH] request failed (${elapsed}ms): ${url} | name=${name} code=${code} ` +
+        `proxy=${proxyUrl ? 'set' : 'none'} message=${message}`
+    );
+
     if (name === 'TimeoutError' || name === 'AbortError') {
-      logger.error(`[DPWH] timeout after ${elapsed}ms: ${url}`);
       const error = new Error('Upstream DPWH API timed out');
       (error as any).statusCode = 504;
       (error as any).reason = 'upstream_timeout';
+      (error as any).diagnostic = { elapsed, proxy: proxyUrl ? 'configured' : 'none' };
       throw error;
     }
-    logger.error(`[DPWH] request failed (${elapsed}ms): ${url}`, err);
+
     const error = new Error('Failed to reach upstream DPWH API');
     (error as any).statusCode = 502;
     (error as any).reason = 'upstream_unreachable';
-    (error as any).cause = (err as Error).message;
+    (error as any).cause = message;
+    (error as any).diagnostic = {
+      elapsed,
+      errorName: name,
+      errorCode: code,
+      errorMessage: message,
+      proxy: proxyUrl ? 'configured' : 'none'
+    };
     throw error;
   }
 
@@ -173,21 +184,17 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
   const isJson = contentType?.includes('application/json');
   const rawBody = response.body ?? '';
 
-  // Detect Cloudflare interstitial (status can be 200 or 403)
+  // Detect Cloudflare interstitial (status can be 200 or 403). The expected
+  // failure mode on the VM — caller should fall back to cached data.
   const looksLikeCloudflareChallenge =
-    typeof rawBody === 'string' &&
-    rawBody.startsWith('<') &&
-    rawBody.includes('Just a moment');
+    typeof rawBody === 'string' && rawBody.startsWith('<') && rawBody.includes('Just a moment');
 
   if (looksLikeCloudflareChallenge) {
-    logger.error(
+    logger.warn(
       `[DPWH] Cloudflare challenge served (status=${response.statusCode}, ${elapsed}ms): ${url}. ` +
-        `This usually means the server's IP is being challenged. Set DPWH_PROXY_URL to a ` +
-        `residential/mobile proxy to bypass it.`
+        `This is expected on datacenter IPs — caller should use the MongoDB cache instead.`
     );
-    const error = new Error(
-      'Upstream DPWH API is currently behind a Cloudflare challenge that the proxy could not solve.'
-    );
+    const error = new Error('Upstream DPWH API is behind a Cloudflare challenge');
     (error as any).statusCode = 502;
     (error as any).reason = 'cloudflare_challenge';
     throw error;
