@@ -8,6 +8,7 @@
     "dev": "tsx watch src/main.ts",
     "build": "tsc && tsc-alias -p tsconfig.json --resolve-full-paths",
     "start": "node ../../build/backend/main.js",
+    "refresh-dpwh-cache": "tsx scripts/refresh-dpwh-cache.ts",
     "test": "echo \"Tests coming soon\"",
     "test:coverage": "echo \"Coverage coming soon\"",
     "lint": "echo \"Lint coming soon\"",
