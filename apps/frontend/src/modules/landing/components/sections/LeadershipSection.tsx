@@ -19,7 +19,7 @@ export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }
   ];
 
   return (
-    <section className="bg-neutral-100 py-16">
+    <section className="bg-white py-16">
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}

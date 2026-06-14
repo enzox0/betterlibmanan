@@ -22,7 +22,7 @@ export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolea
   ];
 
   return (
-    <section className="py-16 bg-white">
+    <section className="py-16 bg-neutral-100">
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}

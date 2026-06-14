@@ -4,7 +4,6 @@ import { lazyLoad, LazyLoader } from '@/app/router/lazy-loader';
 const HeroSection = lazyLoad(() => import('../components/sections/HeroSection'));
 const PartnerLogos = lazyLoad(() => import('../components/sections/PartnerLogos'));
 const BarangayMapSection = lazyLoad(() => import('../components/sections/BarangayMapSection'));
-const AppointmentSection = lazyLoad(() => import('../components/sections/AppointmentSection'));
 const PopularServicesSection = lazyLoad(() => import('../components/sections/PopularServicesSection'));
 const AtAGlanceSection = lazyLoad(() => import('../components/sections/AtAGlanceSection'));
 const WeatherMapSection = lazyLoad(() => import('../components/sections/WeatherMapSection'));
@@ -30,7 +29,6 @@ export function HomePage() {
       <HeroSection />
       <PartnerLogos />
       <BarangayMapSection isLoading={isLoading} />
-      <AppointmentSection />
       <PopularServicesSection isLoading={isLoading} />
       <AtAGlanceSection isLoading={isLoading} />
       <WeatherMapSection isLoading={isLoading} />
