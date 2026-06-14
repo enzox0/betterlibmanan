@@ -760,8 +760,8 @@ export function HomeModuleManager() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: EASE }}
     >
       {/* Page header */}
@@ -822,10 +822,8 @@ export function HomeModuleManager() {
 
                   {/* Active indicator */}
                   {isActive && (
-                    <motion.span
-                      layoutId="active-tab-indicator"
+                    <span
                       className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"
-                      transition={{ duration: 0.2, ease: EASE }}
                     />
                   )}
                 </button>
@@ -835,18 +833,13 @@ export function HomeModuleManager() {
         </div>
 
         {/* Tab panel content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            id={`tabpanel-${activeTab}`}
-            role="tabpanel"
-            aria-labelledby={`tab-${activeTab}`}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2, ease: EASE }}
-            className="p-5"
-          >
+        <div
+          key={activeTab}
+          id={`tabpanel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${activeTab}`}
+          className="p-5"
+        >
             {/* Section sub-header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
               <div>
@@ -891,8 +884,7 @@ export function HomeModuleManager() {
               onDelete={handleDelete}
               onAdd={handleNewRecord}
             />
-          </motion.div>
-        </AnimatePresence>
+          </div>
       </div>
 
       {/* ContentForm — create mode */}
