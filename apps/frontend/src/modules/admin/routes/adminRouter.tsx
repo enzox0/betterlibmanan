@@ -5,6 +5,7 @@ import { ModulePage } from '../pages/ModulePage';
 import { AdminDashboardLayout } from '../components/layout/AdminDashboardLayout';
 import { AccountManagementPage } from '../pages/AccountManagementPage';
 import { MyAccountPage } from '../pages/MyAccountPage';
+import { ContactsPage } from '../pages/ContactsPage';
 
 export const adminRoutes: RouteObject[] = [
   {
@@ -24,6 +25,10 @@ export const adminRoutes: RouteObject[] = [
           {
             path: 'my-account',
             element: <MyAccountPage />,
+          },
+          {
+            path: 'contacts',
+            element: <ContactsPage />,
           },
           {
             path: ':module',
