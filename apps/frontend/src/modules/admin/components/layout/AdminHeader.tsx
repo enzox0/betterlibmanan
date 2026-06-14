@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
@@ -79,7 +80,11 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
         <div className="h-6 w-px bg-gray-200 mx-1" aria-hidden="true" />
 
         {/* Admin identity */}
-        <div className="flex items-center gap-2.5 pl-1">
+        <Link
+          to="/admin/my-account"
+          className="flex items-center gap-2.5 pl-1 rounded-lg px-2 py-1 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          aria-label="My Account"
+        >
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-sm font-semibold text-gray-700 leading-tight">Admin</span>
             <span className="text-xs text-gray-400 leading-tight">Administrator</span>
@@ -91,7 +96,7 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
           >
             A
           </div>
-        </div>
+        </Link>
       </div>
     </motion.header>
   );

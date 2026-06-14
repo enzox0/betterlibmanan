@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminHeader } from './AdminHeader';
@@ -18,15 +18,8 @@ const sidebarMobileVariants = {
   exit: { x: '-100%' },
 };
 
-const pageVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-};
-
 export function AdminDashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
 
   const handleToggleSidebar = () => setSidebarOpen((prev) => !prev);
   const handleCloseSidebar = () => setSidebarOpen(false);
@@ -71,32 +64,19 @@ export function AdminDashboardLayout() {
 
       {/* Right column: header + scrollable content */}
       <div className="flex flex-col flex-1 min-w-0">
-        {/* Header — fixed height of 64px (h-16) */}
         <AdminHeader
           onToggleSidebar={handleToggleSidebar}
           sidebarOpen={sidebarOpen}
         />
 
-        {/* Main content area — page-level fade+slide on route change */}
         <main className="flex-1 overflow-y-auto bg-gray-50/80">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              className="px-6 py-6 min-h-full"
-              variants={pageVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              transition={{ duration: 0.25, ease: EASE }}
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <div className="px-6 py-6 min-h-full">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
   );
 }
-
 
 export default AdminDashboardLayout;

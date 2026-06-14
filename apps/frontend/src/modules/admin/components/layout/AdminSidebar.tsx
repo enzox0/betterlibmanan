@@ -200,25 +200,46 @@ export function AdminSidebar() {
         </motion.ul>
       </nav>
 
-      {/* Account Management */}
+      {/* Account section */}
       <div className="px-3 py-3">
         <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-blue-400">
           Account
         </p>
-        <NavLink
-          to="/admin/accounts"
-          className={({ isActive }) =>
-            [
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-              isActive
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50'
-                : 'text-blue-200 hover:bg-white/10 hover:text-white',
-            ].join(' ')
-          }
-        >
-          <AccountIcon />
-          <span>Account Management</span>
-        </NavLink>
+        <div className="space-y-0.5">
+          <NavLink
+            to="/admin/my-account"
+            className={({ isActive }) =>
+              [
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                isActive
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50'
+                  : 'text-blue-200 hover:bg-white/10 hover:text-white',
+              ].join(' ')
+            }
+          >
+            <AccountIcon />
+            <span>My Account</span>
+          </NavLink>
+          <NavLink
+            to="/admin/accounts"
+            className={({ isActive }) =>
+              [
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                isActive
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50'
+                  : 'text-blue-200 hover:bg-white/10 hover:text-white',
+              ].join(' ')
+            }
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>Manage Accounts</span>
+          </NavLink>
+        </div>
       </div>
 
       {/* Footer / Logout */}
