@@ -28,6 +28,7 @@
     "clean": "turbo run clean && rm -rf node_modules && rm -rf build",
     "db:migrate": "turbo run db:migrate --filter=@betterlibmanan/backend",
     "db:seed": "turbo run db:seed --filter=@betterlibmanan/backend",
+    "seed": "pnpm --filter @betterlibmanan/backend run seed",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:build": "docker-compose build",
