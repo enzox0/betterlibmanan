@@ -1,13 +1,21 @@
 import type { RouteObject } from 'react-router-dom';
 import { AdminRoute } from './AdminRoute';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
+import { HomeModulePage } from '../pages/HomeModulePage';
 import { ModulePage } from '../pages/ModulePage';
 import { AdminDashboardLayout } from '../components/layout/AdminDashboardLayout';
 import { AccountManagementPage } from '../pages/AccountManagementPage';
 import { MyAccountPage } from '../pages/MyAccountPage';
 import { ContactsPage } from '../pages/ContactsPage';
+import { AdminLoginPage } from '../pages/AdminLoginPage';
 
 export const adminRoutes: RouteObject[] = [
+  // Public login page — no auth guard
+  {
+    path: 'login',
+    element: <AdminLoginPage />,
+  },
+  // Protected admin routes
   {
     element: <AdminRoute />,
     children: [
@@ -17,6 +25,10 @@ export const adminRoutes: RouteObject[] = [
           {
             index: true,
             element: <AdminDashboardPage />,
+          },
+          {
+            path: 'home',
+            element: <HomeModulePage />,
           },
           {
             path: 'accounts',

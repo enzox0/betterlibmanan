@@ -5,7 +5,7 @@ export function AdminRoute() {
   const isAuthenticated = useAdminStore((state) => state.isAuthenticated);
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return <Outlet />;
