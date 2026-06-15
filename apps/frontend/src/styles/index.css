@@ -14,6 +14,22 @@ html {
   text-size-adjust: 100%;
   /* Smooth scrolling globally */
   scroll-behavior: smooth;
+
+  /*
+   * Navbar height token — used by fixed elements that need to clear the
+   * sticky navbar (e.g. the Freedom Wall toolbar).
+   * Desktop navbar: logo h-16 (64px) + py-4 top+bottom (32px) = 96px
+   * The TopUtilityBar / BottomUtilityBar are thin (~28–32px each) and
+   * conditionally rendered, so we account for them generously here.
+   */
+  --navbar-h: 96px;
+}
+
+@media (max-width: 1023px) {
+  /* Mobile/tablet navbar is slightly shorter (h-12 logo) */
+  html {
+    --navbar-h: 80px;
+  }
 }
 
 body {
