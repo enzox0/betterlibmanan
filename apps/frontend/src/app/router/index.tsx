@@ -31,6 +31,8 @@ const EducationPage = lazyLoad(() => import('@/modules/services').then(m => ({ d
 const PublicSafetyPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.PublicSafetyPage })));
 const EnvironmentPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.EnvironmentPage })));
 const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ default: m.ComingSoonPage })));
+const AboutPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.AboutPage })));
+const FreedomWallPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.FreedomWallPage })));
 
 export function AppRouter() {
   useAdminShortcut();
@@ -200,6 +202,22 @@ export function AppRouter() {
           element={
             <Layout>
               <ComingSoonPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <Layout>
+              <AboutPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/freedom-wall"
+          element={
+            <Layout>
+              <FreedomWallPage />
             </Layout>
           }
         />
