@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { dpwhProxyRouter } from '@/modules/dpwh-proxy';
 import { authRouter } from '@/modules/auth/auth.module';
+import { freedomWallRouter } from '@/modules/freedom-wall';
 
 /**
  * Central API router. Mount feature routers here as the backend grows so
@@ -18,6 +19,9 @@ apiRouter.use('/auth', authRouter);
 
 // DPWH transparency proxy — bypasses the upstream's CORS restriction
 apiRouter.use('/dpwh', dpwhProxyRouter);
+
+// Freedom Wall — anonymous public sticky notes
+apiRouter.use('/freedom-wall', freedomWallRouter);
 
 // Fallback for unmatched /api routes — keeps the SPA catch-all from
 // accidentally serving index.html for unknown API paths.
