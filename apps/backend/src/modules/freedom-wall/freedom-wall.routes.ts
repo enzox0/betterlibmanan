@@ -5,10 +5,13 @@ import {
   updateNotePosition,
   deleteNote,
 } from './freedom-wall.controller';
+import { requireAuth } from '@/modules/auth/auth.module';
 
 export const freedomWallRouter: Router = Router();
 
 freedomWallRouter.get('/', getNotes);
 freedomWallRouter.post('/', createNote);
 freedomWallRouter.patch('/:id/position', updateNotePosition);
-freedomWallRouter.delete('/:id', deleteNote);
+
+// Only authenticated admins can delete notes from the wall
+freedomWallRouter.delete('/:id', requireAuth, deleteNote);
