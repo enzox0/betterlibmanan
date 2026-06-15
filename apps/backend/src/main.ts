@@ -1,3 +1,7 @@
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
 import { app } from '@/bootstrap/app';
 import { logger } from '@/shared/logger';
 import { connectDB } from '@/infrastructure/database';
