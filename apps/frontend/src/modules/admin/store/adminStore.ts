@@ -1,85 +1,178 @@
 import { create } from 'zustand';
-import type { AdminAuthState, AdminContentState, ContentRecord } from '../types/admin.types';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import type { AdminContentState, ContentRecord } from '../types/admin.types';
 import { mockSections, mockRecords } from '../data/mockSections';
+import {
+  loginRequest,
+  refreshRequest,
+  logoutRequest,
+  type AdminProfile,
+  type LoginPayload,
+} from '../services/auth.api';
 
-type AdminAuthSlice = AdminAuthState;
+// ─── Auth slice ───────────────────────────────────────────────────────────────
 
-const createAuthSlice = (
-  set: (fn: (state: AdminStore) => Partial<AdminStore>) => void,
-): AdminAuthSlice => ({
-  isAuthenticated: false,
-  loginModalOpen: false,
+export interface AdminAuthState {
+  isAuthenticated: boolean;
+  accessToken: string | null;
+  refreshToken: string | null;
+  admin: AdminProfile | null;
+  /** true while a login / refresh call is in-flight */
+  isAuthLoading: boolean;
+  authError: string | null;
 
-  openLoginModal: () =>
-    set(() => ({ loginModalOpen: true })),
+  login: (payload: LoginPayload) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshTokens: () => Promise<boolean>;
+  clearAuthError: () => void;
 
-  closeLoginModal: () =>
-    set(() => ({ loginModalOpen: false })),
+  // Legacy modal helpers kept for backward compatibility
+  loginModalOpen: boolean;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
+}
 
-  login: () =>
-    set(() => ({ isAuthenticated: true, loginModalOpen: false })),
+// ─── Store shape ──────────────────────────────────────────────────────────────
 
-  logout: () =>
-    set(() => ({ isAuthenticated: false })),
-});
+type AdminStore = AdminAuthState & AdminContentState;
 
-type AdminContentSlice = AdminContentState;
+// ─── Store ────────────────────────────────────────────────────────────────────
 
-const createContentSlice = (
-  set: (fn: (state: AdminStore) => Partial<AdminStore>) => void,
-  get: () => AdminStore,
-): AdminContentSlice => ({
-  sections: mockSections,
-  records: mockRecords,
+export const useAdminStore = create<AdminStore>()(
+  persist(
+    (set, get) => ({
+      // ── Auth state ──────────────────────────────────────────────────────────
+      isAuthenticated: false,
+      accessToken: null,
+      refreshToken: null,
+      admin: null,
+      isAuthLoading: false,
+      authError: null,
+      loginModalOpen: false,
 
-  addRecord: (sectionKey, record) => {
-    const now = new Date().toISOString();
-    const newRecord: ContentRecord = {
-      ...record,
-      id: crypto.randomUUID(),
-      sectionKey,
-      createdAt: now,
-      updatedAt: now,
-    };
+      openLoginModal: () => set({ loginModalOpen: true }),
+      closeLoginModal: () => set({ loginModalOpen: false }),
+      clearAuthError: () => set({ authError: null }),
 
-    set((state) => ({
-      records: {
-        ...state.records,
-        [sectionKey]: [...(state.records[sectionKey] ?? []), newRecord],
+      login: async (payload: LoginPayload) => {
+        set({ isAuthLoading: true, authError: null });
+        try {
+          const tokens = await loginRequest(payload);
+          set({
+            isAuthenticated: true,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            admin: tokens.admin,
+            loginModalOpen: false,
+            isAuthLoading: false,
+            authError: null,
+          });
+        } catch (err: any) {
+          const message =
+            err?.response?.data?.message || 'Invalid credentials. Please try again.';
+          set({ isAuthenticated: false, isAuthLoading: false, authError: message });
+          throw new Error(message);
+        }
       },
-    }));
-  },
 
-  updateRecord: (sectionKey, id, updates) => {
-    const now = new Date().toISOString();
-
-    set((state) => ({
-      records: {
-        ...state.records,
-        [sectionKey]: (state.records[sectionKey] ?? []).map((rec) =>
-          rec.id === id ? { ...rec, ...updates, updatedAt: now } : rec,
-        ),
+      logout: async () => {
+        const { refreshToken, accessToken } = get();
+        // Attempt server-side revocation (best effort)
+        if (refreshToken && accessToken) {
+          logoutRequest(refreshToken, accessToken).catch(() => {
+            // Ignore — local state is cleared regardless
+          });
+        }
+        set({
+          isAuthenticated: false,
+          accessToken: null,
+          refreshToken: null,
+          admin: null,
+          authError: null,
+        });
       },
-    }));
-  },
 
-  deleteRecord: (sectionKey, id) => {
-    set((state) => ({
-      records: {
-        ...state.records,
-        [sectionKey]: (state.records[sectionKey] ?? []).filter((rec) => rec.id !== id),
+      refreshTokens: async (): Promise<boolean> => {
+        const { refreshToken } = get();
+        if (!refreshToken) return false;
+
+        try {
+          const tokens = await refreshRequest(refreshToken);
+          set({
+            isAuthenticated: true,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            admin: tokens.admin,
+          });
+          return true;
+        } catch {
+          // Refresh failed — clear session
+          set({
+            isAuthenticated: false,
+            accessToken: null,
+            refreshToken: null,
+            admin: null,
+          });
+          return false;
+        }
       },
-    }));
-  },
 
-  getRecords: (sectionKey) => {
-    return get().records[sectionKey] ?? [];
-  },
-});
+      // ── Content state ───────────────────────────────────────────────────────
+      sections: mockSections,
+      records: mockRecords,
 
-type AdminStore = AdminAuthSlice & AdminContentSlice;
+      addRecord: (sectionKey, record) => {
+        const now = new Date().toISOString();
+        const newRecord: ContentRecord = {
+          ...record,
+          id: crypto.randomUUID(),
+          sectionKey,
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((state) => ({
+          records: {
+            ...state.records,
+            [sectionKey]: [...(state.records[sectionKey] ?? []), newRecord],
+          },
+        }));
+      },
 
-export const useAdminStore = create<AdminStore>()((set, get) => ({
-  ...createAuthSlice(set),
-  ...createContentSlice(set, get),
-}));
+      updateRecord: (sectionKey, id, updates) => {
+        const now = new Date().toISOString();
+        set((state) => ({
+          records: {
+            ...state.records,
+            [sectionKey]: (state.records[sectionKey] ?? []).map((rec) =>
+              rec.id === id ? { ...rec, ...updates, updatedAt: now } : rec,
+            ),
+          },
+        }));
+      },
+
+      deleteRecord: (sectionKey, id) => {
+        set((state) => ({
+          records: {
+            ...state.records,
+            [sectionKey]: (state.records[sectionKey] ?? []).filter((rec) => rec.id !== id),
+          },
+        }));
+      },
+
+      getRecords: (sectionKey) => {
+        return get().records[sectionKey] ?? [];
+      },
+    }),
+    {
+      name: 'admin-auth',
+      storage: createJSONStorage(() => localStorage),
+      // Only persist auth tokens — not loading/error state or UI state
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        admin: state.admin,
+      }),
+    },
+  ),
+);
