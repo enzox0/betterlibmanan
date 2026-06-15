@@ -17,7 +17,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <TopUtilityBar />
       <Navbar />
       <BottomUtilityBar />
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
         <LazyLoader>{children}</LazyLoader>
       </main>
       <Footer />

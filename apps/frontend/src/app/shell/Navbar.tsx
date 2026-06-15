@@ -39,6 +39,7 @@ export function Navbar() {
       ]
     },
     { name: 'Transparency', path: '/transparency' },
+    { name: 'About', path: '/about' },
     { name: 'Contact', path: '/contact' }
   ];
 
