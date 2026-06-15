@@ -134,6 +134,15 @@ export const mockSections: SectionSchema[] = [
       },
     ],
   },
+  {
+    // Freedom Wall is special — its data lives in its own MongoDB collection
+    // and is fetched live (not via the ContentRecord store). Admins can only
+    // delete notes; there is no create/edit form.
+    key: 'freedom-wall',
+    displayName: 'Freedom Wall',
+    supportsPreview: false,
+    fields: [],
+  },
 ];
 
 export const mockRecords: Record<string, ContentRecord[]> = {

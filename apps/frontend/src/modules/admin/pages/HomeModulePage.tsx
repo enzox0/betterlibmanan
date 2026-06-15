@@ -6,6 +6,7 @@ import { mockSections } from '../data/mockSections';
 import type { ContentRecord } from '../types/admin.types';
 import { ContentForm } from '../components/records/ContentForm';
 import { DeleteConfirmDialog } from '../components/records/DeleteConfirmDialog';
+import { FreedomWallLayout } from '../components/records/FreedomWallLayout';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -827,6 +828,7 @@ function SectionContent({
   onEdit,
   onDelete,
   onAdd,
+  onFreedomWallCountChange,
 }: {
   sectionKey: string;
   records: ContentRecord[];
@@ -834,6 +836,7 @@ function SectionContent({
   onEdit: (r: ContentRecord) => void;
   onDelete: (r: ContentRecord) => void;
   onAdd: () => void;
+  onFreedomWallCountChange?: (count: number) => void;
 }) {
   const props = { records, editRef, onEdit, onDelete, onAdd };
   switch (sectionKey) {
@@ -848,6 +851,7 @@ function SectionContent({
     case 'quiz':            return <QuizLayout {...props} />;
     case 'partner-logos':   return <PartnerLogosLayout {...props} />;
     case 'emergency-contacts': return <EmergencyContactsLayout {...props} />;
+    case 'freedom-wall':    return <FreedomWallLayout onCountChange={onFreedomWallCountChange} />;
     default:                return <EmptyState onAdd={onAdd} />;
   }
 }
@@ -862,6 +866,7 @@ export function HomeModulePage() {
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [editingRecord, setEditingRecord] = useState<ContentRecord | null>(null);
   const [deletingRecord, setDeletingRecord] = useState<ContentRecord | null>(null);
+  const [freedomWallCount, setFreedomWallCount] = useState<number | null>(null);
   const newRecordButtonRef = useRef<HTMLButtonElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -961,7 +966,9 @@ export function HomeModulePage() {
                       isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500',
                     ].join(' ')}
                   >
-                    {sectionRecords.length}
+                    {section.key === 'freedom-wall'
+                      ? (freedomWallCount ?? '—')
+                      : sectionRecords.length}
                   </span>
 
                   {/* Active indicator */}
@@ -988,35 +995,43 @@ export function HomeModulePage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
               <div>
                 <h2 className="text-base font-bold text-gray-900">{activeSection?.displayName}</h2>
-                <div className="mt-1 flex items-center gap-2">
-                  {activeRecords.length === 0 ? (
-                    <span className="text-xs text-gray-400 italic">No records yet</span>
-                  ) : (
-                    <>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                        {activePublished} published
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                        {activeDraft} draft
-                      </span>
-                    </>
-                  )}
-                </div>
+                {activeTab === 'freedom-wall' ? (
+                  <p className="mt-1 text-xs text-gray-400">
+                    Anonymous community notes. Admins can remove notes here; only this panel allows deletion.
+                  </p>
+                ) : (
+                  <div className="mt-1 flex items-center gap-2">
+                    {activeRecords.length === 0 ? (
+                      <span className="text-xs text-gray-400 italic">No records yet</span>
+                    ) : (
+                      <>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                          {activePublished} published
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                          {activeDraft} draft
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <button
-                ref={newRecordButtonRef}
-                type="button"
-                onClick={handleNewRecord}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all self-start sm:self-auto"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                  <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
-                </svg>
-                New Record
-              </button>
+              {activeTab !== 'freedom-wall' && (
+                <button
+                  ref={newRecordButtonRef}
+                  type="button"
+                  onClick={handleNewRecord}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all self-start sm:self-auto"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                    <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
+                  </svg>
+                  New Record
+                </button>
+              )}
             </div>
 
             {/* Section-specific layout */}
@@ -1027,6 +1042,7 @@ export function HomeModulePage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onAdd={handleNewRecord}
+              onFreedomWallCountChange={setFreedomWallCount}
             />
           </div>
       </div>

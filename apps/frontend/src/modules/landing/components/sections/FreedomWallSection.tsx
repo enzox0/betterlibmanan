@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaPlus,
   FaTimes,
-  FaGripLines,
   FaPalette,
-  FaTrash,
   FaExpand,
   FaStickyNote,
 } from 'react-icons/fa';
@@ -15,7 +13,6 @@ import {
   getNotes,
   createNote,
   updateNotePosition as apiUpdateNotePosition,
-  deleteNote as apiDeleteNote,
 } from '@/api/freedomWall';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -211,16 +208,6 @@ export function FreedomWallSection() {
     }
   };
 
-  const deleteNote = async (id: string) => {
-    try {
-      await apiDeleteNote(id);
-      setNotes(p => p.filter(n => n.id !== id));
-      toast('Note removed.', 'info');
-    } catch {
-      toast('Failed to remove note.', 'error');
-    }
-  };
-
   const moveNote = async (id: string, dx: number, dy: number) => {
     const note = notes.find(n => n.id === id);
     if (!note) return;
@@ -387,23 +374,7 @@ export function FreedomWallSection() {
                   </span>
                 </div>
 
-                {/* Controls */}
-                <div className="flex items-center justify-between mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity mt-2.5">
-                  <FaGripLines size={12} className="opacity-30" />
-                  <button
-                    onPointerDown={e => e.stopPropagation()}
-                    onClick={() => deleteNote(note.id)}
-                    style={{ minHeight: 0 }}
-                    className="p-1 rounded hover:bg-black/10 transition-colors"
-                  >
-                    <FaTrash
-                      size={10}
-                      className="opacity-40 hover:opacity-80 hover:text-red-600 transition-colors"
-                    />
-                  </button>
-                </div>
-
-                <p className="text-[12px] sm:text-[13px] font-medium leading-relaxed whitespace-pre-wrap break-words flex-1">
+                <p className="text-[12px] sm:text-[13px] font-medium leading-relaxed whitespace-pre-wrap break-words flex-1 mt-4">
                   {note.content}
                 </p>
 
