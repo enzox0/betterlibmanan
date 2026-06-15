@@ -30,11 +30,17 @@ export interface SectionSchema {
 
 export interface AdminAuthState {
   isAuthenticated: boolean;
+  accessToken: string | null;
+  refreshToken: string | null;
+  isAuthLoading: boolean;
+  authError: string | null;
   loginModalOpen: boolean;
   openLoginModal: () => void;
   closeLoginModal: () => void;
-  login: () => void;
-  logout: () => void;
+  login: (payload: { username: string; password: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshTokens: () => Promise<boolean>;
+  clearAuthError: () => void;
 }
 
 export interface AdminContentState {
