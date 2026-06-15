@@ -90,7 +90,7 @@ function LogoutIcon() {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Home',         to: '/admin',              icon: <HomeIcon /> },
+  { label: 'Home',         to: '/admin/home',         icon: <HomeIcon /> },
   { label: 'Services',     to: '/admin/services',     icon: <ServicesIcon /> },
   { label: 'Government',   to: '/admin/government',   icon: <GovernmentIcon /> },
   { label: 'Statistics',   to: '/admin/statistics',   icon: <StatisticsIcon /> },
@@ -148,7 +148,8 @@ export function AdminSidebar() {
       {/* Dashboard */}
       <div className="px-3 pt-5 pb-3">
         <NavLink
-          to="/admin/dashboard"
+          to="/admin"
+          end
           className={({ isActive }) =>
             [
               'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
