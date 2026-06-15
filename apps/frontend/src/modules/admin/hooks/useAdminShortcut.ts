@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminStore } from '../store/adminStore';
 
 export function useAdminShortcut(): void {
-  const loginModalOpen = useAdminStore((state) => state.loginModalOpen);
-  const openLoginModal = useAdminStore((state) => state.openLoginModal);
+  const navigate = useNavigate();
+  const isAuthenticated = useAdminStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -16,14 +17,16 @@ export function useAdminShortcut(): void {
         if (active.getAttribute('contenteditable') === 'true') return;
       }
 
-      if (loginModalOpen) return;
-
-      openLoginModal();
+      if (isAuthenticated) {
+        navigate('/admin');
+      } else {
+        navigate('/admin/login');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [loginModalOpen, openLoginModal]);
+  }, [isAuthenticated, navigate]);
 }

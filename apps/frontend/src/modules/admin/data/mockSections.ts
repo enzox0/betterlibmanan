@@ -118,6 +118,22 @@ export const mockSections: SectionSchema[] = [
       { key: 'websiteUrl', label: 'Website URL', type: 'url', required: false },
     ],
   },
+  {
+    key: 'emergency-contacts',
+    displayName: 'Emergency Contacts',
+    supportsPreview: false,
+    fields: [
+      { key: 'name', label: 'Agency Name', type: 'text', required: true },
+      { key: 'number', label: 'Contact Number', type: 'text', required: true },
+      {
+        key: 'icon',
+        label: 'Icon',
+        type: 'select',
+        required: false,
+        options: ['shield', 'hospital', 'fire', 'building', 'warning', 'broadcast'],
+      },
+    ],
+  },
 ];
 
 export const mockRecords: Record<string, ContentRecord[]> = {
@@ -508,6 +524,63 @@ export const mockRecords: Record<string, ContentRecord[]> = {
       },
       createdAt: '2024-03-15T10:00:00.000Z',
       updatedAt: '2024-03-15T10:00:00.000Z',
+    },
+  ],
+
+  'emergency-contacts': [
+    {
+      id: 'emergency-001',
+      sectionKey: 'emergency-contacts',
+      title: 'Police',
+      status: 'published',
+      fields: { name: 'Police', number: '0900 000 0000', icon: 'shield' },
+      createdAt: '2024-01-10T08:00:00.000Z',
+      updatedAt: '2024-01-10T08:00:00.000Z',
+    },
+    {
+      id: 'emergency-002',
+      sectionKey: 'emergency-contacts',
+      title: 'MSWDO',
+      status: 'published',
+      fields: { name: 'MSWDO', number: '0900 000 0000', icon: 'hospital' },
+      createdAt: '2024-01-10T08:01:00.000Z',
+      updatedAt: '2024-01-10T08:01:00.000Z',
+    },
+    {
+      id: 'emergency-003',
+      sectionKey: 'emergency-contacts',
+      title: 'Fire',
+      status: 'published',
+      fields: { name: 'Fire', number: '0900 000 0000', icon: 'fire' },
+      createdAt: '2024-01-10T08:02:00.000Z',
+      updatedAt: '2024-01-10T08:02:00.000Z',
+    },
+    {
+      id: 'emergency-004',
+      sectionKey: 'emergency-contacts',
+      title: 'DILG',
+      status: 'published',
+      fields: { name: 'DILG', number: '0900 000 0000', icon: 'building' },
+      createdAt: '2024-01-10T08:03:00.000Z',
+      updatedAt: '2024-01-10T08:03:00.000Z',
+    },
+    {
+      id: 'emergency-005',
+      sectionKey: 'emergency-contacts',
+      title: 'MDRRMO',
+      status: 'published',
+      fields: { name: 'MDRRMO', number: '0900 000 0000', icon: 'warning' },
+      createdAt: '2024-01-10T08:04:00.000Z',
+      updatedAt: '2024-01-10T08:04:00.000Z',
+    },
+    {
+      id: 'emergency-006',
+      sectionKey: 'emergency-contacts',
+      title: 'R2TMC',
+      status: 'published',
+      fields: { name: 'R2TMC', number: '0900 000 0000', icon: 'broadcast' },
+      createdAt: '2024-01-10T08:05:00.000Z',
+      updatedAt: '2024-01-10T08:05:00.000Z',
     },
   ],
 
