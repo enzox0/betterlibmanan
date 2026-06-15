@@ -7,7 +7,7 @@ import { AdminDashboardLayout } from '../components/layout/AdminDashboardLayout'
 import { AccountManagementPage } from '../pages/AccountManagementPage';
 import { MyAccountPage } from '../pages/MyAccountPage';
 import { ContactsPage } from '../pages/ContactsPage';
-import { AdminLoginPage } from '../pages/AdminLoginPage';
+import { AdminLoginPage } from '../components/auth/AdminLoginPage';
 
 export const adminRoutes: RouteObject[] = [
   // Public login page — no auth guard
