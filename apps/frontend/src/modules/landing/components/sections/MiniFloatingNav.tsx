@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaPen, FaTools, FaUsers, FaBookOpen } from "react-icons/fa";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -14,7 +14,10 @@ interface NavItem {
   label: string;
   description: string;
   id: string;
+  /** Route to navigate to. If sectionId is set, we scroll instead when already on this route. */
   href: string;
+  /** When provided, scrolls to this element id on the target page. */
+  sectionId?: string;
 }
 
 const navItems: NavItem[] = [
@@ -23,7 +26,7 @@ const navItems: NavItem[] = [
     label: "Freedom Wall",
     description: "Share your thoughts",
     id: "freedom-wall",
-    href: "/",
+    href: "/freedom-wall",
   },
   {
     icon: FaTools,
@@ -44,7 +47,7 @@ const navItems: NavItem[] = [
     label: "About",
     description: "Learn about Libmanan",
     id: "about",
-    href: "/",
+    href: "/about",
   },
 ];
 
@@ -54,6 +57,7 @@ interface VerticalNavProps {
 
 export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showByTimeout, setShowByTimeout] = useState(true);
   const [isCursorOnLeftSide, setIsCursorOnLeftSide] = useState(false);
 
@@ -76,18 +80,30 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
 
   const shouldShowNav = visible && (showByTimeout || isCursorOnLeftSide);
 
-  const handleClick = (href: string) => {
-    navigate(href);
+  const handleClick = (item: NavItem) => {
+    if (item.sectionId) {
+      if (location.pathname === item.href) {
+        // Already on the target page — just scroll
+        document.getElementById(item.sectionId)?.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        // Navigate then scroll after the page mounts
+        navigate(item.href);
+        setTimeout(() => {
+          document.getElementById(item.sectionId!)?.scrollIntoView({ behavior: 'smooth' });
+        }, 400);
+      }
+    } else {
+      navigate(item.href);
+    }
   };
 
   return (
     <motion.nav
-      className="fixed left-2 lg:left-6 top-[45%] -translate-y-1/2 z-[100] hidden md:block"
+      className="fixed left-2 lg:left-6 inset-y-0 z-[100] hidden md:flex items-center pointer-events-none"
       initial={false}
       animate={{
         opacity: shouldShowNav ? 1 : 0,
         x: shouldShowNav ? 0 : -20,
-        pointerEvents: shouldShowNav ? "auto" : "none",
       }}
       transition={
         shouldShowNav
@@ -95,13 +111,16 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
           : { duration: 0.75, ease: [0.4, 0, 0.2, 1] }
       }
     >
-      <div className="flex flex-col gap-2">
+      <div
+        className="flex flex-col gap-2"
+        style={{ pointerEvents: shouldShowNav ? "auto" : "none" }}
+      >
         {navItems.map((item, index) => (
           <NavButton
             key={item.id}
             item={item}
             index={index}
-            onClick={() => handleClick(item.href)}
+            onClick={() => handleClick(item)}
           />
         ))}
       </div>
@@ -139,11 +158,10 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
 
   const expanded = isMobile ? false : isHovered;
 
-  // Calculate height based on label length (approx 16px per character + padding)
-  const expandedHeight = useMemo(() => {
-    const baseHeight = 60;
-    const charHeight = 12;
-    return `${baseHeight + item.label.length * charHeight}px`;
+  // Half of the extra height added above and below the base 44px
+  const extraPadding = useMemo(() => {
+    const extraHeight = item.label.length * 5; // same as expandedHeight calculation
+    return `${extraHeight / 2 + 2}px`; // 6px is base p-1.5
   }, [item.label.length]);
 
   return (
@@ -158,18 +176,17 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
         className="relative group"
       >
         <motion.div
-          layout
           className={cn(
-            "bg-white border border-neutral-200 transition-colors overflow-hidden flex items-center justify-center rounded-xl",
+            "bg-white border border-neutral-200 transition-colors overflow-hidden flex items-center justify-center rounded-lg",
             !isMobile ? "hover:bg-neutral-900" : ""
           )}
-          style={{ transformOrigin: "center" }}
           animate={{
-            height: expanded ? expandedHeight : "44px",
+            paddingTop: expanded ? extraPadding : "6px",
+            paddingBottom: expanded ? extraPadding : "6px",
           }}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
         >
-          <div className="p-1.5 flex flex-col items-center justify-center gap-1.5">
+          <div className="px-1.5 flex flex-col items-center justify-center gap-1.5">
             <motion.div
               animate={{ scale: expanded ? 1.15 : 1 }}
               transition={{ duration: 0.3 }}
