@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { dpwhProxyRouter } from '@/modules/dpwh-proxy';
+import { authRouter } from '@/modules/auth/auth.module';
 
 /**
  * Central API router. Mount feature routers here as the backend grows so
@@ -11,6 +12,9 @@ export const apiRouter: Router = Router();
 apiRouter.get('/', (_req, res) => {
   res.json({ success: true, message: 'API ready', version: '1.0.0' });
 });
+
+// Admin auth — login, refresh, logout, /me
+apiRouter.use('/auth', authRouter);
 
 // DPWH transparency proxy — bypasses the upstream's CORS restriction
 apiRouter.use('/dpwh', dpwhProxyRouter);
