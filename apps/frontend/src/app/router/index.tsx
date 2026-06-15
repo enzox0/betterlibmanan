@@ -3,6 +3,7 @@ import { lazyLoad } from '@/app/router/lazy-loader';
 import { Layout, LayoutEager } from '@/app/shell/Layout';
 import HomePage from '@/modules/landing';
 import { adminRoutes } from '../../modules/admin/routes/adminRouter';
+import { useAdminShortcut } from '../../modules/admin/hooks/useAdminShortcut';
 
 // Admin subtree rendered via useRoutes so the RouteObject[] array integrates
 // cleanly with the existing JSX-based <Routes> pattern.
@@ -32,6 +33,8 @@ const EnvironmentPage = lazyLoad(() => import('@/modules/services').then(m => ({
 const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ default: m.ComingSoonPage })));
 
 export function AppRouter() {
+  useAdminShortcut();
+
   return (
     <Routes>
         <Route
