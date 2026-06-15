@@ -13,7 +13,8 @@
     "test:coverage": "echo \"Coverage coming soon\"",
     "lint": "echo \"Lint coming soon\"",
     "db:migrate": "echo \"Migrations coming soon\"",
-    "db:seed": "echo \"Seeds coming soon\""
+    "db:seed": "tsx --tsconfig tsconfig.scripts.json scripts/seed-admin.ts",
+    "seed": "tsx --tsconfig tsconfig.scripts.json scripts/seed-admin.ts"
   },
   "dependencies": {
     "@betterlibmanan/types": "workspace:*",

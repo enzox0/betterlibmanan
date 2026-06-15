@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "outDir": "../../build/backend/scripts",
+    "composite": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": false
+  },
+  "include": ["scripts", "src"]
+}
