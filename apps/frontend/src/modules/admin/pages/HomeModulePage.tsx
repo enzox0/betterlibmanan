@@ -1,0 +1,1068 @@
+import { useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { StatsCard } from '../components/overview/StatsCard';
+import { useAdminStore } from '../store/adminStore';
+import { mockSections } from '../data/mockSections';
+import type { ContentRecord } from '../types/admin.types';
+import { ContentForm } from '../components/records/ContentForm';
+import { DeleteConfirmDialog } from '../components/records/DeleteConfirmDialog';
+
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+function formatLastUpdated(isoString: string): string {
+  const d = new Date(isoString);
+  const month = MONTH_NAMES[d.getMonth()];
+  const day = String(d.getDate()).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${month} ${day}, ${year} ${hours}:${minutes}`;
+}
+
+function formatDate(isoString: string): string {
+  if (!isoString) return '—';
+  const d = new Date(isoString);
+  return `${MONTH_NAMES[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}, ${d.getFullYear()}`;
+}
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+type FormMode = null | 'create' | 'edit';
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: ContentRecord['status'] }) {
+  return status === 'published' ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+      Published
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+      Draft
+    </span>
+  );
+}
+
+function CardActions({
+  record,
+  editRef,
+  onEdit,
+  onDelete,
+}: {
+  record: ContentRecord;
+  editRef?: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        ref={editRef}
+        type="button"
+        onClick={() => onEdit(record)}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+          <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.79 2.291a.75.75 0 0 0 .949.95l2.29-.79a2.75 2.75 0 0 0 .892-.597l4.262-4.262a1.75 1.75 0 0 0 0-2.475Z" />
+          <path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9a.75.75 0 0 1 1.5 0v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z" />
+        </svg>
+        Edit
+      </button>
+      <button
+        type="button"
+        onClick={() => onDelete(record)}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+          <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z" clipRule="evenodd" />
+        </svg>
+        Delete
+      </button>
+    </div>
+  );
+}
+
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 py-14 text-center">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mx-auto h-9 w-9 text-gray-300 mb-2" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+      </svg>
+      <p className="text-sm text-gray-400">No records in this section yet.</p>
+      <button type="button" onClick={onAdd} className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2">
+        Add the first record
+      </button>
+    </div>
+  );
+}
+
+// ─── Section-specific layouts ─────────────────────────────────────────────────
+
+/** Hero — banner-style cards showing title, subtitle, CTA */
+function HeroLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="flex flex-col gap-3">
+      {records.map((record) => (
+        <div
+          key={record.id}
+          className="relative overflow-hidden rounded-xl border border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-5"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <StatusBadge status={record.status} />
+                <span className="text-[10px] text-gray-400">{formatLastUpdated(record.updatedAt)}</span>
+              </div>
+              <h3 className="text-base font-bold text-gray-900 truncate">{record.fields.title ?? record.title}</h3>
+              {record.fields.subtitle && (
+                <p className="mt-1 text-sm text-gray-500 line-clamp-2">{record.fields.subtitle}</p>
+              )}
+              {record.fields.ctaLabel && (
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-600/10 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200/60">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                    <path fillRule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 3.085 2.514l2-2a2 2 0 0 0 0-2.828.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M7.086 9.975a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.826 2 2 0 0 0-3.085-2.515l-2 2a2 2 0 0 0 0 2.829.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
+                  </svg>
+                  CTA: {record.fields.ctaLabel}
+                </div>
+              )}
+            </div>
+            <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Leadership — profile cards grid with avatar placeholder */
+function LeadershipLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {records.map((record) => (
+        <div key={record.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3">
+          {/* Avatar + name */}
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-blue-400" aria-hidden="true">
+                <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{record.fields.name ?? record.title}</p>
+              <p className="text-xs text-gray-500 truncate">{record.fields.position ?? '—'}</p>
+            </div>
+          </div>
+          {/* Contact info */}
+          <div className="flex flex-col gap-1">
+            {record.fields.email && (
+              <p className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" aria-hidden="true">
+                  <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
+                  <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
+                </svg>
+                {record.fields.email}
+              </p>
+            )}
+            {record.fields.phone && (
+              <p className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" aria-hidden="true">
+                  <path fillRule="evenodd" d="M3.5 2A1.5 1.5 0 0 0 2 3.5V5c0 5.799 4.701 10.5 10.5 10.5H14a1.5 1.5 0 0 0 1.5-1.5v-1.232a1.5 1.5 0 0 0-1.12-1.452l-2.07-.518a1.5 1.5 0 0 0-1.586.698l-.032.052a11.034 11.034 0 0 1-4.24-4.24l.052-.032a1.5 1.5 0 0 0 .698-1.586L6.684 3.62A1.5 1.5 0 0 0 5.232 2.5H3.5Z" clipRule="evenodd" />
+                </svg>
+                {record.fields.phone}
+              </p>
+            )}
+          </div>
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-1 border-t border-gray-50 mt-auto">
+            <StatusBadge status={record.status} />
+            <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Latest Updates — news feed cards with date badge */
+function LatestUpdatesLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="flex flex-col gap-3">
+      {records.map((record) => (
+        <div key={record.id} className="flex gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+          {/* Date chip */}
+          {record.fields.date ? (
+            <div className="flex-shrink-0 flex flex-col items-center justify-center rounded-lg bg-blue-50 border border-blue-100 w-14 h-14 text-center">
+              <span className="text-[10px] font-semibold uppercase text-blue-400 leading-tight">
+                {MONTH_NAMES[new Date(record.fields.date).getMonth()]}
+              </span>
+              <span className="text-xl font-bold text-blue-700 leading-tight">
+                {String(new Date(record.fields.date).getDate()).padStart(2, '0')}
+              </span>
+              <span className="text-[10px] text-blue-400 leading-tight">
+                {new Date(record.fields.date).getFullYear()}
+              </span>
+            </div>
+          ) : (
+            <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 text-gray-300" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
+              </svg>
+            </div>
+          )}
+          {/* Content */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <StatusBadge status={record.status} />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 truncate">{record.title}</h3>
+              {record.fields.summary && (
+                <p className="mt-1 text-xs text-gray-500 line-clamp-2">{record.fields.summary}</p>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-gray-400">Updated {formatLastUpdated(record.updatedAt)}</span>
+              <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Popular Services — icon service cards in a grid */
+function PopularServicesLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {records.map((record) => (
+        <div key={record.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3">
+          <div className="flex items-start gap-3">
+            {/* Icon placeholder */}
+            <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-violet-50 to-blue-100 border border-blue-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-blue-400" aria-hidden="true">
+                <path fillRule="evenodd" d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25Zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5Z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{record.fields.name ?? record.title}</p>
+              {record.fields.description && (
+                <p className="mt-1 text-xs text-gray-500 line-clamp-2">{record.fields.description}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+            <StatusBadge status={record.status} />
+            <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** History — vertical timeline with year markers */
+function HistoryLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  const sorted = [...records].sort((a, b) => {
+    const ya = parseInt(a.fields.year ?? '0', 10);
+    const yb = parseInt(b.fields.year ?? '0', 10);
+    return ya - yb;
+  });
+  return (
+    <div className="relative flex flex-col gap-0 pl-8">
+      {/* Vertical line */}
+      <div className="absolute left-3.5 top-2 bottom-2 w-px bg-gray-200" aria-hidden="true" />
+      {sorted.map((record, idx) => (
+        <div key={record.id} className="relative flex flex-col gap-1 pb-6 last:pb-0">
+          {/* Timeline dot */}
+          <div className={[
+            'absolute -left-[25px] top-1 h-4 w-4 rounded-full border-2 border-white flex items-center justify-center',
+            record.status === 'published' ? 'bg-blue-500' : 'bg-amber-400',
+          ].join(' ')} aria-hidden="true" />
+          <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  {record.fields.year && (
+                    <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">
+                      {record.fields.year}
+                    </span>
+                  )}
+                  <StatusBadge status={record.status} />
+                </div>
+                <h3 className="text-sm font-bold text-gray-900">{record.title}</h3>
+                {record.fields.content && (
+                  <p className="mt-1.5 text-xs text-gray-500 line-clamp-3">{record.fields.content}</p>
+                )}
+              </div>
+              <CardActions record={record} editRef={idx === 0 ? editRef : undefined} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** At a Glance — stat metric tiles */
+function AtAGlanceLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {records.map((record) => (
+        <div key={record.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-2">
+          {/* Icon chip */}
+          {record.fields.icon && (
+            <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center mb-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4 text-blue-500" aria-hidden="true">
+                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
+              </svg>
+            </div>
+          )}
+          <p className="text-2xl font-black text-gray-900 leading-none">{record.fields.value ?? '—'}</p>
+          <p className="text-xs font-medium text-gray-500 leading-snug">{record.fields.label ?? record.title}</p>
+          <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-auto">
+            <StatusBadge status={record.status} />
+            <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Weather & Map — embed preview cards */
+function WeatherMapLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {records.map((record) => (
+        <div key={record.id} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+          {/* Embed preview area */}
+          <div className="h-32 bg-gradient-to-br from-sky-50 to-blue-100 border-b border-gray-100 flex items-center justify-center relative">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="h-10 w-10 text-sky-300" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+            </svg>
+            {record.fields.embedUrl && (
+              <a
+                href={record.fields.embedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 text-[10px] font-semibold text-blue-600 backdrop-blur-sm border border-blue-100 hover:bg-white transition-colors"
+              >
+                Open URL
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                  <path fillRule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 3.085 2.514l2-2a2 2 0 0 0 0-2.828.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M7.086 9.975a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.826 2 2 0 0 0-3.085-2.515l-2 2a2 2 0 0 0 0 2.829.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
+                </svg>
+              </a>
+            )}
+          </div>
+          <div className="p-4 flex flex-col gap-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-gray-900 truncate">{record.title}</h3>
+                {record.fields.description && (
+                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">{record.fields.description}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <StatusBadge status={record.status} />
+              <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const CONTACT_TYPE_META: Record<string, { icon: React.ReactNode; color: string }> = {
+  phone: {
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path fillRule="evenodd" d="M3.5 2A1.5 1.5 0 0 0 2 3.5V5c0 5.799 4.701 10.5 10.5 10.5H14a1.5 1.5 0 0 0 1.5-1.5v-1.232a1.5 1.5 0 0 0-1.12-1.452l-2.07-.518a1.5 1.5 0 0 0-1.586.698l-.032.052a11.034 11.034 0 0 1-4.24-4.24l.052-.032a1.5 1.5 0 0 0 .698-1.586L6.684 3.62A1.5 1.5 0 0 0 5.232 2.5H3.5Z" clipRule="evenodd" />
+      </svg>
+    ),
+    color: 'bg-green-50 text-green-600',
+  },
+  email: {
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
+        <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
+      </svg>
+    ),
+    color: 'bg-blue-50 text-blue-600',
+  },
+  address: {
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path fillRule="evenodd" d="m7.539 14.841.003.003.002.002a.755.755 0 0 0 .912 0l.002-.002.003-.003.012-.009a5.57 5.57 0 0 0 .19-.153 15.588 15.588 0 0 0 2.046-2.082c1.101-1.362 2.291-3.342 2.291-5.597A5 5 0 0 0 3 7c0 2.255 1.19 4.235 2.292 5.597a15.591 15.591 0 0 0 2.046 2.082 8.916 8.916 0 0 0 .189.153l.012.01ZM8 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clipRule="evenodd" />
+      </svg>
+    ),
+    color: 'bg-orange-50 text-orange-600',
+  },
+  fax: {
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path fillRule="evenodd" d="M4 2a2 2 0 0 0-2 2v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6a2 2 0 0 0-2-2h-1V3a1 1 0 0 0-1-1H4Zm6 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 7Zm-4 2a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 6 9Zm2-1a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 8Z" clipRule="evenodd" />
+      </svg>
+    ),
+    color: 'bg-purple-50 text-purple-600',
+  },
+};
+
+/** Contact — grouped contact info list with type icons */
+function ContactLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="flex flex-col gap-2">
+      {records.map((record) => {
+        const type = record.fields.type ?? 'phone';
+        const meta = CONTACT_TYPE_META[type] ?? CONTACT_TYPE_META.phone;
+        return (
+          <div key={record.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
+            <div className={`flex-shrink-0 h-9 w-9 rounded-lg flex items-center justify-center ${meta.color}`}>
+              {meta.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{record.fields.label ?? record.title}</p>
+              <p className="text-sm font-medium text-gray-800 truncate">{record.fields.value ?? '—'}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StatusBadge status={record.status} />
+              <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Quiz — Q&A accordion-style cards */
+function QuizLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="flex flex-col gap-2">
+      {records.map((record) => {
+        const isOpen = openId === record.id;
+        return (
+          <div key={record.id} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+            <button
+              type="button"
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-gray-50/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+              onClick={() => setOpenId(isOpen ? null : record.id)}
+              aria-expanded={isOpen}
+            >
+              <div className="flex-shrink-0 h-7 w-7 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 text-violet-500" aria-hidden="true">
+                  <path fillRule="evenodd" d="M15 8A7 7 0 1 1 1 8a7 7 0 0 1 14 0ZM9 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM6.75 8a.75.75 0 0 0 0 1.5h.75v1.75a.75.75 0 0 0 1.5 0v-2.5A.75.75 0 0 0 8.25 8h-1.5Z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{record.fields.question ?? record.title}</p>
+                {record.fields.category && (
+                  <span className="text-[10px] font-medium text-violet-500">{record.fields.category}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <StatusBadge status={record.status} />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+                >
+                  <path fillRule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </button>
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  key="answer"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: EASE }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/60">
+                    <p className="text-xs text-gray-600 leading-relaxed">{record.fields.answer ?? '—'}</p>
+                    <div className="flex items-center justify-end mt-3">
+                      <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Partner Logos — logo tiles grid with name and URL */
+function PartnerLogosLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {records.map((record) => (
+        <div key={record.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3">
+          {/* Logo placeholder */}
+          <div className="h-16 w-full rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-gray-300" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 truncate">{record.fields.name ?? record.title}</p>
+            {record.fields.websiteUrl && (
+              <a
+                href={record.fields.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-0.5 text-xs text-blue-500 hover:text-blue-700 truncate block"
+              >
+                {record.fields.websiteUrl}
+              </a>
+            )}
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+            <StatusBadge status={record.status} />
+            <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const EMERGENCY_ICON_META: Record<string, { label: string; color: string; svg: React.ReactNode }> = {
+  shield: {
+    label: 'Police',
+    color: 'bg-blue-50 text-blue-600',
+    svg: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path fillRule="evenodd" d="M8.074.945A4.993 4.993 0 0 0 6 5v.032c.004.6.138 1.172.389 1.686L3.104 8.345A3.75 3.75 0 0 0 2 11.035V14.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-3.465a3.75 3.75 0 0 0-1.104-2.69L9.611 6.718A4.98 4.98 0 0 0 10 5.032V5a4.993 4.993 0 0 0-1.926-3.955ZM8 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  hospital: {
+    label: 'MSWDO',
+    color: 'bg-green-50 text-green-600',
+    svg: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path fillRule="evenodd" d="M3 2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9.5v-2.5a1.5 1.5 0 0 0-3 0V15H4a1 1 0 0 1-1-1V2Zm4 2.75a.75.75 0 0 1 .75-.75h.5a.75.75 0 0 1 0 1.5H8.5V7h1.25a.75.75 0 0 1 0 1.5H8.5v1.5h1.25a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1 0-1.5H7.5V8.5H6.25a.75.75 0 0 1 0-1.5H7.5V5.5H6.25a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  fire: {
+    label: 'Fire',
+    color: 'bg-red-50 text-red-600',
+    svg: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path d="M7.557 2a.5.5 0 0 1 .443.27l2.25 4.5a.5.5 0 0 1-.693.693L8.25 6.5V11a.5.5 0 0 1-1 0V6.5L5.443 7.463a.5.5 0 0 1-.693-.693l2.25-4.5A.5.5 0 0 1 7.557 2Z" />
+        <path fillRule="evenodd" d="M3 10.5a5 5 0 1 1 10 0 5 5 0 0 1-10 0ZM8 7a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  building: {
+    label: 'DILG',
+    color: 'bg-gray-100 text-gray-600',
+    svg: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path fillRule="evenodd" d="M1 2.5A1.5 1.5 0 0 1 2.5 1h11A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11Zm4.5 2a.5.5 0 0 0 0 1H5v1h.5a.5.5 0 0 0 0-1H5v-1h.5Zm3 0a.5.5 0 0 0 0 1H8v1h.5a.5.5 0 0 0 0-1H8v-1h.5Zm3 0a.5.5 0 0 0 0 1H11v1h.5a.5.5 0 0 0 0-1H11v-1h.5ZM5 8.5a.5.5 0 0 1 .5-.5H6a.5.5 0 0 1 0 1h-.5a.5.5 0 0 1-.5-.5Zm3 0a.5.5 0 0 1 .5-.5H9a.5.5 0 0 1 0 1h-.5a.5.5 0 0 1-.5-.5Zm3 0a.5.5 0 0 1 .5-.5H12a.5.5 0 0 1 0 1h-.5a.5.5 0 0 1-.5-.5ZM6 11H5v1.5h1V11Zm4-1H9v2.5h1V10Zm.5-1h.5a.5.5 0 0 1 0 1H11v1.5h1V10h.5a.5.5 0 0 1 0 1H12v.5a.5.5 0 0 1-1 0V11h-.5a.5.5 0 0 1 0-1Z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  warning: {
+    label: 'MDRRMO',
+    color: 'bg-amber-50 text-amber-600',
+    svg: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path fillRule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 5Zm0 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  broadcast: {
+    label: 'R2TMC',
+    color: 'bg-purple-50 text-purple-600',
+    svg: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+        <path d="M3.05 3.05a7 7 0 0 0 0 9.9.75.75 0 1 1-1.06 1.06A8.5 8.5 0 1 1 14.01 2.99a.75.75 0 1 1-1.06 1.06 7 7 0 0 0-9.9 0Z" />
+        <path d="M5.174 5.173a4 4 0 0 0 0 5.657.75.75 0 1 1-1.06 1.06 5.5 5.5 0 0 1 7.778-7.778.75.75 0 1 1-1.06 1.061 4 4 0 0 0-5.658 0Z" />
+        <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+      </svg>
+    ),
+  },
+};
+
+/** Emergency Contacts — marquee-preview list matching the TopUtilityBar */
+function EmergencyContactsLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Marquee preview — mirrors the live TopUtilityBar */}
+      {(() => {
+        const published = records.filter((r) => r.status === 'published');
+        return published.length === 0 ? null : (
+          <div className="mb-4 overflow-hidden rounded-lg bg-red-900 py-2 relative">
+            {/* "Preview" label */}
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-white/50 pointer-events-none z-10">
+              Preview
+            </span>
+            <style>{`
+              @keyframes em-marquee {
+                0%   { transform: translateX(0%); }
+                100% { transform: translateX(-50%); }
+              }
+              .em-marquee-track {
+                display: inline-flex;
+                animation: em-marquee 20s linear infinite;
+              }
+            `}</style>
+            <div className="em-marquee-track whitespace-nowrap">
+              {[...published, ...published].map((record, idx) => {
+                const meta = EMERGENCY_ICON_META[record.fields.icon ?? 'shield'] ?? EMERGENCY_ICON_META.shield;
+                return (
+                  <span
+                    key={`${record.id}-${idx}`}
+                    className="inline-flex items-center gap-2 mx-6 sm:mx-12 text-[11px] sm:text-xs font-medium text-white"
+                  >
+                    <span className="opacity-70 shrink-0">{meta.svg}</span>
+                    {record.fields.name}: {record.fields.number}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Editable rows */}
+      {records.map((record) => {
+        const icon = record.fields.icon ?? 'shield';
+        const meta = EMERGENCY_ICON_META[icon] ?? EMERGENCY_ICON_META.shield;
+        return (
+          <div key={record.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
+            <div className={`flex-shrink-0 h-9 w-9 rounded-lg flex items-center justify-center ${meta.color}`}>
+              {meta.svg}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{record.fields.name ?? record.title}</p>
+              <a
+                href={`tel:${(record.fields.number ?? '').replace(/\s/g, '')}`}
+                className="text-xs text-gray-500 hover:text-blue-600 transition-colors"
+              >
+                {record.fields.number ?? '—'}
+              </a>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StatusBadge status={record.status} />
+              <CardActions record={record} editRef={editRef} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Layout router ─────────────────────────────────────────────────────────────
+
+function SectionContent({
+  sectionKey,
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  sectionKey: string;
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  const props = { records, editRef, onEdit, onDelete, onAdd };
+  switch (sectionKey) {
+    case 'hero':            return <HeroLayout {...props} />;
+    case 'leadership':      return <LeadershipLayout {...props} />;
+    case 'latest-updates':  return <LatestUpdatesLayout {...props} />;
+    case 'popular-services':return <PopularServicesLayout {...props} />;
+    case 'history':         return <HistoryLayout {...props} />;
+    case 'at-a-glance':     return <AtAGlanceLayout {...props} />;
+    case 'weather-map':     return <WeatherMapLayout {...props} />;
+    case 'contact':         return <ContactLayout {...props} />;
+    case 'quiz':            return <QuizLayout {...props} />;
+    case 'partner-logos':   return <PartnerLogosLayout {...props} />;
+    case 'emergency-contacts': return <EmergencyContactsLayout {...props} />;
+    default:                return <EmptyState onAdd={onAdd} />;
+  }
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
+export function HomeModulePage() {
+  const records = useAdminStore((s) => s.records);
+  const [activeTab, setActiveTab] = useState<string>(mockSections[0]?.key ?? '');
+
+  // Form / delete dialog state
+  const [formMode, setFormMode] = useState<FormMode>(null);
+  const [editingRecord, setEditingRecord] = useState<ContentRecord | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState<ContentRecord | null>(null);
+  const newRecordButtonRef = useRef<HTMLButtonElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+
+  const allRecords = Object.values(records).flat();
+  const publishedCount = allRecords.filter((r) => r.status === 'published').length;
+  const draftCount = allRecords.filter((r) => r.status === 'draft').length;
+
+  const lastUpdatedIso = allRecords.reduce<string>((max, r) => {
+    return r.updatedAt > max ? r.updatedAt : max;
+  }, '');
+  const lastUpdatedDisplay = lastUpdatedIso ? formatLastUpdated(lastUpdatedIso) : '—';
+
+  const activeSection = mockSections.find((s) => s.key === activeTab);
+  const activeRecords = records[activeTab] ?? [];
+  const activePublished = activeRecords.filter((r) => r.status === 'published').length;
+  const activeDraft = activeRecords.filter((r) => r.status === 'draft').length;
+
+  function handleNewRecord() {
+    setEditingRecord(null);
+    setFormMode('create');
+  }
+
+  function handleEdit(record: ContentRecord) {
+    setEditingRecord(record);
+    setFormMode('edit');
+  }
+
+  function handleDelete(record: ContentRecord) {
+    setDeletingRecord(record);
+  }
+
+  function handleFormClose() {
+    setFormMode(null);
+    setEditingRecord(null);
+  }
+
+  function handleDeleteClose() {
+    setDeletingRecord(null);
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35, ease: EASE }}
+    >
+      {/* Page header */}
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-gray-900">Home</h1>
+        <p className="mt-1 text-sm text-gray-500">Manage all content sections displayed on the public Home page.</p>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <StatsCard label="Total Sections" value={mockSections.length} trend="neutral" accentColor="blue" />
+        <StatsCard label="Published Items" value={publishedCount} trend="up" accentColor="green" />
+        <StatsCard label="Draft Items" value={draftCount} trend="neutral" accentColor="yellow" />
+        <StatsCard label="Last Updated" value={lastUpdatedDisplay} trend="neutral" accentColor="blue" />
+      </div>
+
+      {/* Tab panel */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+        {/* Tab bar */}
+        <div className="border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <nav className="flex min-w-max px-4 pt-3 gap-1" role="tablist" aria-label="Content sections">
+            {mockSections.map((section) => {
+              const sectionRecords = records[section.key] ?? [];
+              const isActive = section.key === activeTab;
+              return (
+                <button
+                  key={section.key}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`tabpanel-${section.key}`}
+                  id={`tab-${section.key}`}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(section.key);
+                    setFormMode(null);
+                    setEditingRecord(null);
+                    setDeletingRecord(null);
+                  }}
+                  className={[
+                    'relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1',
+                    isActive
+                      ? 'text-blue-600 bg-blue-50/60'
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50',
+                  ].join(' ')}
+                >
+                  {section.displayName}
+
+                  {/* Record count badge */}
+                  <span
+                    className={[
+                      'inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold min-w-[18px]',
+                      isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500',
+                    ].join(' ')}
+                  >
+                    {sectionRecords.length}
+                  </span>
+
+                  {/* Active indicator */}
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Tab panel content */}
+        <div
+          key={activeTab}
+          id={`tabpanel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${activeTab}`}
+          className="p-5"
+        >
+            {/* Section sub-header */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">{activeSection?.displayName}</h2>
+                <div className="mt-1 flex items-center gap-2">
+                  {activeRecords.length === 0 ? (
+                    <span className="text-xs text-gray-400 italic">No records yet</span>
+                  ) : (
+                    <>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                        {activePublished} published
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                        {activeDraft} draft
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <button
+                ref={newRecordButtonRef}
+                type="button"
+                onClick={handleNewRecord}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all self-start sm:self-auto"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
+                </svg>
+                New Record
+              </button>
+            </div>
+
+            {/* Section-specific layout */}
+            <SectionContent
+              sectionKey={activeTab}
+              records={activeRecords}
+              editRef={editButtonRef}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onAdd={handleNewRecord}
+            />
+          </div>
+      </div>
+
+      {/* ContentForm — create mode */}
+      {formMode === 'create' && (
+        <ContentForm
+          mode="create"
+          sectionKey={activeTab}
+          onClose={handleFormClose}
+          returnFocusRef={newRecordButtonRef}
+        />
+      )}
+
+      {/* ContentForm — edit mode */}
+      {formMode === 'edit' && editingRecord !== null && (
+        <ContentForm
+          mode="edit"
+          sectionKey={activeTab}
+          initialData={editingRecord}
+          onClose={handleFormClose}
+          returnFocusRef={editButtonRef}
+        />
+      )}
+
+      {/* DeleteConfirmDialog */}
+      {deletingRecord !== null && (
+        <DeleteConfirmDialog
+          record={deletingRecord}
+          sectionKey={activeTab}
+          onClose={handleDeleteClose}
+        />
+      )}
+    </motion.div>
+  );
+}
+
+HomeModulePage.displayName = 'HomeModulePage';
+export default HomeModulePage;
