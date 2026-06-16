@@ -1,3 +1,7 @@
+import dns from 'dns';
+// Override DNS servers to bypass local resolver issues
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
