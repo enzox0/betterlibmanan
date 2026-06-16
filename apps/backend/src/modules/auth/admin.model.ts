@@ -53,7 +53,7 @@ const AdminSchema = new Schema<IAdmin>(
     timestamps: true,
     toJSON: {
       // Strip password from JSON responses even if accidentally selected
-      transform(_doc, ret) {
+      transform(_doc, ret: Record<string, unknown>) {
         delete ret.password;
         return ret;
       },
