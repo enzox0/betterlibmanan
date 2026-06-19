@@ -1,9 +1,11 @@
 import { FaPlay } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { Skeleton, SkeletonCard } from '@/shared/ui';
 
 export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
+  const navigate = useNavigate();
   return (
     <section className="bg-white py-16">
       <motion.div
@@ -46,7 +48,9 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
                     through a short interactive quiz designed to highlight the municipality's history and
                     significance.
                   </p>
-                  <button className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
+                  <button
+                    onClick={() => navigate('/quiz')}
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
                     <FaPlay size={12} />
                     Take the Quiz
                   </button>
