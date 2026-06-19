@@ -1,0 +1,61 @@
+#!/bin/sh
+# =============================================================================
+# post-merge — Enterprise Git Hook
+# Runs after a successful git merge (including git pull).
+# Automatically reinstalls dependencies when lockfiles change so developers
+# never run stale node_modules after pulling in others' dep changes.
+# =============================================================================
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${CYAN}  BetterLibmanan — Post-Merge Checks${NC}"
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+# -----------------------------------------------------------------------------
+# 1. DEPENDENCY SYNC
+#    Check if pnpm-lock.yaml changed in the merge and reinstall if so.
+# -----------------------------------------------------------------------------
+echo "\n📦 [1/2] Checking for dependency changes..."
+
+LOCKFILE_CHANGED=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD 2>/dev/null | grep -E 'pnpm-lock\.yaml|package-lock\.json' | head -1)
+
+if [ -n "$LOCKFILE_CHANGED" ]; then
+  echo "${YELLOW}⚠️  Lockfile changed: $LOCKFILE_CHANGED${NC}"
+  echo "   Running pnpm install to sync dependencies..."
+  cd "$ROOT_DIR"
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm install --frozen-lockfile 2>&1
+    echo "${GREEN}✅ Dependencies synced.${NC}"
+  else
+    echo "${YELLOW}⚠️  pnpm not found. Run 'pnpm install' manually.${NC}"
+  fi
+else
+  echo "${GREEN}✅ No lockfile changes detected.${NC}"
+fi
+
+# -----------------------------------------------------------------------------
+# 2. .ENV.EXAMPLE DRIFT DETECTION
+#    If .env.example changed, alert the developer to update their local .env.
+# -----------------------------------------------------------------------------
+echo "\n🔐 [2/2] Checking .env.example for new variables..."
+
+ENV_EXAMPLE_CHANGED=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD 2>/dev/null | grep '\.env\.example' | head -1)
+
+if [ -n "$ENV_EXAMPLE_CHANGED" ]; then
+  echo "${YELLOW}⚠️  .env.example was updated in this merge.${NC}"
+  echo "   New or changed environment variables:"
+  git diff ORIG_HEAD HEAD -- .env.example 2>/dev/null | grep '^+[^+]' | grep -v '^+++' | sed 's/^+/   + /'
+  echo ""
+  echo "${YELLOW}   → Review the changes above and update your local .env file accordingly.${NC}"
+else
+  echo "${GREEN}✅ .env.example unchanged.${NC}"
+fi
+
+echo "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+exit 0

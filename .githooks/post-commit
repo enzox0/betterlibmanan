@@ -1,0 +1,30 @@
+#!/bin/sh
+# =============================================================================
+# post-commit — Enterprise Git Hook
+# Runs after a commit is successfully created.
+# Provides developer feedback: commit summary and reminder nudges.
+# =============================================================================
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null)
+COMMIT_MSG=$(git log -1 --format="%s" 2>/dev/null)
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo ""
+echo "${GREEN}✅ Commit created: ${COMMIT_HASH}${NC}"
+echo "   Branch:  ${CURRENT_BRANCH}"
+echo "   Message: ${COMMIT_MSG}"
+
+# Remind developer to push if they have a significant number of unpushed commits
+UNPUSHED=$(git log --oneline "@{u}..HEAD" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$UNPUSHED" -gt 5 ]; then
+  echo ""
+  echo "${YELLOW}⚠️  You have $UNPUSHED unpushed commits on '${CURRENT_BRANCH}'.${NC}"
+  echo "   → Consider pushing soon to keep your remote branch up to date."
+fi
+
+exit 0

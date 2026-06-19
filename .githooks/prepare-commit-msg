@@ -1,0 +1,80 @@
+#!/bin/sh
+# =============================================================================
+# prepare-commit-msg — Enterprise Git Hook
+# Runs after the default commit message is prepared but before the editor opens.
+# Injects branch name context and a structured template to guide developers.
+# =============================================================================
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2   # can be: message, template, merge, squash, commit
+
+# Don't modify messages for merges, squashes, or when -m flag is used
+case "$COMMIT_SOURCE" in
+  merge|squash) exit 0 ;;
+esac
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+# -----------------------------------------------------------------------------
+# Extract ticket/issue number from branch name conventions:
+#   feature/PROJ-123-some-description  → PROJ-123
+#   feat/123-short-desc                → #123
+#   bugfix/LGU-456-fix-thing           → LGU-456
+# -----------------------------------------------------------------------------
+TICKET=""
+if echo "$CURRENT_BRANCH" | grep -qE '[A-Z]+-[0-9]+'; then
+  TICKET=$(echo "$CURRENT_BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1)
+elif echo "$CURRENT_BRANCH" | grep -qE '/[0-9]+-'; then
+  TICKET=$(echo "$CURRENT_BRANCH" | grep -oE '/([0-9]+)-' | grep -oE '[0-9]+' | head -1)
+  TICKET="#$TICKET"
+fi
+
+# Only inject template when no message exists yet (blank commit)
+CURRENT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Strip comment lines to check if message is empty
+STRIPPED=$(echo "$CURRENT_MSG" | grep -v '^#' | tr -d '[:space:]')
+
+if [ -z "$STRIPPED" ]; then
+  # Build the template
+  BRANCH_LINE=""
+  if [ -n "$CURRENT_BRANCH" ]; then
+    BRANCH_LINE="# Branch: $CURRENT_BRANCH"
+  fi
+
+  TICKET_HINT=""
+  if [ -n "$TICKET" ]; then
+    TICKET_HINT="# Detected ticket: $TICKET (consider referencing it in the body)"
+  fi
+
+  cat > "$COMMIT_MSG_FILE" << TEMPLATE
+# <type>(<scope>): <short description>  [max 72 chars]
+#
+# Types: feat | fix | chore | docs | style | refactor | perf
+#        test | ci | build | revert | hotfix | security | deps | wip
+#
+# Scopes (project areas):
+#   auth, api, frontend, backend, worker, db, infra, ci, docs,
+#   config, types, utils, gateway, middleware, dpwh, lgu
+#
+# Examples:
+#   feat(auth): implement JWT refresh token rotation
+#   fix(api): handle null response from DPWH scraper
+#   security(auth): patch broken access control on admin routes
+#   deps(backend): upgrade mongoose to 8.1.0
+#
+$BRANCH_LINE
+$TICKET_HINT
+# ─────────────────────────────────────────────
+# [Optional body — explain WHY, not WHAT]
+# (Leave a blank line between subject and body)
+#
+# [Optional footer]
+# Refs: $TICKET
+# Closes: #<issue-number>
+# Breaking: <description of breaking change>
+# ─────────────────────────────────────────────
+TEMPLATE
+fi
+
+exit 0
