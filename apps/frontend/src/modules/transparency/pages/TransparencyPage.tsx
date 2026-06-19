@@ -1,589 +1,686 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FaSearch,
-  FaFilter,
-  FaRoad,
-  FaWater,
-  FaBuilding,
-  FaCheckCircle,
-  FaSpinner,
-  FaClock,
-  FaMapMarkerAlt,
-  FaCalendarAlt,
-  FaMoneyBillWave,
-  FaHardHat,
-  FaChartLine,
-  FaExternalLinkAlt,
-  FaStream,
-  FaTh,
-  FaList,
-  FaChevronLeft,
-  FaChevronRight
+  FaSearch, FaTimes, FaRoad, FaWater, FaBuilding, FaCheckCircle,
+  FaSpinner, FaClock, FaMapMarkerAlt, FaCalendarAlt, FaMoneyBillWave,
+  FaHardHat, FaChartLine, FaExternalLinkAlt, FaStream, FaTh, FaList,
+  FaChevronLeft, FaChevronRight, FaFilter,
 } from 'react-icons/fa';
 import React from 'react';
+import CountUp from '@/shared/ui/CountUp';
 import { Project, ProjectSummary, fetchProjects } from '../api';
 
-const categoryIcons: Record<string, any> = {
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const DOT_BG = {
+  backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
+  backgroundSize: '28px 28px',
+};
+
+const ITEMS_PER_PAGE = 20;
+
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   'Roads': FaRoad,
   'Bridges': FaStream,
   'Flood Control and Drainage': FaWater,
-  'Buildings and Facilities': FaBuilding
+  'Buildings and Facilities': FaBuilding,
 };
 
-const statusColors: Record<string, { bg: string; text: string; border: string }> = {
-  'Completed': { bg: 'bg-gray-900', text: 'text-white', border: 'border-gray-900' },
-  'On-Going': { bg: 'bg-blue-600', text: 'text-white', border: 'border-blue-600' },
-  'Not Started': { bg: 'bg-gray-300', text: 'text-gray-800', border: 'border-gray-300' },
-  'For Procurement': { bg: 'bg-gray-500', text: 'text-white', border: 'border-gray-500' }
+const STATUS_STYLES: Record<string, { pill: string; dot: string }> = {
+  'Completed':      { pill: 'bg-neutral-900 text-white',               dot: 'bg-neutral-900' },
+  'On-Going':       { pill: 'bg-blue-600 text-white',                   dot: 'bg-blue-600'    },
+  'Not Started':    { pill: 'bg-neutral-200 text-neutral-700',          dot: 'bg-neutral-400' },
+  'For Procurement':{ pill: 'bg-neutral-500 text-white',                dot: 'bg-neutral-500' },
 };
+const DEFAULT_STATUS = { pill: 'bg-neutral-200 text-neutral-700', dot: 'bg-neutral-400' };
 
-export function TransparencyPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedStatus, setSelectedStatus] = useState<string>('All');
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
-  const [summary, setSummary] = useState<ProjectSummary>({
-    totalProjects: 0,
-    completed: 0,
-    ongoing: 0,
-    notStarted: 0,
-    totalBudget: 0
-  });
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
+const formatCurrency = (n: number) =>
+  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }).format(n);
+
+const formatDate = (d: string | null) =>
+  d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+
+const getCategoryIcon = (cat: string) => CATEGORY_ICONS[cat] ?? FaBuilding;
+const getStatusStyle  = (s: string)   => STATUS_STYLES[s] ?? DEFAULT_STATUS;
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+/** Slim horizontal progress bar */
+function ProgressBar({ pct }: { pct: number }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-neutral-100">
+      <div className="flex justify-between text-[11px] text-gray-500 mb-1.5">
+        <span>Progress</span>
+        <span className="font-bold text-gray-700">{pct}%</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+        <motion.div
+          className="h-full rounded-full bg-blue-600"
+          initial={{ width: 0 }}
+          whileInView={{ width: `${pct}%` }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Pill badge */
+function StatusPill({ status }: { status: string }) {
+  const s = getStatusStyle(status);
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.pill}`}>
+      {status}
+    </span>
+  );
+}
+
+/** Grid card */
+function GridCard({ project, onClick }: { project: Project; onClick: () => void }) {
+  const Icon = getCategoryIcon(project.category);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4 }}
+      onClick={onClick}
+      className="group relative cursor-pointer rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5"
+    >
+      {/* left accent stripe */}
+      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
+
+      <div className="pl-5 pr-5 pt-5 pb-4">
+        {/* header row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600 group-hover:bg-neutral-200 transition-colors">
+            <Icon className="text-sm" />
+          </div>
+          <StatusPill status={project.status} />
+        </div>
+
+        {/* title */}
+        <h3 className="line-clamp-3 text-sm font-bold text-gray-900 leading-snug mb-3">
+          {project.description}
+        </h3>
+
+        {/* key info */}
+        <div className="space-y-1.5 text-xs text-gray-600">
+          <div className="flex items-center gap-2">
+            <FaMoneyBillWave className="shrink-0 text-gray-400" />
+            <span className="font-semibold text-gray-800 truncate">{formatCurrency(project.budget)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaHardHat className="shrink-0 text-gray-400" />
+            <span className="truncate">{project.contractor.split('(')[0].trim()}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaCalendarAlt className="shrink-0 text-gray-400" />
+            <span>{formatDate(project.startDate)}</span>
+          </div>
+        </div>
+
+        {/* progress */}
+        {project.progress > 0 && <ProgressBar pct={project.progress} />}
+
+        {/* footer */}
+        <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center justify-between">
+          <span className="text-[10px] text-gray-400 font-mono">{project.contractId}</span>
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 group-hover:text-gray-800 transition-colors">
+            Details
+            <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/** List row */
+function ListRow({ project, onClick }: { project: Project; onClick: () => void }) {
+  const Icon = getCategoryIcon(project.category);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.35 }}
+      onClick={onClick}
+      className="group relative cursor-pointer flex items-start gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
+    >
+      <div className="absolute left-0 top-0 h-full w-1 rounded-l-2xl bg-gradient-to-b from-neutral-400 to-neutral-700" />
+
+      <div className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600 group-hover:bg-neutral-200 transition-colors">
+        <Icon className="text-sm" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          <StatusPill status={project.status} />
+          {project.progress > 0 && (
+            <span className="text-[11px] font-bold text-gray-600">{project.progress}%</span>
+          )}
+        </div>
+        <p className="text-sm font-bold text-gray-900 leading-snug mb-2">{project.description}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          <span className="flex items-center gap-1"><FaMoneyBillWave className="text-gray-400" />{formatCurrency(project.budget)}</span>
+          <span className="flex items-center gap-1"><FaHardHat className="text-gray-400" />{project.contractor.split('(')[0].trim()}</span>
+          <span className="flex items-center gap-1"><FaCalendarAlt className="text-gray-400" />{formatDate(project.startDate)}</span>
+          <span className="flex items-center gap-1"><FaMapMarkerAlt className="text-gray-400" />{project.location.province}</span>
+        </div>
+        {project.progress > 0 && (
+          <div className="mt-2 h-1 w-full rounded-full bg-neutral-100 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-blue-600"
+              initial={{ width: 0 }}
+              whileInView={{ width: `${project.progress}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 flex items-center self-center">
+        <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </motion.div>
+  );
+}
+
+/** Project detail modal */
+function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
+  const Icon = getCategoryIcon(project.category);
+
+  // close on Escape
   useEffect(() => {
-    loadProjects();
-  }, []);
-
-  const loadProjects = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchProjects({
-        page: 1,
-        limit: 100,
-        search: 'Libmanan',
-        region: 'Region V',
-        province: 'CAMARINES SUR'
-      });
-      
-      setProjects(data.data.data);
-      setSummary(data.data.summary);
-      setLoading(false);
-    } catch (err) {
-      setError('Failed to load projects. Please try again later.');
-      setLoading(false);
-      console.error('Error fetching projects:', err);
-    }
-  };
-
-  const categories = ['All', ...Array.from(new Set(projects.map(p => p.category)))];
-  const statuses = ['All', ...Array.from(new Set(projects.map(p => p.status)))];
-
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.contractor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || project.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'All' || project.status === selectedStatus;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProjects = filteredProjects.slice(startIndex, endIndex);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategory, selectedStatus]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative bg-gray-900 py-12 sm:py-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent"></div>
+    <div className="fixed inset-0 z-[9999999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      {/* backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.98 }}
+        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[88vh] rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden"
+      >
+        {/* header */}
+        <div className="flex-shrink-0 relative overflow-hidden bg-gray-900 px-6 pt-6 pb-5">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={DOT_BG} />
+
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+          >
+            <FaTimes size={14} />
+          </button>
+
+          <div className="relative flex items-start gap-3 pr-8">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
+              <Icon className="text-sm" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <StatusPill status={project.status} />
+                <span className="text-[11px] text-gray-400 font-mono">{project.contractId}</span>
+              </div>
+              <h2 className="text-sm font-bold text-white leading-snug sm:text-base">
+                {project.description}
+              </h2>
+            </div>
+          </div>
+        </div>
+
+        {/* scrollable body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* progress */}
+          {project.progress > 0 && (
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+              <div className="flex justify-between mb-2">
+                <span className="text-xs font-semibold text-gray-700">Project Progress</span>
+                <span className="text-lg font-bold text-blue-600">{project.progress}%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-neutral-200 overflow-hidden">
+                <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${project.progress}%` }} />
+              </div>
+            </div>
+          )}
+
+          {/* financials */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { icon: FaMoneyBillWave, label: 'Total Budget',  amount: project.budget     },
+              { icon: FaChartLine,     label: 'Amount Paid',   amount: project.amountPaid },
+            ].map(item => (
+              <div key={item.label} className="rounded-2xl border border-neutral-200 bg-white p-4">
+                <div className="flex items-center gap-2 text-gray-500 mb-1.5">
+                  <item.icon size={12} />
+                  <span className="text-xs font-medium">{item.label}</span>
+                </div>
+                <p className="text-base font-bold text-gray-900">
+                  ₱<CountUp from={0} to={item.amount} duration={1.2} delay={0.1} separator="," />
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* details grid */}
+          <div className="space-y-2.5">
+            <DetailRow icon={FaHardHat} label="Contractor" value={project.contractor} />
+            <DetailRow icon={FaMapMarkerAlt} label="Location" value={`${project.location.province}, ${project.location.region}`} />
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <DetailRow icon={FaCalendarAlt} label="Start Date" value={formatDate(project.startDate)} />
+              <DetailRow icon={FaCheckCircle} label="Completion" value={formatDate(project.completionDate)} />
+            </div>
+            <DetailRow icon={FaBuilding} label="Category" value={project.category} />
+            <DetailRow icon={FaMoneyBillWave} label="Program" value={project.programName} />
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <DetailRow icon={FaStream} label="Source of Funds" value={project.sourceOfFunds} />
+              <DetailRow icon={FaClock} label="Infrastructure Year" value={project.infraYear} />
+            </div>
+          </div>
+        </div>
+
+        {/* footer */}
+        <div className="flex-shrink-0 border-t border-neutral-100 px-5 py-3 flex items-center justify-between">
+          <a
+            href="https://www.dpwh.gov.ph/dpwh/transparency"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            DPWH Transparency Portal <FaExternalLinkAlt size={9} />
+          </a>
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-neutral-200 bg-white px-4 py-1.5 text-xs font-semibold text-gray-700 hover:bg-neutral-50 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function DetailRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+      <div className="flex items-center gap-1.5 text-gray-400 mb-1">
+        <Icon size={11} />
+        <span className="text-[11px] font-semibold uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="text-sm text-gray-800">{value}</p>
+    </div>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
+export function TransparencyPage() {
+  const [projects, setProjects]           = useState<Project[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
+  const [search, setSearch]               = useState('');
+  const [category, setCategory]           = useState('All');
+  const [status, setStatus]               = useState('All');
+  const [selected, setSelected]           = useState<Project | null>(null);
+  const [view, setView]                   = useState<'grid' | 'list'>('grid');
+  const [page, setPage]                   = useState(1);
+  const [summary, setSummary]             = useState<ProjectSummary>({
+    totalProjects: 0, completed: 0, ongoing: 0, notStarted: 0, totalBudget: 0,
+  });
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchProjects({ page: 1, limit: 100, search: 'Libmanan', region: 'Region V', province: 'CAMARINES SUR' });
+      setProjects(res.data.data);
+      setSummary(res.data.summary);
+    } catch {
+      setError('Failed to load projects. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(1); }, [search, category, status]);
+
+  const categories = ['All', ...Array.from(new Set(projects.map(p => p.category)))];
+  const statuses   = ['All', ...Array.from(new Set(projects.map(p => p.status)))];
+
+  const filtered = projects.filter(p => {
+    const q = search.toLowerCase();
+    return (
+      (p.description.toLowerCase().includes(q) || p.contractor.toLowerCase().includes(q)) &&
+      (category === 'All' || p.category === category) &&
+      (status   === 'All' || p.status   === status)
+    );
+  });
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const start      = (page - 1) * ITEMS_PER_PAGE;
+  const visible    = filtered.slice(start, start + ITEMS_PER_PAGE);
+
+  const summaryCards = [
+    { label: 'Total Projects', value: filtered.length, icon: FaBuilding,      accent: 'text-gray-700' },
+    { label: 'Completed',      value: filtered.filter(p => p.status === 'Completed').length, icon: FaCheckCircle, accent: 'text-gray-700' },
+    { label: 'On-Going',       value: filtered.filter(p => p.status === 'On-Going').length,  icon: FaSpinner,     accent: 'text-blue-600' },
+    { label: 'Total Budget',   value: null, budget: filtered.reduce((s, p) => s + p.budget, 0), icon: FaMoneyBillWave, accent: 'text-gray-700' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-neutral-100">
+
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <section className="relative bg-gray-900 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={DOT_BG} />
+
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-14 sm:pt-16 sm:pb-20"
         >
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-              DPWH Projects Transparency
+            <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
+              DPWH Projects
             </h1>
-            <p className="mt-3 text-sm text-gray-300 sm:text-base">
+            <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
               Track infrastructure projects in Libmanan, Camarines Sur
             </p>
+          </div>
+
+          {/* hero search */}
+          <div className="mt-8 max-w-xl mx-auto">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-xl backdrop-blur-sm bg-white/10 border border-white/10 pointer-events-none" />
+              <FaSearch size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+              <input
+                type="text"
+                placeholder="Search projects or contractors…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="relative z-10 w-full pl-11 pr-10 py-3.5 rounded-xl bg-transparent border border-transparent text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 transition-all"
+              />
+              <AnimatePresence>
+                {search && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={() => setSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+                  >
+                    <FaTimes size={12} />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* hero KPIs */}
+          <div className="mt-8 flex flex-wrap justify-center gap-8 sm:gap-12">
+            {[
+              { label: 'Total Projects', value: summary.totalProjects },
+              { label: 'Completed',      value: summary.completed     },
+              { label: 'On-Going',       value: summary.ongoing       },
+            ].map(s => (
+              <div key={s.label} className="text-center">
+                <p className="text-2xl font-bold text-white">
+                  <CountUp from={0} to={s.value} duration={1.5} delay={0.3} />
+                </p>
+                <p className="text-[11px] text-gray-500 uppercase tracking-wider mt-0.5">{s.label}</p>
+              </div>
+            ))}
           </div>
         </motion.div>
       </section>
 
-      {/* Summary Cards */}
-      <section className="py-8 sm:py-12">
+      {/* ── Summary Cards ─────────────────────────────────────────────── */}
+      <section className="py-8 sm:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-500">Total Projects</p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">{filteredProjects.length}</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition-all duration-300 hover:bg-blue-100 hover:text-blue-600">
-                  <FaBuilding size={16} />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-500">Completed</p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
-                    {filteredProjects.filter(p => p.status === 'Completed').length}
-                  </p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white transition-all duration-300 hover:bg-blue-600">
-                  <FaCheckCircle size={16} />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-600">On-Going</p>
-                  <p className="mt-1 text-2xl font-bold text-blue-600">
-                    {filteredProjects.filter(p => p.status === 'On-Going').length}
-                  </p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white transition-all duration-300 hover:bg-blue-700">
-                  <FaSpinner size={16} />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-500">Total Budget</p>
-                  <p className="mt-1 text-base font-bold text-gray-900">
-                    {formatCurrency(filteredProjects.reduce((sum, p) => sum + p.budget, 0))}
-                  </p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 text-gray-700 transition-all duration-300 hover:bg-blue-100 hover:text-blue-600">
-                  <FaMoneyBillWave size={16} />
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {summaryCards.map((card, i) => {
+              const CardIcon = card.icon;
+              return (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.08 }}
+                  className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{card.label}</p>
+                      {card.value !== null ? (
+                        <p className={`text-2xl font-bold ${card.accent}`}>
+                          <CountUp from={0} to={card.value} duration={1.2} delay={0.2 + i * 0.08} />
+                        </p>
+                      ) : (
+                        <p className="text-base font-bold text-gray-900">
+                          ₱<CountUp from={0} to={card.budget!} duration={1.4} delay={0.2 + i * 0.08} separator="," />
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-100">
+                      <CardIcon className={`text-base ${card.accent}`} />
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* Filters and Search */}
-      <section className="bg-white py-6 shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3">
-            {/* Top Row: Search and View Toggle */}
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              {/* Search */}
-              <div className="relative flex-1 lg:max-w-md">
-                <FaSearch size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search projects or contractors..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                />
-              </div>
-
-              {/* View Toggle */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                    viewMode === 'grid'
-                      ? 'border-gray-900 bg-gray-900 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
+      {/* ── Filters toolbar ───────────────────────────────────────────── */}
+      <section className="bg-white border-y border-neutral-200">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* filters */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="relative">
+                <FaFilter size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className="appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-7 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                 >
-                  <FaTh size={12} />
-                  <span className="hidden sm:inline">Grid</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                    viewMode === 'list'
-                      ? 'border-gray-900 bg-gray-900 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  <FaList size={12} />
-                  <span className="hidden sm:inline">List</span>
-                </button>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
+              <div className="relative">
+                <FaClock size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  className="appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-7 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                >
+                  {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              {(category !== 'All' || status !== 'All') && (
+                <button
+                  onClick={() => { setCategory('All'); setStatus('All'); }}
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  <FaTimes size={9} /> Clear
+                </button>
+              )}
             </div>
 
-            {/* Bottom Row: Filters */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative">
-                  <FaFilter size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-8 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:w-auto"
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-400">
+                {start + 1}–{Math.min(start + ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+              </span>
+              {/* view toggle */}
+              <div className="flex rounded-xl border border-neutral-200 overflow-hidden">
+                {(['grid', 'list'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      view === v ? 'bg-neutral-900 text-white' : 'bg-white text-gray-600 hover:bg-neutral-50'
+                    }`}
                   >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="relative">
-                  <FaClock size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-8 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:w-auto"
-                  >
-                    {statuses.map(status => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Results Count */}
-              <div className="flex items-center text-xs text-gray-600">
-                Showing {startIndex + 1}-{Math.min(endIndex, filteredProjects.length)} of {filteredProjects.length} projects
+                    {v === 'grid' ? <FaTh size={11} /> : <FaList size={11} />}
+                    <span className="hidden sm:inline capitalize">{v}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Projects Grid */}
-      <section className="py-10">
+      {/* ── Projects ──────────────────────────────────────────────────── */}
+      <section className="py-8 sm:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {loading ? (
-            <div className="flex items-center justify-center py-24">
-              <div className="text-center">
-                <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-                  <FaSpinner className="h-8 w-8 animate-spin text-gray-600" />
-                </div>
-                <p className="text-base text-gray-600 font-medium">Loading projects...</p>
-                <p className="text-xs text-gray-500 mt-1">This may take a few moments</p>
+            <div className="flex flex-col items-center justify-center gap-4 py-32">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white shadow-sm">
+                <FaSpinner className="animate-spin text-gray-500" size={22} />
               </div>
+              <p className="text-sm font-medium text-gray-600">Loading projects…</p>
             </div>
           ) : error ? (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-10 text-center">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-200 flex items-center justify-center">
-                <svg className="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-100">
+                <svg className="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-lg font-semibold text-gray-800">Oops! Something went wrong</p>
-              <p className="text-gray-700 mt-2">{error}</p>
-              <button 
-                onClick={loadProjects}
-                className="mt-6 px-6 py-2.5 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition-colors"
-              >
+              <p className="text-base font-bold text-gray-900 mb-1">Something went wrong</p>
+              <p className="text-sm text-gray-500 mb-5">{error}</p>
+              <button onClick={load} className="rounded-xl border border-neutral-200 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors">
                 Try Again
               </button>
             </div>
-          ) : filteredProjects.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center">
-              <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-gray-100 flex items-center justify-center">
-                <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
+                <FaSearch size={12} className="text-neutral-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No projects found</h3>
-              <p className="text-gray-600">Try adjusting your filters or search criteria</p>
+              <p className="text-sm font-semibold text-neutral-700 mb-1">No projects found</p>
+              <p className="text-xs text-neutral-400">Try adjusting your filters or search term.</p>
+              <button
+                onClick={() => { setSearch(''); setCategory('All'); setStatus('All'); }}
+                className="mt-3 text-xs font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+              >
+                Clear all filters
+              </button>
             </div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className={viewMode === 'grid' ? 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}
-            >
-              {currentProjects.map((project, index) => {
-                const Icon = categoryIcons[project.category] || FaBuilding;
-                const statusStyle = statusColors[project.status] || statusColors['Not Started'];
-
-                if (viewMode === 'list') {
-                  return (
-                    <motion.div
-                      key={project.contractId}
-                      initial={{ opacity: 0, x: -30 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: index * 0.03 }}
-                      onClick={() => setSelectedProject(project)}
-                      className="group cursor-pointer rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-gray-400 hover:shadow-xl hover:-translate-y-1"
-                    >
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        {/* Left: Icon and Content */}
-                        <div className="flex flex-1 gap-5">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gray-100 text-gray-700 group-hover:bg-gray-200 transition-all duration-300">
-                            <Icon className="text-xl" />
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="mb-3 flex flex-wrap items-center gap-2">
-                              <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
-                                {project.status}
-                              </span>
-                              {project.progress > 0 && (
-                                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
-                                  {project.progress}% Complete
-                                </span>
-                              )}
-                            </div>
-                            
-                            <h3 className="mb-3 text-lg font-bold text-gray-900 leading-snug">
-                              {project.description}
-                            </h3>
-                            
-                            <div className="grid gap-3 text-sm text-gray-600 sm:grid-cols-2 lg:grid-cols-4">
-                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
-                                <FaMoneyBillWave className="text-gray-600" />
-                                <span className="font-bold text-gray-900 truncate">{formatCurrency(project.budget)}</span>
-                              </div>
-                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
-                                <FaHardHat className="text-gray-600" />
-                                <span className="truncate">{project.contractor.split('(')[0].trim()}</span>
-                              </div>
-                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
-                                <FaCalendarAlt className="text-gray-600" />
-                                <span>{formatDate(project.startDate)}</span>
-                              </div>
-                              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl">
-                                <FaMapMarkerAlt className="text-gray-600" />
-                                <span className="truncate">{project.location.province}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right: Action */}
-                        <div className="flex items-center justify-end lg:justify-start lg:ml-4">
-                          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 group-hover:text-gray-600 transition-colors">
-                            <span>View Details</span>
-                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar for list view */}
-                      {project.progress > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-                            <div
-                              className="h-full rounded-full bg-gray-600 transition-all duration-500"
-                              style={{ width: `${project.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  );
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${view}-${page}`}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className={view === 'grid'
+                  ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
+                  : 'space-y-3'
                 }
-
-                return (
-                  <motion.div
-                    key={project.contractId}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.06 }}
-                    onClick={() => setSelectedProject(project)}
-                    className="group cursor-pointer rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all duration-300 hover:border-gray-400 hover:shadow-2xl hover:-translate-y-2"
-                  >
-                    {/* Top Bar */}
-                    <div className="h-2 bg-gray-800"></div>
-                    
-                    <div className="p-6">
-                      {/* Header */}
-                      <div className="mb-4 flex items-start justify-between">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-700 group-hover:bg-gray-200 transition-all duration-300">
-                          <Icon className="text-xl" />
-                        </div>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
-                          {project.status}
-                        </span>
-                      </div>
-
-                      {/* Content */}
-                      <h3 className="mb-4 line-clamp-3 text-base font-bold text-gray-900 leading-snug group-hover:text-gray-600 transition-colors">
-                        {project.description}
-                      </h3>
-
-                      {/* Progress Bar */}
-                      {project.progress > 0 && (
-                        <div className="mb-5">
-                          <div className="mb-2 flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-700">Progress</span>
-                            <span className="text-sm font-bold text-gray-700">{project.progress}%</span>
-                          </div>
-                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-                            <div
-                              className="h-full rounded-full bg-gray-600 transition-all duration-500"
-                              style={{ width: `${project.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Details */}
-                      <div className="space-y-2.5 text-sm text-gray-600 mb-5">
-                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl">
-                          <FaMoneyBillWave className="text-gray-600 shrink-0" />
-                        <span className="font-bold text-gray-900 truncate">{formatCurrency(project.budget)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl">
-                        <FaHardHat className="text-gray-600 shrink-0" />
-                        <span className="truncate">{project.contractor.split('(')[0].trim()}</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl">
-                        <FaCalendarAlt className="text-gray-600 shrink-0" />
-                          <span>{formatDate(project.startDate)}</span>
-                        </div>
-                      </div>
-
-                      {/* View Details */}
-                      <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Contract ID: {project.contractId}</span>
-                        <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 group-hover:text-gray-600 transition-colors">
-                          <span>View</span>
-                          <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+              >
+                {visible.map(project =>
+                  view === 'grid'
+                    ? <GridCard key={project.contractId} project={project} onClick={() => setSelected(project)} />
+                    : <ListRow  key={project.contractId} project={project} onClick={() => setSelected(project)} />
+                )}
+              </motion.div>
+            </AnimatePresence>
           )}
 
-          {/* Pagination */}
-          {!loading && !error && filteredProjects.length > 0 && (
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-              {/* Previous Button */}
+          {/* ── Pagination ──────────────────────────────────────────── */}
+          {!loading && !error && totalPages > 1 && (
+            <div className="mt-10 flex items-center justify-between gap-4">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:bg-white"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <FaChevronLeft className="w-4 h-4" />
-                Previous
+                <FaChevronLeft size={10} /> Previous
               </button>
 
-              {/* Page Numbers */}
-              <div className="flex items-center gap-2">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
+              <div className="flex items-center gap-1.5">
+                {(() => {
+                  const range: number[] = [];
+                  const delta = 2;
+                  for (let i = Math.max(1, page - delta); i <= Math.min(totalPages, page + delta); i++) range.push(i);
+                  if (range[0] > 1) {
+                    range.unshift(-1);
+                    if (range[1] > 2) range.unshift(1);
                   }
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${
-                        currentPage === pageNum
-                          ? 'bg-gray-900 text-white shadow-lg'
-                          : 'border border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
+                  if (range[range.length - 1] < totalPages) {
+                    range.push(-2);
+                    if (range[range.length - 2] < totalPages - 1) range.push(totalPages);
+                  }
+                  return range.map((n, i) =>
+                    n < 0 ? (
+                      <span key={`ellipsis-${i}`} className="text-gray-400 text-xs px-1">…</span>
+                    ) : (
+                      <button
+                        key={n}
+                        onClick={() => setPage(n)}
+                        className={`h-8 w-8 rounded-lg text-xs font-bold transition-colors ${
+                          page === n
+                            ? 'bg-neutral-900 text-white shadow-sm'
+                            : 'border border-neutral-200 bg-white text-gray-700 hover:bg-neutral-50'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    )
                   );
-                })}
-                {totalPages > 5 && currentPage < totalPages - 2 && (
-                  <>
-                    <span className="text-gray-500 text-sm font-medium px-2">...</span>
-                    <button
-                      onClick={() => setCurrentPage(totalPages)}
-                      className="h-10 w-10 rounded-xl border border-gray-300 bg-white text-sm font-bold text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all"
-                    >
-                      {totalPages}
-                    </button>
-                  </>
-                )}
+                })()}
               </div>
 
-              {/* Next Button */}
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:bg-white"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                Next
-                <FaChevronRight className="w-4 h-4" />
+                Next <FaChevronRight size={10} />
               </button>
             </div>
           )}
 
-          {/* Source Attribution */}
-          {!loading && !error && filteredProjects.length > 0 && (
-            <div className="mt-8 flex items-center justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-[10px] font-bold text-white">
-                  i
-                </span>
-                <span className="text-gray-600">Data Source:</span>
+          {/* source attribution */}
+          {!loading && !error && filtered.length > 0 && (
+            <div className="mt-8 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs text-gray-500 shadow-sm">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[9px] font-bold text-white">i</span>
+                Data source:
                 <a
                   href="https://www.dpwh.gov.ph/dpwh/transparency"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-gray-800 hover:text-gray-900 hover:underline transition-colors"
+                  className="font-semibold text-gray-800 hover:text-gray-900 inline-flex items-center gap-1 transition-colors"
                 >
-                  DPWH Transparency Portal
+                  DPWH Transparency Portal <FaExternalLinkAlt size={9} />
                 </a>
               </div>
             </div>
@@ -591,138 +688,14 @@ export function TransparencyPage() {
         </div>
       </section>
 
-      {/* Project Details Modal */}
-      {selectedProject && (
-        <div className="fixed inset-0 z-[9999999] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setSelectedProject(null)}
-          />
-          
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="relative z-10 w-full max-w-4xl max-h-[90vh] rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex-shrink-0 border-b border-gray-200 bg-white p-6 rounded-t-2xl">
-              <button 
-                className="absolute right-4 top-4 p-2 text-gray-500 hover:text-gray-900 transition-colors"
-                onClick={() => setSelectedProject(null)}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              
-              <div className="pr-12">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusColors[selectedProject.status].bg} ${statusColors[selectedProject.status].text} ${statusColors[selectedProject.status].border}`}>
-                    {selectedProject.status}
-                  </span>
-                  <span className="text-xs text-gray-500">Contract ID: {selectedProject.contractId}</span>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
-                  {selectedProject.description}
-                </h2>
-              </div>
-            </div>
+      {/* ── Modal ─────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {selected && <ProjectModal project={selected} onClose={() => setSelected(null)} />}
+      </AnimatePresence>
 
-            {/* Content - scrollable */}
-            <div className="flex-1 overflow-y-auto p-6 rounded-b-2xl">
-              {/* Progress */}
-              {selectedProject.progress > 0 && (
-                <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-900">Project Progress</span>
-                    <span className="text-2xl font-bold text-blue-600">{selectedProject.progress}%</span>
-                  </div>
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div
-                      className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                      style={{ width: `${selectedProject.progress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Financial Info */}
-              <div className="mb-6 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <div className="mb-2 flex items-center gap-2 text-gray-600">
-                    <FaMoneyBillWave />
-                    <span className="text-sm font-medium">Total Budget</span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900">{formatCurrency(selectedProject.budget)}</p>
-                </div>
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <div className="mb-2 flex items-center gap-2 text-gray-600">
-                    <FaChartLine />
-                    <span className="text-sm font-medium">Amount Paid</span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900">{formatCurrency(selectedProject.amountPaid)}</p>
-                </div>
-              </div>
-
-              {/* Project Details */}
-              <div className="space-y-4">
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
-                    <FaHardHat className="text-gray-700" />
-                    Contractor Information
-                  </h3>
-                  <p className="text-sm text-gray-700">{selectedProject.contractor}</p>
-                </div>
-
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
-                    <FaMapMarkerAlt className="text-gray-700" />
-                    Location
-                  </h3>
-                  <p className="text-sm text-gray-700">
-                    {selectedProject.location.province}, {selectedProject.location.region}
-                  </p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <h3 className="mb-2 text-sm font-semibold text-gray-900">Start Date</h3>
-                    <p className="text-sm text-gray-700">{formatDate(selectedProject.startDate)}</p>
-                  </div>
-                  <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <h3 className="mb-2 text-sm font-semibold text-gray-900">Completion Date</h3>
-                    <p className="text-sm text-gray-700">{formatDate(selectedProject.completionDate)}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <h3 className="mb-3 text-sm font-semibold text-gray-900">Project Category</h3>
-                  <div className="flex items-center gap-2">
-                    {React.createElement(categoryIcons[selectedProject.category] || FaBuilding, {
-                      className: 'text-gray-700'
-                    })}
-                    <span className="text-sm text-gray-700">{selectedProject.category}</span>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Program & Funding</h3>
-                  <div className="space-y-1 text-sm text-gray-700">
-                    <p><span className="font-medium">Program:</span> {selectedProject.programName}</p>
-                    <p><span className="font-medium">Source of Funds:</span> {selectedProject.sourceOfFunds}</p>
-                    <p><span className="font-medium">Infrastructure Year:</span> {selectedProject.infraYear}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }
 
 TransparencyPage.displayName = 'TransparencyPage';
-
 export default TransparencyPage;
