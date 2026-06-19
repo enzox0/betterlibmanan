@@ -160,7 +160,7 @@ export function TransparencyPage() {
                   <p className="mt-1 text-2xl font-bold text-gray-900">{filteredProjects.length}</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition-all duration-300 hover:bg-blue-100 hover:text-blue-600">
-                  <FaBuilding className="text-base" />
+                  <FaBuilding size={16} />
                 </div>
               </div>
             </div>
@@ -174,7 +174,7 @@ export function TransparencyPage() {
                   </p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white transition-all duration-300 hover:bg-blue-600">
-                  <FaCheckCircle className="text-base" />
+                  <FaCheckCircle size={16} />
                 </div>
               </div>
             </div>
@@ -188,7 +188,7 @@ export function TransparencyPage() {
                   </p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white transition-all duration-300 hover:bg-blue-700">
-                  <FaSpinner className="text-base" />
+                  <FaSpinner size={16} />
                 </div>
               </div>
             </div>
@@ -202,7 +202,7 @@ export function TransparencyPage() {
                   </p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 text-gray-700 transition-all duration-300 hover:bg-blue-100 hover:text-blue-600">
-                  <FaMoneyBillWave className="text-base" />
+                  <FaMoneyBillWave size={16} />
                 </div>
               </div>
             </div>
@@ -218,7 +218,7 @@ export function TransparencyPage() {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               {/* Search */}
               <div className="relative flex-1 lg:max-w-md">
-                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                <FaSearch size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search projects or contractors..."
@@ -238,7 +238,7 @@ export function TransparencyPage() {
                       : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
                 >
-                  <FaTh className="text-xs" />
+                  <FaTh size={12} />
                   <span className="hidden sm:inline">Grid</span>
                 </button>
                 <button
@@ -249,7 +249,7 @@ export function TransparencyPage() {
                       : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
                 >
-                  <FaList className="text-xs" />
+                  <FaList size={12} />
                   <span className="hidden sm:inline">List</span>
                 </button>
               </div>
@@ -259,7 +259,7 @@ export function TransparencyPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <div className="relative">
-                  <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  <FaFilter size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
@@ -272,7 +272,7 @@ export function TransparencyPage() {
                 </div>
 
                 <div className="relative">
-                  <FaClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  <FaClock size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}

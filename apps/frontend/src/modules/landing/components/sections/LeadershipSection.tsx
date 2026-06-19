@@ -80,7 +80,7 @@ export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }
 
                     <div className="mb-4 flex justify-center">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
-                        <FaUserTie className="text-base" />
+                        <FaUserTie size={18} />
                       </div>
                     </div>
 
@@ -91,14 +91,14 @@ export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }
                         href={`mailto:${official.email}`}
                         className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
                       >
-                        <FaEnvelope className="text-xs" />
+                        <FaEnvelope size={12} />
                         <span>{official.email}</span>
                       </a>
                       <a
                         href={`tel:${official.phone}`}
                         className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
                       >
-                        <FaPhone className="text-xs" />
+                        <FaPhone size={12} />
                         <span>{official.phone}</span>
                       </a>
                     </div>

@@ -146,7 +146,7 @@ export function GovernmentPage() {
                   <div className="mt-4 space-y-2.5 text-sm text-gray-600">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
-                        <FaEnvelope className="text-gray-400 text-xs" />
+                        <FaEnvelope size={12} className="text-gray-400" />
                       </div>
                       <a
                         href={`mailto:${official.email}`}
@@ -157,7 +157,7 @@ export function GovernmentPage() {
                     </div>
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
-                        <FaPhone className="text-gray-400 text-xs" />
+                        <FaPhone size={12} className="text-gray-400" />
                       </div>
                       <a href={`tel:${official.phone}`} className="transition-colors hover:text-blue-600">
                         {official.phone}
@@ -165,7 +165,7 @@ export function GovernmentPage() {
                     </div>
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
-                        <FaClock className="text-gray-400 text-xs" />
+                        <FaClock size={12} className="text-gray-400" />
                       </div>
                       <span>{official.hours}</span>
                     </div>

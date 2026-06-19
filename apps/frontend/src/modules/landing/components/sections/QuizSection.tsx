@@ -47,7 +47,7 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
                     significance.
                   </p>
                   <button className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
-                    <FaPlay className="text-xs" />
+                    <FaPlay size={12} />
                     Take the Quiz
                   </button>
                 </div>

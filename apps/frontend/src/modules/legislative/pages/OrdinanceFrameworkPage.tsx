@@ -65,13 +65,14 @@ export function OrdinanceFrameworkPage() {
           {/* Search */}
           <div className="mt-8 max-w-xl mx-auto">
             <div className="relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+              <div className="absolute inset-0 rounded-xl backdrop-blur-sm bg-white/10 border border-white/10 pointer-events-none" />
+              <FaSearch size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
               <input
                 type="text"
                 placeholder="Search ordinances by title or number…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-11 pr-10 py-3.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/60 transition-all backdrop-blur-sm"
+                className="relative z-10 w-full pl-11 pr-10 py-3.5 rounded-xl bg-transparent border border-transparent text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/60 transition-all"
               />
               <AnimatePresence>
                 {search && (

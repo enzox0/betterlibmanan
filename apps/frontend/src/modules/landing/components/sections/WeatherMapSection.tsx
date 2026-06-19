@@ -111,7 +111,7 @@ export function WeatherMapSection({ isLoading = false }: { isLoading?: boolean }
                   <div className="p-6">
                     <div className="mb-5 flex items-center gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white">
-                        <FaCloud className="text-lg" />
+                        <FaCloud size={20} />
                       </div>
                       <div>
                         <div className="text-4xl font-bold text-neutral-900">26°C</div>
@@ -123,7 +123,7 @@ export function WeatherMapSection({ isLoading = false }: { isLoading?: boolean }
                     <div className="grid grid-cols-2 gap-3 border-y border-neutral-200 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700">
-                          <FaTint className="text-sm" />
+                          <FaTint size={14} />
                         </div>
                         <div>
                           <div className="text-base font-semibold text-neutral-900">78%</div>
@@ -133,7 +133,7 @@ export function WeatherMapSection({ isLoading = false }: { isLoading?: boolean }
 
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700">
-                          <FaWind className="text-sm" />
+                          <FaWind size={14} />
                         </div>
                         <div>
                           <div className="text-base font-semibold text-neutral-900">12 km/h</div>
@@ -144,7 +144,7 @@ export function WeatherMapSection({ isLoading = false }: { isLoading?: boolean }
 
                     <div className="mt-4 rounded-xl bg-neutral-100 p-4 text-center">
                       <div className="text-xs uppercase tracking-wide text-neutral-500">Current</div>
-                      <FaCloud className="mx-auto mt-3 text-base text-neutral-700" />
+                      <FaCloud size={16} className="mx-auto mt-3 text-neutral-700" />
                       <div className="mt-3 text-base font-semibold text-neutral-900">26°</div>
                     </div>
                   </div>
