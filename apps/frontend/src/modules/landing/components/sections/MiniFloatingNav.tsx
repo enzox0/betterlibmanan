@@ -83,13 +83,11 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
   const handleClick = (item: NavItem) => {
     if (item.sectionId) {
       if (location.pathname === item.href) {
-        // Already on the target page — just scroll
-        document.getElementById(item.sectionId)?.scrollIntoView({ behavior: 'smooth' });
+        document.getElementById(item.sectionId)?.scrollIntoView({ behavior: "smooth" });
       } else {
-        // Navigate then scroll after the page mounts
         navigate(item.href);
         setTimeout(() => {
-          document.getElementById(item.sectionId!)?.scrollIntoView({ behavior: 'smooth' });
+          document.getElementById(item.sectionId!)?.scrollIntoView({ behavior: "smooth" });
         }, 400);
       }
     } else {
@@ -98,33 +96,57 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
   };
 
   return (
-    <motion.nav
-      className="fixed left-2 lg:left-6 inset-y-0 z-[100] hidden md:flex items-center pointer-events-none"
-      initial={false}
-      animate={{
-        opacity: shouldShowNav ? 1 : 0,
-        x: shouldShowNav ? 0 : -20,
-      }}
-      transition={
-        shouldShowNav
-          ? { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
-          : { duration: 0.75, ease: [0.4, 0, 0.2, 1] }
-      }
-    >
-      <div
-        className="flex flex-col gap-2"
-        style={{ pointerEvents: shouldShowNav ? "auto" : "none" }}
+    <>
+      {/* Desktop: left-side vertical nav */}
+      <motion.nav
+        className="fixed left-2 lg:left-6 inset-y-0 z-[100] hidden md:flex items-center pointer-events-none"
+        initial={false}
+        animate={{
+          opacity: shouldShowNav ? 1 : 0,
+          x: shouldShowNav ? 0 : -20,
+        }}
+        transition={
+          shouldShowNav
+            ? { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
+            : { duration: 0.75, ease: [0.4, 0, 0.2, 1] }
+        }
       >
-        {navItems.map((item, index) => (
-          <NavButton
-            key={item.id}
-            item={item}
-            index={index}
-            onClick={() => handleClick(item)}
-          />
-        ))}
-      </div>
-    </motion.nav>
+        <div
+          className="flex flex-col gap-2"
+          style={{ pointerEvents: shouldShowNav ? "auto" : "none" }}
+        >
+          {navItems.map((item, index) => (
+            <NavButton
+              key={item.id}
+              item={item}
+              index={index}
+              onClick={() => handleClick(item)}
+            />
+          ))}
+        </div>
+      </motion.nav>
+
+      {/* Mobile / tablet: bottom dock */}
+      {visible && (
+        <nav className="fixed bottom-4 inset-x-0 z-[100] flex md:hidden justify-center px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-neutral-200 rounded-xl px-2 py-1 shadow-lg shadow-black/10"
+          >
+            {navItems.map((item, index) => (
+              <MobileNavButton
+                key={item.id}
+                item={item}
+                index={index}
+                onClick={() => handleClick(item)}
+              />
+            ))}
+          </motion.div>
+        </nav>
+      )}
+    </>
   );
 }
 
@@ -248,5 +270,28 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+interface MobileNavButtonProps {
+  item: NavItem;
+  index: number;
+  onClick?: () => void;
+}
+
+function MobileNavButton({ item, index, onClick }: MobileNavButtonProps) {
+  const Icon = item.icon;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.06 }}
+      onClick={onClick}
+      className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors active:scale-95 active:bg-neutral-100"
+      style={{ WebkitTapHighlightColor: "transparent" }}
+    >
+      <Icon size={13} className="text-neutral-500" />
+    </motion.button>
   );
 }
