@@ -34,6 +34,7 @@ const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ de
 const AboutPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.AboutPage })));
 const FreedomWallPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.FreedomWallPage })));
 const CommunityPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.CommunityPage })));
+const QuizPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.QuizPage })));
 const TourismPage = lazyLoad(() => import('@/modules/tourism'));
 
 export function AppRouter() {
@@ -228,6 +229,14 @@ export function AppRouter() {
           element={
             <Layout>
               <FreedomWallPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/quiz"
+          element={
+            <Layout>
+              <QuizPage />
             </Layout>
           }
         />
