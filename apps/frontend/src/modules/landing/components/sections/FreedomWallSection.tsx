@@ -60,7 +60,8 @@ export function FreedomWallSection() {
   const [isAdding, setIsAdding]         = useState(false);
   const [newContent, setNewContent]     = useState('');
   const [color, setColor]               = useState(COLORS[0]);
-  const [scale, setScale]               = useState(1);
+  const initialScale                    = window.innerWidth < 768 ? 0.6 : 1;
+  const [scale, setScale]               = useState(initialScale);
   const [position, setPosition]         = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning]       = useState(false);
   const [loading, setLoading]           = useState(true);
@@ -109,8 +110,9 @@ export function FreedomWallSection() {
             const noteCenterY = latest.y + 75;
             // Inverse of: vp = -CANVAS_OFFSET + canvasCoord*scale + pan
             // Solving pan so that noteCenter renders at board center:
-            const panX = bw / 2 + CANVAS_OFFSET - noteCenterX * 1; // scale=1 on first paint
-            const panY = bh / 2 + CANVAS_OFFSET - noteCenterY * 1;
+            const s = scaleRef.current;
+            const panX = bw / 2 + CANVAS_OFFSET - noteCenterX * s;
+            const panY = bh / 2 + CANVAS_OFFSET - noteCenterY * s;
             setPosition({ x: panX, y: panY });
           });
         }
@@ -221,7 +223,7 @@ export function FreedomWallSection() {
     }
   };
 
-  const resetView = () => { setScale(1); setPosition({ x: 0, y: 0 }); };
+  const resetView = () => { setScale(window.innerWidth < 768 ? 0.6 : 1); setPosition({ x: 0, y: 0 }); };
 
   const fmtDate = (s?: string) => {
     if (!s) return '';
