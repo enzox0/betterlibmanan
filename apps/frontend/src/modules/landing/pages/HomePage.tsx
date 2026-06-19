@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { lazyLoad, LazyLoader } from "@/app/router/lazy-loader";
+import { SectionStepper } from "../components/ui/SectionStepper";
 
 const HeroSection = lazyLoad(
   () => import("../components/sections/HeroSection"),
@@ -35,6 +36,20 @@ const QuizSection = lazyLoad(
   () => import("../components/sections/QuizSection"),
 );
 
+const SECTIONS = [
+  { id: "section-hero", label: "Home" },
+  { id: "section-partners", label: "Partners" },
+  { id: "section-barangay-map", label: "Barangay Map" },
+  { id: "section-services", label: "Services" },
+  { id: "section-at-a-glance", label: "At a Glance" },
+  { id: "section-weather", label: "Weather" },
+  { id: "section-history", label: "History" },
+  { id: "section-updates", label: "Latest Updates" },
+  { id: "section-leadership", label: "Leadership" },
+  { id: "section-contact", label: "Contact" },
+  { id: "section-quiz", label: "Quiz" },
+];
+
 export function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,17 +63,41 @@ export function HomePage() {
 
   return (
     <div>
-      <HeroSection />
-      <PartnerLogos />
-      <BarangayMapSection isLoading={isLoading} />
-      <PopularServicesSection isLoading={isLoading} />
-      <AtAGlanceSection isLoading={isLoading} />
-      <WeatherMapSection isLoading={isLoading} />
-      <HistorySection isLoading={isLoading} />
-      <LatestUpdatesSection isLoading={isLoading} />
-      <LeadershipSection isLoading={isLoading} />
-      <ContactSection isLoading={isLoading} />
-      <QuizSection isLoading={isLoading} />
+      <SectionStepper sections={SECTIONS} />
+
+      <div id="section-hero">
+        <HeroSection />
+      </div>
+      <div id="section-partners">
+        <PartnerLogos />
+      </div>
+      <div id="section-barangay-map">
+        <BarangayMapSection isLoading={isLoading} />
+      </div>
+      <div id="section-services">
+        <PopularServicesSection isLoading={isLoading} />
+      </div>
+      <div id="section-at-a-glance">
+        <AtAGlanceSection isLoading={isLoading} />
+      </div>
+      <div id="section-weather">
+        <WeatherMapSection isLoading={isLoading} />
+      </div>
+      <div id="section-history">
+        <HistorySection isLoading={isLoading} />
+      </div>
+      <div id="section-updates">
+        <LatestUpdatesSection isLoading={isLoading} />
+      </div>
+      <div id="section-leadership">
+        <LeadershipSection isLoading={isLoading} />
+      </div>
+      <div id="section-contact">
+        <ContactSection isLoading={isLoading} />
+      </div>
+      <div id="section-quiz">
+        <QuizSection isLoading={isLoading} />
+      </div>
     </div>
   );
 }
