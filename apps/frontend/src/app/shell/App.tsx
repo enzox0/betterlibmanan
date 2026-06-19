@@ -5,6 +5,7 @@ import {
   SplashScreen,
   hasSplashBeenShown,
 } from "@/app/components/SplashScreen";
+import { ScrollToTop } from "@/app/components";
 import { ToastProvider } from "@/context/ToastContext";
 
 export function App() {
@@ -18,6 +19,7 @@ export function App() {
       )}
       {splashDone && (
         <BrowserRouter>
+          <ScrollToTop />
           <AppRouter />
         </BrowserRouter>
       )}
