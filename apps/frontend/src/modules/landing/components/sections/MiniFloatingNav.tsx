@@ -33,14 +33,14 @@ const navItems: NavItem[] = [
     label: "Services",
     description: "Browse government services",
     id: "services",
-    href: "/",
+    href: "/services",
   },
   {
     icon: FaUsers,
     label: "Community",
     description: "Connect with others",
     id: "community",
-    href: "/",
+    href: "/community",
   },
   {
     icon: FaBookOpen,
