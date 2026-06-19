@@ -33,6 +33,7 @@ const EnvironmentPage = lazyLoad(() => import('@/modules/services').then(m => ({
 const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ default: m.ComingSoonPage })));
 const AboutPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.AboutPage })));
 const FreedomWallPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.FreedomWallPage })));
+const CommunityPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.CommunityPage })));
 
 export function AppRouter() {
   useAdminShortcut();
@@ -218,6 +219,14 @@ export function AppRouter() {
           element={
             <Layout>
               <FreedomWallPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/community"
+          element={
+            <Layout>
+              <CommunityPage />
             </Layout>
           }
         />
