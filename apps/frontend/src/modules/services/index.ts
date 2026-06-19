@@ -1,4 +1,5 @@
 export { ServicesPage, default } from './pages/ServicesPage';
+export { ServiceCategoryPage } from './pages/ServiceCategoryPage';
 export { CertificatesPage } from './pages/CertificatesPage';
 export { BusinessPage } from './pages/BusinessPage';
 export { TaxPaymentsPage } from './pages/TaxPaymentsPage';
