@@ -34,6 +34,7 @@ const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ de
 const AboutPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.AboutPage })));
 const FreedomWallPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.FreedomWallPage })));
 const CommunityPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.CommunityPage })));
+const TourismPage = lazyLoad(() => import('@/modules/tourism'));
 
 export function AppRouter() {
   useAdminShortcut();
@@ -203,6 +204,14 @@ export function AppRouter() {
           element={
             <Layout>
               <ComingSoonPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/tourism"
+          element={
+            <Layout>
+              <TourismPage />
             </Layout>
           }
         />
