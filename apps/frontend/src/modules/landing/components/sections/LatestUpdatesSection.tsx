@@ -7,7 +7,12 @@ export function LatestUpdatesSection({
 }: {
   isLoading?: boolean;
 }) {
-  const placeholderUpdates = [
+  const placeholderUpdates: {
+    title: string;
+    excerpt: string;
+    date: string;
+    image?: string;
+  }[] = [
     {
       title: "Municipal Council Meeting",
       excerpt:
@@ -71,7 +76,13 @@ export function LatestUpdatesSection({
                     key={index}
                     className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
                   >
-                    <div className="h-36 sm:h-48 bg-gradient-to-br from-neutral-200 to-neutral-300"></div>
+                    <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
+                      <img
+                        src={update.image ?? "/betterlibmanan.png"}
+                        alt={update.title}
+                        className="h-full w-full object-cover grayscale"
+                      />
+                    </div>
                     <div className="p-4 sm:p-6">
                       <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
                         <FaCalendarAlt />
