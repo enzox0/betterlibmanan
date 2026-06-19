@@ -1,148 +1,263 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import {
+  FaScroll, FaSearch, FaTimes,
+  FaExternalLinkAlt, FaArrowLeft, FaCheckCircle,
+} from 'react-icons/fa';
 import { mockLegislativeData } from '../data/mockData';
 
 export function OrdinanceFrameworkPage() {
   const data = mockLegislativeData.ordinance;
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  const filtered = data.documents.filter(doc => {
+    const matchesSearch =
+      !search.trim() ||
+      doc.title.toLowerCase().includes(search.toLowerCase()) ||
+      doc.number.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch;
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative bg-gray-900 py-12 sm:py-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent"></div>
+    <div className="min-h-screen bg-neutral-100">
+
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <section className="relative bg-gray-900 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
+
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-14 sm:pt-16 sm:pb-20"
         >
+          {/* Back link */}
+          <Link
+            to="/legislative"
+            className="mb-6 inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 transition-colors hover:text-white"
+          >
+            <FaArrowLeft size={10} />
+            Legislative
+          </Link>
+
           <div className="text-center">
-            <p className="text-sm text-gray-400 mb-2">Legislative</p>
-            <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
+            <span className="inline-block rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 backdrop-blur-sm mb-4">
+              Sangguniang Bayan ng Libmanan
+            </span>
+            <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
               Ordinance Framework
             </h1>
-            <p className="mt-3 text-sm text-gray-300 sm:text-base">
-              Municipal ordinances enacted by the Sangguniang Bayan ng Libmanan
+            <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
+              Municipal ordinances enacted by the Sangguniang Bayan ng Libmanan, Camarines Sur.
             </p>
+          </div>
+
+          {/* Search */}
+          <div className="mt-8 max-w-xl mx-auto">
+            <div className="relative">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search ordinances by title or number…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-11 pr-10 py-3.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/60 transition-all backdrop-blur-sm"
+              />
+              <AnimatePresence>
+                {search && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={() => setSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <FaTimes size={12} />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="mt-6 flex flex-wrap justify-center gap-8 sm:gap-12">
+            {[
+              { label: 'Total Ordinances', value: data.documents.length },
+              { label: 'Categories',       value: data.categories.length },
+            ].map(stat => (
+              <div key={stat.label} className="text-center">
+                <p className="text-xl font-bold text-white">{stat.value}</p>
+                <p className="text-[11px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </motion.div>
       </section>
 
-      {/* Definition */}
-      <section className="py-8 sm:py-12">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="rounded-xl border border-gray-200 bg-white p-6"
-          >
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">What is an Ordinance?</h2>
-            <p className="text-sm text-gray-600 leading-relaxed">{data.definition}</p>
-          </motion.div>
-        </div>
-      </section>
+      {/* ── Definition + Categories ───────────────────────────────────── */}
+      <section className="py-10 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-6 lg:grid-cols-2">
 
-      {/* Categories */}
-      <section className="py-8 sm:py-12 bg-white">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-6"
-          >
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Ordinance Categories</h2>
-          </motion.div>
-          <div className="flex flex-wrap gap-2">
-            {data.categories.map((category, index) => (
-              <motion.span
-                key={category}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
-              >
-                {category}
-              </motion.span>
-            ))}
-          </div>
-        </div>
-      </section>
+            {/* Definition */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="group relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm"
+            >
+              <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500 to-blue-700" />
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600">
+                <FaScroll size={15} />
+              </div>
+              <h2 className="text-base font-bold text-gray-900 mb-2">What is an Ordinance?</h2>
+              <p className="text-sm text-gray-500 leading-relaxed">{data.definition}</p>
+            </motion.div>
 
-      {/* Ordinances Table */}
-      <section className="py-8 sm:py-12">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-6"
-          >
-            <h2 className="text-xl font-bold text-gray-900 mb-2">2025 Ordinances</h2>
-            <p className="text-sm text-gray-500">Official ordinances enacted by the Sangguniang Bayan ng Libmanan in 2025</p>
-          </motion.div>
-
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px]">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Ordinance No.
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Title
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Session Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {data.documents.map((doc, index) => (
-                    <motion.tr
-                      key={doc.number}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
+            {/* Categories */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm"
+            >
+              <h2 className="text-base font-bold text-gray-900 mb-1">Categories</h2>
+              <p className="text-xs text-gray-500 mb-4">Filter documents by ordinance category</p>
+              <div className="flex flex-wrap gap-2">
+                {data.categories.map((cat, index) => {
+                  const isActive = activeCategory === cat;
+                  return (
+                    <motion.button
+                      key={cat}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
                       viewport={{ once: true }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="hover:bg-gray-50"
+                      transition={{ duration: 0.25, delay: index * 0.04 }}
+                      onClick={() => setActiveCategory(isActive ? null : cat)}
+                      className={[
+                        'rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200',
+                        isActive
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                          : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100',
+                      ].join(' ')}
                     >
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {doc.number}
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-gray-600">
-                        {doc.title}
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500">
-                        {doc.sessionDate}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                      {cat}
+                    </motion.button>
+                  );
+                })}
+              </div>
+              {activeCategory && (
+                <button
+                  onClick={() => setActiveCategory(null)}
+                  className="mt-3 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FaTimes size={9} /> Clear filter
+                </button>
+              )}
+            </motion.div>
 
-          <div className="mt-6 text-center">
+          </div>
+        </div>
+      </section>
+
+      {/* ── Documents ─────────────────────────────────────────────────── */}
+      <section className="py-10 sm:py-14 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+          >
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">2025 Ordinances</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {filtered.length > 0
+                  ? `${filtered.length} ordinance${filtered.length !== 1 ? 's' : ''}${search || activeCategory ? ' matched' : ''}`
+                  : 'No ordinances matched'}
+              </p>
+            </div>
             <a
               href={data.externalLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
             >
-              View All Ordinances on Libmanan Website
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
+              View all on official portal
+              <FaExternalLinkAlt size={9} />
             </a>
-          </div>
+          </motion.div>
+
+          <AnimatePresence mode="wait">
+            {filtered.length > 0 ? (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-2"
+              >
+                {filtered.map((doc, index) => (
+                  <motion.div
+                    key={doc.number}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.04 }}
+                    className="group flex items-start gap-4 rounded-xl border border-neutral-200 bg-white p-4 transition-all duration-200 hover:border-neutral-300 hover:shadow-sm"
+                  >
+                    <FaCheckCircle className="mt-0.5 shrink-0 text-blue-500" size={14} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
+                        <span className="text-[11px] font-bold text-blue-600 tabular-nums">
+                          #{doc.number}
+                        </span>
+                        <span className="text-[11px] text-gray-400">{doc.sessionDate}</span>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{doc.title}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="rounded-xl border border-neutral-200 bg-white p-10 text-center"
+              >
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
+                  <FaSearch size={12} className="text-neutral-400" />
+                </div>
+                <p className="text-sm font-semibold text-neutral-700 mb-1">No ordinances matched</p>
+                <p className="text-xs text-neutral-400">Try a different keyword or clear the filter.</p>
+                <button
+                  onClick={() => { setSearch(''); setActiveCategory(null); }}
+                  className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  Show all ordinances
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
+
     </div>
   );
 }
