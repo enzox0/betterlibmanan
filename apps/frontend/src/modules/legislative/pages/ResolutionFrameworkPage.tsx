@@ -6,6 +6,7 @@ import {
   FaExternalLinkAlt, FaArrowLeft, FaCheckCircle,
 } from 'react-icons/fa';
 import { mockLegislativeData } from '../data/mockData';
+import CountUp from '@/shared/ui/CountUp';
 
 export function ResolutionFrameworkPage() {
   const data = mockLegislativeData.resolution;
@@ -99,7 +100,9 @@ export function ResolutionFrameworkPage() {
               { label: 'Types',             value: data.types.length },
             ].map(stat => (
               <div key={stat.label} className="text-center">
-                <p className="text-xl font-bold text-white">{stat.value}</p>
+                <p className="text-xl font-bold text-white">
+                  <CountUp from={0} to={stat.value} duration={1.5} delay={0.3} />
+                </p>
                 <p className="text-[11px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
               </div>
             ))}
