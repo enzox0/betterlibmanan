@@ -119,6 +119,13 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     keywords: 'tourism, Libmanan tourism, tourist spots, Camarines Sur, Bicol tourism, travel, heritage, nature',
   },
 
+  // Quiz
+  '/quiz': {
+    title: 'Libmanan Quiz',
+    description: 'Test your knowledge of Libmanan, Camarines Sur with our interactive quiz covering history, culture, geography, government, and nature.',
+    keywords: 'Libmanan quiz, trivia, knowledge test, Bicol, Camarines Sur, interactive quiz',
+  },
+
   // Error Pages
   '/404': {
     title: 'Page Not Found',
