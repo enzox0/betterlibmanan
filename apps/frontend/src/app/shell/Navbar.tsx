@@ -7,12 +7,12 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownTimeoutRef = useRef<number | null>(null);
-  
+
   const navItems = [
     { name: 'Home', path: '/' },
-    { 
-      name: 'Services', 
-      path: '/services', 
+    {
+      name: 'Services',
+      path: '/services',
       hasDropdown: true,
       dropdownItems: [
         { name: 'Certificates', path: '/services/certificates' },
@@ -29,9 +29,9 @@ export function Navbar() {
     },
     { name: 'Government', path: '/government' },
     { name: 'Statistics', path: '/statistics' },
-    { 
-      name: 'Legislative', 
-      path: '/legislative', 
+    {
+      name: 'Legislative',
+      path: '/legislative',
       hasDropdown: true,
       dropdownItems: [
         { name: 'Ordinance Framework', path: '/legislative/ordinances' },
@@ -39,8 +39,17 @@ export function Navbar() {
       ]
     },
     { name: 'Transparency', path: '/transparency' },
-    { name: 'About', path: '/about' },
-    { name: 'Contact', path: '/contact' }
+    { name: 'Contact', path: '/contact' },
+    {
+      name: 'Others',
+      path: '/others',
+      hasDropdown: true,
+      dropdownOnly: true,
+      dropdownItems: [
+        { name: 'Tourism', path: '/tourism' },
+        { name: 'About', path: '/about' }
+      ]
+    }
   ];
 
   const languageButtons = [
@@ -88,7 +97,7 @@ export function Navbar() {
               />
             </Link>
           </div>
-          
+
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6">
             {navItems.map((item) => (
@@ -99,6 +108,15 @@ export function Navbar() {
                 onMouseLeave={() => item.hasDropdown && handleDropdownMouseLeave()}
               >
                 {item.hasDropdown ? (
+                  item.dropdownOnly ? (
+                    <span
+                      onMouseEnter={() => handleDropdownMouseEnter(item.name)}
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-default select-none"
+                    >
+                      {item.name}
+                      <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
+                    </span>
+                  ) : (
                   <Link
                     to={item.path}
                     onClick={(e) => {
@@ -111,6 +129,7 @@ export function Navbar() {
                     {item.name}
                     <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
                   </Link>
+                  )
                 ) : (
                   <Link
                     to={item.path}
@@ -119,10 +138,10 @@ export function Navbar() {
                     {item.name}
                   </Link>
                 )}
-                
+
                 {/* Dropdown Menu */}
                 {item.hasDropdown && activeDropdown === item.name && (
-                  <div 
+                  <div
                     className="absolute top-full left-0 mt-0 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 pt-2"
                     onMouseEnter={() => handleDropdownMouseEnter(item.name)}
                     onMouseLeave={handleDropdownMouseLeave}
@@ -142,23 +161,22 @@ export function Navbar() {
               </div>
             ))}
           </nav>
-          
+
           {/* Desktop Language Buttons */}
           <div className="hidden lg:flex items-center gap-2">
             {languageButtons.map((lang) => (
               <button
                 key={lang.code}
-                className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${
-                  lang.active
+                className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${lang.active
                     ? 'bg-blue-800 text-white border-blue-800'
                     : 'bg-white text-blue-800 border-blue-800 hover:bg-blue-50'
-                }`}
+                  }`}
               >
                 {lang.code}
               </button>
             ))}
           </div>
-          
+
           {/* Mobile Menu Button */}
           <button
             className="lg:hidden flex items-center justify-center text-gray-700 p-2"
@@ -167,7 +185,7 @@ export function Navbar() {
             {isMobileMenuOpen ? <FaTimes className="h-6 w-6" /> : <FaBars className="h-6 w-6" />}
           </button>
         </div>
-        
+
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-100 pt-4 pb-4 overflow-y-auto max-h-[calc(100dvh-80px)]">
@@ -183,7 +201,7 @@ export function Navbar() {
                         {item.name}
                         <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
                       </button>
-                      
+
                       {/* Mobile Dropdown */}
                       {activeDropdown === item.name && item.dropdownItems && (
                         <div className="pl-4 mt-2 flex flex-col gap-2">
@@ -219,11 +237,10 @@ export function Navbar() {
               {languageButtons.map((lang) => (
                 <button
                   key={lang.code}
-                  className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${
-                    lang.active
+                  className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${lang.active
                       ? 'bg-blue-800 text-white border-blue-800'
                       : 'bg-white text-blue-800 border-blue-800 hover:bg-blue-50'
-                  }`}
+                    }`}
                 >
                   {lang.code}
                 </button>
