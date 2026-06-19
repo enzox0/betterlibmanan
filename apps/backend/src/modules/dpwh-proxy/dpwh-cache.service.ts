@@ -1,5 +1,5 @@
-import { logger } from '@/shared/logger';
-import { DpwhCacheModel, IDpwhCache } from './dpwh-cache.model';
+import { logger } from "@/shared/logger";
+import { DpwhCacheModel, IDpwhCache } from "./dpwh-cache.model";
 
 /**
  * Default cache TTL — how long before a stored response is considered "stale"
@@ -19,17 +19,17 @@ export const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
  */
 export const buildCacheKey = (
   path: string,
-  query: Record<string, string | string[] | undefined> = {}
+  query: Record<string, string | string[] | undefined> = {},
 ): string => {
   const entries = Object.entries(query)
-    .filter(([, v]) => v !== undefined && v !== null && v !== '')
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
     .map(([k, v]) => {
-      const value = Array.isArray(v) ? [...v].sort().join(',') : String(v);
+      const value = Array.isArray(v) ? [...v].sort().join(",") : String(v);
       return [k, value] as const;
     })
     .sort(([a], [b]) => a.localeCompare(b));
 
-  const qs = entries.map(([k, v]) => `${k}=${v}`).join('&');
+  const qs = entries.map(([k, v]) => `${k}=${v}`).join("&");
   return qs ? `${path}?${qs}` : path;
 };
 
@@ -46,15 +46,19 @@ export interface CacheEntry {
  * it's expired — the caller decides whether stale is acceptable. Returns
  * `null` only if the key has never been populated.
  */
-export const getCached = async (cacheKey: string): Promise<CacheEntry | null> => {
-  const doc = await DpwhCacheModel.findOne({ cacheKey }).lean<IDpwhCache>().exec();
+export const getCached = async (
+  cacheKey: string,
+): Promise<CacheEntry | null> => {
+  const doc = await DpwhCacheModel.findOne({ cacheKey })
+    .lean<IDpwhCache>()
+    .exec();
   if (!doc) return null;
   return {
     data: doc.data,
     fetchedAt: doc.fetchedAt,
     expiresAt: doc.expiresAt,
     upstreamStatus: doc.upstreamStatus,
-    fresh: doc.expiresAt.getTime() > Date.now()
+    fresh: doc.expiresAt.getTime() > Date.now(),
   };
 };
 
@@ -81,12 +85,12 @@ export const setCached = async (input: SetCacheInput): Promise<void> => {
         fetchedAt: now,
         expiresAt: new Date(now.getTime() + ttl),
         upstreamStatus: input.upstreamStatus,
-        fetchDurationMs: input.fetchDurationMs
-      }
+        fetchDurationMs: input.fetchDurationMs,
+      },
     },
-    { upsert: true }
+    { upsert: true },
   );
   logger.info(
-    `[DPWH][cache] upserted key=${input.cacheKey} ttlMs=${ttl} status=${input.upstreamStatus}`
+    `[DPWH][cache] upserted key=${input.cacheKey} ttlMs=${ttl} status=${input.upstreamStatus}`,
   );
 };

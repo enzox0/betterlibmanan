@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface INote extends Document {
   content: string;
@@ -41,7 +41,7 @@ const NoteSchema = new Schema<INote>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export const NoteModel = mongoose.model<INote>('Note', NoteSchema);
+export const NoteModel = mongoose.model<INote>("Note", NoteSchema);

@@ -1,2 +1,2 @@
 // Cache coming soon
-export {}
+export {};

@@ -1,4 +1,3 @@
-
 export interface ExecutiveOfficial {
   title: string;
   name: string;
@@ -33,4 +32,3 @@ export interface GovernmentData {
   offices: MunicipalOffice[];
   barangays: Barangay[];
 }
-

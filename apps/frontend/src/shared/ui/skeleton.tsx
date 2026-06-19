@@ -1,5 +1,5 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -11,10 +11,7 @@ export function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        'animate-pulse rounded-md bg-neutral-200',
-        className
-      )}
+      className={cn("animate-pulse rounded-md bg-neutral-200", className)}
       {...props}
     />
   );
@@ -28,8 +25,8 @@ export function SkeletonCard({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm',
-        className
+        "rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm",
+        className,
       )}
       {...props}
     >

@@ -1,2 +1,2 @@
 // REST gateway coming soon
-export {}
+export {};

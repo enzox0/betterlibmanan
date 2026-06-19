@@ -1,2 +1,2 @@
 // Audit module coming soon
-export {}
+export {};

@@ -1,17 +1,67 @@
-import LogoLoop from '@/modules/landing/components/LogoLoop';
+import LogoLoop from "@/modules/landing/components/LogoLoop";
 
 // LGU Logos from /betterLGUs folder
 const LGU_LOGOS = [
-  { src: "/betterLGUs/better-cainta-logo.svg", alt: "Better Cainta", title: "Better Cainta", href: "https://bettercainta.org" },
-  { src: "/betterLGUs/better-calauan-logo.svg", alt: "Better Calauan", title: "Better Calauan", href: "https://bettercalauan.org" },
-  { src: "/betterLGUs/better-solano-logo.svg", alt: "Better Solano", title: "Better Solano", href: "https://bettersolano.org" },
-  { src: "/betterLGUs/betterGeneraltrias-logo.png", alt: "Better General Trias", title: "Better General Trias", href: "https://bettergeneraltrias.org" },
-  { src: "/betterLGUs/betterallen_navbar.webp", alt: "Better Allen", title: "Better Allen", href: "https://betterallen.org" },
-  { src: "/betterLGUs/betteraparri-5SgBAXRt.webp", alt: "Better Aparri", title: "Better Aparri", href: "https://betteraparri.org" },
-  { src: "/betterLGUs/betterlb-icon-colored.svg", alt: "Better Lb", title: "Better Lb", href: "https://betterlb.org" },
-  { src: "/betterLGUs/betterlibmanan-logo.png", alt: "Better Libmanan", title: "Better Libmanan", href: "https://betterlibmanan.org" },
-  { src: "/betterLGUs/bettersanpablo-logo3-Cr753wFY.png", alt: "Better San Pablo", title: "Better San Pablo", href: "https://bettersanpablo.org" },
-  { src: "/betterLGUs/cabuyao-city-seal.png", alt: "Cabuyao City", title: "Cabuyao City", href: "https://bettercabuyao.org" },
+  {
+    src: "/betterLGUs/better-cainta-logo.svg",
+    alt: "Better Cainta",
+    title: "Better Cainta",
+    href: "https://bettercainta.org",
+  },
+  {
+    src: "/betterLGUs/better-calauan-logo.svg",
+    alt: "Better Calauan",
+    title: "Better Calauan",
+    href: "https://bettercalauan.org",
+  },
+  {
+    src: "/betterLGUs/better-solano-logo.svg",
+    alt: "Better Solano",
+    title: "Better Solano",
+    href: "https://bettersolano.org",
+  },
+  {
+    src: "/betterLGUs/betterGeneraltrias-logo.png",
+    alt: "Better General Trias",
+    title: "Better General Trias",
+    href: "https://bettergeneraltrias.org",
+  },
+  {
+    src: "/betterLGUs/betterallen_navbar.webp",
+    alt: "Better Allen",
+    title: "Better Allen",
+    href: "https://betterallen.org",
+  },
+  {
+    src: "/betterLGUs/betteraparri-5SgBAXRt.webp",
+    alt: "Better Aparri",
+    title: "Better Aparri",
+    href: "https://betteraparri.org",
+  },
+  {
+    src: "/betterLGUs/betterlb-icon-colored.svg",
+    alt: "Better Lb",
+    title: "Better Lb",
+    href: "https://betterlb.org",
+  },
+  {
+    src: "/betterLGUs/betterlibmanan-logo.png",
+    alt: "Better Libmanan",
+    title: "Better Libmanan",
+    href: "https://betterlibmanan.org",
+  },
+  {
+    src: "/betterLGUs/bettersanpablo-logo3-Cr753wFY.png",
+    alt: "Better San Pablo",
+    title: "Better San Pablo",
+    href: "https://bettersanpablo.org",
+  },
+  {
+    src: "/betterLGUs/cabuyao-city-seal.png",
+    alt: "Cabuyao City",
+    title: "Cabuyao City",
+    href: "https://bettercabuyao.org",
+  },
 ];
 
 export default function PartnerLogos() {
@@ -20,9 +70,9 @@ export default function PartnerLogos() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:gap-10">
           <div className="flex items-center gap-3 sm:gap-4">
-            <img 
-              src="/bettergov-logo.svg" 
-              alt="Better Gov Logo" 
+            <img
+              src="/bettergov-logo.svg"
+              alt="Better Gov Logo"
               className="h-7 sm:h-10 w-auto opacity-70"
             />
             <div className="flex-shrink-0 text-center md:text-left">
@@ -34,7 +84,7 @@ export default function PartnerLogos() {
               </h3>
             </div>
           </div>
-          
+
           <div className="flex-1 w-full overflow-hidden">
             <LogoLoop
               logos={LGU_LOGOS}

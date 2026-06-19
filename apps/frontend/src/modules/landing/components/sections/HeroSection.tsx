@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 export function HeroSection() {
   return (
@@ -13,11 +13,12 @@ export function HeroSection() {
           <div className="grid items-center gap-8 lg:grid-cols-2">
             <div className="text-center lg:text-left">
               <h1 className="mb-6 text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white">
-                Welcome to <span className="text-yellow-400">Better</span><span className="text-blue-400">Libmanan</span>.org
+                Welcome to <span className="text-yellow-400">Better</span>
+                <span className="text-blue-400">Libmanan</span>.org
               </h1>
               <p className="mb-8 max-w-2xl text-base sm:text-lg lg:text-xl leading-relaxed text-gray-300">
-                Access government services, information, and resources for the people of Libmanan,
-                Camarines Sur.
+                Access government services, information, and resources for the
+                people of Libmanan, Camarines Sur.
               </p>
 
               <div className="flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
@@ -33,7 +34,12 @@ export function HeroSection() {
             <div className="relative w-full max-w-md mx-auto lg:max-w-none">
               <div className="rounded-2xl bg-white p-6 sm:p-8 shadow-xl">
                 <div className="mb-6 flex items-center gap-3">
-                  <svg className="h-5 w-5 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="h-5 w-5 text-neutral-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -41,7 +47,9 @@ export function HeroSection() {
                       d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
                     />
                   </svg>
-                  <span className="text-xl sm:text-2xl font-bold text-neutral-900">Find a Service</span>
+                  <span className="text-xl sm:text-2xl font-bold text-neutral-900">
+                    Find a Service
+                  </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -51,14 +59,26 @@ export function HeroSection() {
                     className="h-10 sm:h-12 w-full flex-1 rounded-xl border border-neutral-200 px-4 sm:px-5 text-sm text-neutral-700 outline-none placeholder:text-neutral-400"
                   />
                   <button className="flex h-9 sm:h-10 w-full sm:w-10 items-center justify-center rounded-xl bg-neutral-900 text-white transition-colors hover:bg-neutral-800">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 12h14m-6-6 6 6-6 6"
+                      />
                     </svg>
                   </button>
                 </div>
 
                 <div className="mt-6 flex flex-wrap items-center gap-2 sm:gap-3">
-                  <span className="text-xs sm:text-sm text-neutral-500">Popular:</span>
+                  <span className="text-xs sm:text-sm text-neutral-500">
+                    Popular:
+                  </span>
                   <span className="rounded-full bg-neutral-100 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-neutral-800">
                     Birth Certificate
                   </span>
@@ -78,6 +98,6 @@ export function HeroSection() {
   );
 }
 
-HeroSection.displayName = 'HeroSection';
+HeroSection.displayName = "HeroSection";
 
 export default HeroSection;

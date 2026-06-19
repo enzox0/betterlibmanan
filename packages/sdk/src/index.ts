@@ -1,2 +1,2 @@
 // SDK coming soon
-export {}
+export {};

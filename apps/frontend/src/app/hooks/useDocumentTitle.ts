@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface UseDocumentTitleOptions {
   preserveTitleOnUnmount?: boolean;
   suffix?: string;
 }
 
-const DEFAULT_TITLE = 'BetterLibmanan';
-const DEFAULT_SUFFIX = ' | BetterLibmanan';
+const DEFAULT_TITLE = "BetterLibmanan";
+const DEFAULT_SUFFIX = " | BetterLibmanan";
 
 /**
  * Custom hook to manage document title dynamically
@@ -18,7 +18,7 @@ const DEFAULT_SUFFIX = ' | BetterLibmanan';
  */
 export function useDocumentTitle(
   title: string,
-  options: UseDocumentTitleOptions = {}
+  options: UseDocumentTitleOptions = {},
 ): void {
   const { preserveTitleOnUnmount = false, suffix = DEFAULT_SUFFIX } = options;
   const previousTitleRef = useRef<string>(document.title);

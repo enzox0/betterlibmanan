@@ -1,5 +1,12 @@
-import { useState, useEffect, memo } from 'react';
-import { FaDollarSign, FaEuroSign, FaYenSign, FaThermometerHalf, FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { useState, useEffect, memo } from "react";
+import {
+  FaDollarSign,
+  FaEuroSign,
+  FaYenSign,
+  FaThermometerHalf,
+  FaCalendarAlt,
+  FaClock,
+} from "react-icons/fa";
 
 interface CurrencyRates {
   USD: number;
@@ -8,9 +15,9 @@ interface CurrencyRates {
 }
 
 const currencies = [
-  { code: 'USD', icon: FaDollarSign, label: '1 USD = ₱' },
-  { code: 'EUR', icon: FaEuroSign, label: '1 EUR = ₱' },
-  { code: 'JPY', icon: FaYenSign, label: '1 JPY = ₱' },
+  { code: "USD", icon: FaDollarSign, label: "1 USD = ₱" },
+  { code: "EUR", icon: FaEuroSign, label: "1 EUR = ₱" },
+  { code: "JPY", icon: FaYenSign, label: "1 JPY = ₱" },
 ];
 
 // Isolated clock component — re-renders every second without touching the marquee
@@ -26,21 +33,21 @@ const LiveClock = memo(function LiveClock() {
     <>
       <FaCalendarAlt size={12} />
       <span>
-        {now.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
+        {now.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
         })}
       </span>
       <span>•</span>
       <FaClock size={12} />
       <span>
-        {now.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
+        {now.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
           hour12: true,
-          timeZone: 'Asia/Manila',
+          timeZone: "Asia/Manila",
         })}
       </span>
       <span>PHT</span>
@@ -49,7 +56,9 @@ const LiveClock = memo(function LiveClock() {
 });
 
 export function BottomUtilityBar() {
-  const [currencyRates, setCurrencyRates] = useState<CurrencyRates | null>(null);
+  const [currencyRates, setCurrencyRates] = useState<CurrencyRates | null>(
+    null,
+  );
   const [temperature, setTemperature] = useState<number | null>(null);
   const [currentCurrencyIndex, setCurrentCurrencyIndex] = useState(0);
 
@@ -60,12 +69,14 @@ export function BottomUtilityBar() {
     async function fetchData() {
       try {
         const weatherResponse = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m`
+          `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m`,
         );
         const weatherData = await weatherResponse.json();
         setTemperature(Math.round(weatherData.current.temperature_2m));
 
-        const currencyResponse = await fetch('https://api.exchangerate-api.com/v4/latest/PHP');
+        const currencyResponse = await fetch(
+          "https://api.exchangerate-api.com/v4/latest/PHP",
+        );
         const currencyData = await currencyResponse.json();
         setCurrencyRates({
           USD: 1 / currencyData.rates.USD,
@@ -94,15 +105,21 @@ export function BottomUtilityBar() {
   const CurrencyIcon = currentCurrency.icon;
   const currencyValue = currencyRates
     ? currencyRates[currentCurrency.code as keyof CurrencyRates].toFixed(2)
-    : currentCurrency.code === 'USD' ? '57.00' : currentCurrency.code === 'EUR' ? '62.00' : '0.39';
-  const tempLabel = temperature !== null ? `${temperature}°C` : '25°C';
+    : currentCurrency.code === "USD"
+      ? "57.00"
+      : currentCurrency.code === "EUR"
+        ? "62.00"
+        : "0.39";
+  const tempLabel = temperature !== null ? `${temperature}°C` : "25°C";
 
   // Static marquee items — clock lives in LiveClock so it never remounts the marquee
   const MarqueeItems = () => (
     <div className="flex items-center gap-8 text-xs pr-8">
       <div className="flex items-center gap-2 whitespace-nowrap">
         <CurrencyIcon size={12} />
-        <span>{currentCurrency.label} {currencyValue}</span>
+        <span>
+          {currentCurrency.label} {currencyValue}
+        </span>
       </div>
       <div className="flex items-center gap-2 whitespace-nowrap">
         <FaThermometerHalf size={12} />
@@ -120,9 +137,14 @@ export function BottomUtilityBar() {
         {/* Desktop: static row */}
         <div className="hidden sm:flex justify-end items-center gap-6 text-xs">
           <div className="flex items-center gap-2 h-6 overflow-hidden">
-            <div key={currentCurrencyIndex} className="flex items-center gap-2 animate-slide-up">
+            <div
+              key={currentCurrencyIndex}
+              className="flex items-center gap-2 animate-slide-up"
+            >
               <CurrencyIcon size={12} />
-              <span>{currentCurrency.label} {currencyValue}</span>
+              <span>
+                {currentCurrency.label} {currencyValue}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">

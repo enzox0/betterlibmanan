@@ -1,4 +1,4 @@
-import { useAdminStore } from '../store/adminStore';
+import { useAdminStore } from "../store/adminStore";
 
 export function useAdminAuth() {
   const isAuthenticated = useAdminStore((s) => s.isAuthenticated);

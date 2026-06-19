@@ -1,2 +1,2 @@
 // Buttons coming soon
-export {}
+export {};

@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   FaPlay,
   FaCheckCircle,
@@ -12,12 +12,12 @@ import {
   FaTrophy,
   FaStar,
   FaArrowRight,
-} from 'react-icons/fa';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { quizQuestions, CATEGORY_COLORS } from '../data/quizData';
+} from "react-icons/fa";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { quizQuestions, CATEGORY_COLORS } from "../data/quizData";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
-type Phase = 'intro' | 'quiz' | 'result';
+type Phase = "intro" | "quiz" | "result";
 
 interface Answer {
   questionId: number;
@@ -28,16 +28,16 @@ interface Answer {
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 function getResultTier(score: number, total: number) {
   const pct = (score / total) * 100;
-  if (pct === 100) return { label: 'Perfect Score!', color: 'text-yellow-500' };
-  if (pct >= 80) return { label: 'Excellent!', color: 'text-emerald-600' };
-  if (pct >= 60) return { label: 'Good Job!', color: 'text-blue-600' };
-  if (pct >= 40) return { label: 'Keep Learning!', color: 'text-orange-500' };
-  return { label: 'Try Again!', color: 'text-red-500' };
+  if (pct === 100) return { label: "Perfect Score!", color: "text-yellow-500" };
+  if (pct >= 80) return { label: "Excellent!", color: "text-emerald-600" };
+  if (pct >= 60) return { label: "Good Job!", color: "text-blue-600" };
+  if (pct >= 40) return { label: "Keep Learning!", color: "text-orange-500" };
+  return { label: "Try Again!", color: "text-red-500" };
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
 export function QuizPage() {
-  const [phase, setPhase] = useState<Phase>('intro');
+  const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -49,7 +49,7 @@ export function QuizPage() {
 
   /* ── Actions ─────────────────────────────────────────────────────────── */
   const startQuiz = () => {
-    setPhase('quiz');
+    setPhase("quiz");
     setCurrentIndex(0);
     setAnswers([]);
     setSelectedOption(null);
@@ -79,12 +79,12 @@ export function QuizPage() {
       setSelectedOption(null);
       setRevealed(false);
     } else {
-      setPhase('result');
+      setPhase("result");
     }
   }, [selectedOption, current, answers, currentIndex, total]);
 
   const restart = () => {
-    setPhase('intro');
+    setPhase("intro");
     setCurrentIndex(0);
     setAnswers([]);
     setSelectedOption(null);
@@ -95,39 +95,41 @@ export function QuizPage() {
   const getOptionStyle = (index: number) => {
     if (!revealed) {
       return selectedOption === index
-        ? 'border-neutral-900 bg-neutral-900 text-white shadow-md'
-        : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50';
+        ? "border-neutral-900 bg-neutral-900 text-white shadow-md"
+        : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50";
     }
     if (index === current.correctIndex) {
-      return 'border-emerald-500 bg-emerald-50 text-emerald-800';
+      return "border-emerald-500 bg-emerald-50 text-emerald-800";
     }
     if (index === selectedOption && selectedOption !== current.correctIndex) {
-      return 'border-red-400 bg-red-50 text-red-800';
+      return "border-red-400 bg-red-50 text-red-800";
     }
-    return 'border-neutral-200 bg-white text-neutral-400';
+    return "border-neutral-200 bg-white text-neutral-400";
   };
 
   const getOptionIcon = (index: number) => {
     if (!revealed) return null;
-    if (index === current.correctIndex) return <FaCheckCircle className="text-emerald-500 shrink-0" />;
-    if (index === selectedOption) return <FaTimesCircle className="text-red-400 shrink-0" />;
+    if (index === current.correctIndex)
+      return <FaCheckCircle className="text-emerald-500 shrink-0" />;
+    if (index === selectedOption)
+      return <FaTimesCircle className="text-red-400 shrink-0" />;
     return null;
   };
 
-  const tier = phase === 'result' ? getResultTier(score, total) : null;
+  const tier = phase === "result" ? getResultTier(score, total) : null;
 
   /* ── Render ──────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-neutral-50">
-
       {/* ── Hero Banner ───────────────────────────────────────────────────── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
         <motion.div
@@ -140,21 +142,26 @@ export function QuizPage() {
             Libmanan Quiz
           </h1>
           <p className="mt-3 text-center text-sm text-gray-400 sm:text-base max-w-lg mx-auto">
-            Test your knowledge of Libmanan's history, culture, geography, and more.
+            Test your knowledge of Libmanan's history, culture, geography, and
+            more.
           </p>
 
           {/* Progress strip — only visible during quiz */}
-          {phase === 'quiz' && (
+          {phase === "quiz" && (
             <div className="mt-8 max-w-xl mx-auto">
               <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                <span>Question {currentIndex + 1} of {total}</span>
-                <span className="font-semibold text-white">{score} correct</span>
+                <span>
+                  Question {currentIndex + 1} of {total}
+                </span>
+                <span className="font-semibold text-white">
+                  {score} correct
+                </span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
                 <motion.div
                   className="h-full rounded-full bg-blue-400"
                   initial={{ width: 0 }}
-                  animate={{ width: `${((currentIndex) / total) * 100}%` }}
+                  animate={{ width: `${(currentIndex / total) * 100}%` }}
                   transition={{ duration: 0.4 }}
                 />
               </div>
@@ -167,9 +174,8 @@ export function QuizPage() {
       <section className="py-10 sm:py-14">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <AnimatePresence mode="wait">
-
             {/* ── INTRO ─────────────────────────────────────────────────────── */}
-            {phase === 'intro' && (
+            {phase === "intro" && (
               <motion.div
                 key="intro"
                 initial={{ opacity: 0, y: 20 }}
@@ -193,16 +199,17 @@ export function QuizPage() {
                     How well do you know Libmanan?
                   </h2>
                   <p className="mt-2 text-sm text-neutral-500 leading-relaxed">
-                    Explore your knowledge of Libmanan's heritage, cultural identity, geography,
-                    and local landmarks through {total} interactive questions.
+                    Explore your knowledge of Libmanan's heritage, cultural
+                    identity, geography, and local landmarks through {total}{" "}
+                    interactive questions.
                   </p>
 
                   {/* Quiz meta chips */}
                   <div className="mt-5 flex flex-wrap gap-2">
                     {[
                       { label: `${total} Questions`, icon: FaLightbulb },
-                      { label: 'Multiple Choice', icon: FaCheckCircle },
-                      { label: 'Instant Feedback', icon: FaStar },
+                      { label: "Multiple Choice", icon: FaCheckCircle },
+                      { label: "Instant Feedback", icon: FaStar },
                     ].map(({ label, icon: Icon }) => (
                       <span
                         key={label}
@@ -220,7 +227,11 @@ export function QuizPage() {
                       Topics covered
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {(Object.keys(CATEGORY_COLORS) as Array<keyof typeof CATEGORY_COLORS>).map((cat) => (
+                      {(
+                        Object.keys(CATEGORY_COLORS) as Array<
+                          keyof typeof CATEGORY_COLORS
+                        >
+                      ).map((cat) => (
                         <span
                           key={cat}
                           className={`px-3 py-1 rounded-full border text-xs font-semibold ${CATEGORY_COLORS[cat]}`}
@@ -243,7 +254,7 @@ export function QuizPage() {
             )}
 
             {/* ── QUIZ ──────────────────────────────────────────────────────── */}
-            {phase === 'quiz' && (
+            {phase === "quiz" && (
               <motion.div
                 key={`question-${currentIndex}`}
                 initial={{ opacity: 0, x: 24 }}
@@ -256,7 +267,9 @@ export function QuizPage() {
                 <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-6 sm:p-8">
                   {/* Category + question number */}
                   <div className="flex items-center justify-between mb-5">
-                    <span className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold ${CATEGORY_COLORS[current.category]}`}>
+                    <span
+                      className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold ${CATEGORY_COLORS[current.category]}`}
+                    >
                       {current.category}
                     </span>
                     <span className="text-xs text-neutral-400">
@@ -277,21 +290,23 @@ export function QuizPage() {
                         onClick={() => selectOption(index)}
                         disabled={revealed}
                         className={[
-                          'w-full flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3.5 text-sm font-medium text-left transition-all duration-200',
+                          "w-full flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3.5 text-sm font-medium text-left transition-all duration-200",
                           getOptionStyle(index),
-                          !revealed && 'cursor-pointer',
-                          revealed && 'cursor-default',
-                        ].join(' ')}
+                          !revealed && "cursor-pointer",
+                          revealed && "cursor-default",
+                        ].join(" ")}
                       >
                         <span className="flex items-center gap-3">
-                          <span className={[
-                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold',
-                            revealed && index === current.correctIndex
-                              ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
-                              : revealed && index === selectedOption
-                                ? 'border-red-300 bg-red-100 text-red-600'
-                                : 'border-neutral-300 bg-neutral-100 text-neutral-500',
-                          ].join(' ')}>
+                          <span
+                            className={[
+                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
+                              revealed && index === current.correctIndex
+                                ? "border-emerald-400 bg-emerald-100 text-emerald-700"
+                                : revealed && index === selectedOption
+                                  ? "border-red-300 bg-red-100 text-red-600"
+                                  : "border-neutral-300 bg-neutral-100 text-neutral-500",
+                            ].join(" ")}
+                          >
                             {String.fromCharCode(65 + index)}
                           </span>
                           {option}
@@ -311,23 +326,30 @@ export function QuizPage() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                       className={[
-                        'rounded-2xl border p-5 sm:p-6',
+                        "rounded-2xl border p-5 sm:p-6",
                         selectedOption === current.correctIndex
-                          ? 'border-emerald-200 bg-emerald-50'
-                          : 'border-red-200 bg-red-50',
-                      ].join(' ')}
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-red-200 bg-red-50",
+                      ].join(" ")}
                     >
                       <div className="flex items-start gap-3">
-                        {selectedOption === current.correctIndex
-                          ? <FaCheckCircle className="text-emerald-500 mt-0.5 shrink-0" />
-                          : <FaTimesCircle className="text-red-400 mt-0.5 shrink-0" />
-                        }
+                        {selectedOption === current.correctIndex ? (
+                          <FaCheckCircle className="text-emerald-500 mt-0.5 shrink-0" />
+                        ) : (
+                          <FaTimesCircle className="text-red-400 mt-0.5 shrink-0" />
+                        )}
                         <div>
-                          <p className={[
-                            'text-sm font-semibold mb-1',
-                            selectedOption === current.correctIndex ? 'text-emerald-800' : 'text-red-700',
-                          ].join(' ')}>
-                            {selectedOption === current.correctIndex ? 'Correct!' : 'Not quite.'}
+                          <p
+                            className={[
+                              "text-sm font-semibold mb-1",
+                              selectedOption === current.correctIndex
+                                ? "text-emerald-800"
+                                : "text-red-700",
+                            ].join(" ")}
+                          >
+                            {selectedOption === current.correctIndex
+                              ? "Correct!"
+                              : "Not quite."}
                           </p>
                           <p className="text-sm text-neutral-600 leading-relaxed">
                             {current.explanation}
@@ -350,9 +372,13 @@ export function QuizPage() {
                       className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 px-6 py-3.5 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors"
                     >
                       {currentIndex + 1 < total ? (
-                        <>Next Question <FaChevronRight className="text-xs" /></>
+                        <>
+                          Next Question <FaChevronRight className="text-xs" />
+                        </>
                       ) : (
-                        <>See Results <FaTrophy className="text-xs" /></>
+                        <>
+                          See Results <FaTrophy className="text-xs" />
+                        </>
                       )}
                     </button>
                   </motion.div>
@@ -361,7 +387,7 @@ export function QuizPage() {
             )}
 
             {/* ── RESULT ────────────────────────────────────────────────────── */}
-            {phase === 'result' && tier && (
+            {phase === "result" && tier && (
               <motion.div
                 key="result"
                 initial={{ opacity: 0, scale: 0.96 }}
@@ -373,9 +399,12 @@ export function QuizPage() {
                 {/* Score card */}
                 <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-6 sm:p-8 text-center">
                   <div className="text-5xl font-bold text-neutral-900 mb-1">
-                    {score}<span className="text-2xl text-neutral-400">/{total}</span>
+                    {score}
+                    <span className="text-2xl text-neutral-400">/{total}</span>
                   </div>
-                  <p className={`text-xl font-bold mt-1 ${tier.color}`}>{tier.label}</p>
+                  <p className={`text-xl font-bold mt-1 ${tier.color}`}>
+                    {tier.label}
+                  </p>
                   <p className="mt-2 text-sm text-neutral-500">
                     You answered {score} out of {total} questions correctly.
                   </p>
@@ -386,10 +415,16 @@ export function QuizPage() {
                       className="h-full rounded-full bg-neutral-900"
                       initial={{ width: 0 }}
                       animate={{ width: `${(score / total) * 100}%` }}
-                      transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{
+                        duration: 0.8,
+                        delay: 0.2,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-neutral-400">{Math.round((score / total) * 100)}% correct</p>
+                  <p className="mt-2 text-xs text-neutral-400">
+                    {Math.round((score / total) * 100)}% correct
+                  </p>
 
                   {/* Actions */}
                   <div className="mt-7 flex flex-col sm:flex-row gap-3">
@@ -411,29 +446,42 @@ export function QuizPage() {
                 {/* Per-question review */}
                 <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-neutral-100">
-                    <h3 className="text-sm font-bold text-neutral-900">Question Review</h3>
-                    <p className="text-xs text-neutral-500 mt-0.5">See how you answered each question</p>
+                    <h3 className="text-sm font-bold text-neutral-900">
+                      Question Review
+                    </h3>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      See how you answered each question
+                    </p>
                   </div>
                   <div className="divide-y divide-neutral-100">
                     {quizQuestions.map((q, i) => {
                       const ans = answers[i];
                       const correct = ans?.correct;
                       return (
-                        <div key={q.id} className="px-5 py-4 flex items-start gap-3">
-                          <div className={[
-                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold mt-0.5',
-                            correct
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-red-100 text-red-600',
-                          ].join(' ')}>
+                        <div
+                          key={q.id}
+                          className="px-5 py-4 flex items-start gap-3"
+                        >
+                          <div
+                            className={[
+                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold mt-0.5",
+                              correct
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-red-100 text-red-600",
+                            ].join(" ")}
+                          >
                             {i + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-neutral-800 leading-snug">{q.question}</p>
+                            <p className="text-sm font-medium text-neutral-800 leading-snug">
+                              {q.question}
+                            </p>
                             <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
                               <span className="text-xs text-neutral-500">
-                                <span className="font-medium text-neutral-700">Your answer: </span>
-                                {ans ? q.options[ans.selectedIndex] : '—'}
+                                <span className="font-medium text-neutral-700">
+                                  Your answer:{" "}
+                                </span>
+                                {ans ? q.options[ans.selectedIndex] : "—"}
                               </span>
                               {!correct && (
                                 <span className="text-xs text-emerald-600 font-medium">
@@ -443,10 +491,11 @@ export function QuizPage() {
                             </div>
                           </div>
                           <div className="shrink-0">
-                            {correct
-                              ? <FaCheckCircle className="text-emerald-500 text-sm" />
-                              : <FaTimesCircle className="text-red-400 text-sm" />
-                            }
+                            {correct ? (
+                              <FaCheckCircle className="text-emerald-500 text-sm" />
+                            ) : (
+                              <FaTimesCircle className="text-red-400 text-sm" />
+                            )}
                           </div>
                         </div>
                       );
@@ -456,7 +505,9 @@ export function QuizPage() {
 
                 {/* Explore more CTA */}
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-900 p-6 text-center">
-                  <p className="text-sm font-bold text-white mb-1">Want to learn more about Libmanan?</p>
+                  <p className="text-sm font-bold text-white mb-1">
+                    Want to learn more about Libmanan?
+                  </p>
                   <p className="text-xs text-gray-400 mb-4">
                     Explore our tourism spots, history, and government services.
                   </p>
@@ -477,7 +528,6 @@ export function QuizPage() {
                 </div>
               </motion.div>
             )}
-
           </AnimatePresence>
         </div>
       </section>
@@ -485,5 +535,5 @@ export function QuizPage() {
   );
 }
 
-QuizPage.displayName = 'QuizPage';
+QuizPage.displayName = "QuizPage";
 export default QuizPage;

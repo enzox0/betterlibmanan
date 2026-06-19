@@ -1,11 +1,11 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose, { Schema, Document } from "mongoose";
+import bcrypt from "bcryptjs";
 
 export interface IAdmin extends Document {
   username: string;
   password: string;
   displayName: string;
-  role: 'superadmin' | 'admin' | 'editor';
+  role: "superadmin" | "admin" | "editor";
   isActive: boolean;
   lastLoginAt?: Date;
   createdAt: Date;
@@ -38,8 +38,8 @@ const AdminSchema = new Schema<IAdmin>(
     },
     role: {
       type: String,
-      enum: ['superadmin', 'admin', 'editor'],
-      default: 'admin',
+      enum: ["superadmin", "admin", "editor"],
+      default: "admin",
     },
     isActive: {
       type: Boolean,
@@ -62,15 +62,17 @@ const AdminSchema = new Schema<IAdmin>(
 );
 
 // Hash password before save
-AdminSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+AdminSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-AdminSchema.methods.comparePassword = function (candidate: string): Promise<boolean> {
+AdminSchema.methods.comparePassword = function (
+  candidate: string,
+): Promise<boolean> {
   return bcrypt.compare(candidate, this.password);
 };
 
-export const AdminModel = mongoose.model<IAdmin>('Admin', AdminSchema);
+export const AdminModel = mongoose.model<IAdmin>("Admin", AdminSchema);

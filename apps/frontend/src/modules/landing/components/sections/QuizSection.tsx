@@ -1,8 +1,8 @@
-import { FaPlay } from 'react-icons/fa';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { Skeleton, SkeletonCard } from '@/shared/ui';
+import { FaPlay } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { Skeleton, SkeletonCard } from "@/shared/ui";
 
 export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.9 }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -39,18 +39,22 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
                   />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">Libmanan Quiz</h2>
+                  <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">
+                    Libmanan Quiz
+                  </h2>
                   <p className="mt-2 text-base font-semibold text-neutral-800">
                     How well do you know Libmanan, Camarines Sur?
                   </p>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-500">
-                    Explore your knowledge of Libmanan's heritage, cultural identity, and local landmarks
-                    through a short interactive quiz designed to highlight the municipality's history and
+                    Explore your knowledge of Libmanan's heritage, cultural
+                    identity, and local landmarks through a short interactive
+                    quiz designed to highlight the municipality's history and
                     significance.
                   </p>
                   <button
-                    onClick={() => navigate('/quiz')}
-                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800">
+                    onClick={() => navigate("/quiz")}
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
+                  >
                     <FaPlay size={12} />
                     Take the Quiz
                   </button>
@@ -64,6 +68,6 @@ export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
   );
 }
 
-QuizSection.displayName = 'QuizSection';
+QuizSection.displayName = "QuizSection";
 
 export default QuizSection;

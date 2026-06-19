@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function AgriculturePage() {
   return <ServiceCategoryPage slug="agriculture" />;
 }
 
-AgriculturePage.displayName = 'AgriculturePage';
+AgriculturePage.displayName = "AgriculturePage";
 export default AgriculturePage;

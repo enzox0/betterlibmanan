@@ -1,49 +1,88 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaSearch, FaTimes, FaRoad, FaWater, FaBuilding, FaCheckCircle,
-  FaSpinner, FaClock, FaMapMarkerAlt, FaCalendarAlt, FaMoneyBillWave,
-  FaHardHat, FaChartLine, FaExternalLinkAlt, FaStream, FaTh, FaList,
-  FaChevronLeft, FaChevronRight, FaFilter,
-} from 'react-icons/fa';
-import React from 'react';
-import CountUp from '@/shared/ui/CountUp';
-import { Project, ProjectSummary, fetchProjects } from '../api';
+  FaSearch,
+  FaTimes,
+  FaRoad,
+  FaWater,
+  FaBuilding,
+  FaCheckCircle,
+  FaSpinner,
+  FaClock,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaMoneyBillWave,
+  FaHardHat,
+  FaChartLine,
+  FaExternalLinkAlt,
+  FaStream,
+  FaTh,
+  FaList,
+  FaChevronLeft,
+  FaChevronRight,
+  FaFilter,
+} from "react-icons/fa";
+import React from "react";
+import CountUp from "@/shared/ui/CountUp";
+import { Project, ProjectSummary, fetchProjects } from "../api";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DOT_BG = {
-  backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-  backgroundSize: '28px 28px',
+  backgroundImage:
+    "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+  backgroundSize: "28px 28px",
 };
 
 const ITEMS_PER_PAGE = 20;
 
-const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  'Roads': FaRoad,
-  'Bridges': FaStream,
-  'Flood Control and Drainage': FaWater,
-  'Buildings and Facilities': FaBuilding,
+const CATEGORY_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
+  Roads: FaRoad,
+  Bridges: FaStream,
+  "Flood Control and Drainage": FaWater,
+  "Buildings and Facilities": FaBuilding,
 };
 
 const STATUS_STYLES: Record<string, { pill: string; dot: string }> = {
-  'Completed':      { pill: 'bg-neutral-900 text-white',               dot: 'bg-neutral-900' },
-  'On-Going':       { pill: 'bg-blue-600 text-white',                   dot: 'bg-blue-600'    },
-  'Not Started':    { pill: 'bg-neutral-200 text-neutral-700',          dot: 'bg-neutral-400' },
-  'For Procurement':{ pill: 'bg-neutral-500 text-white',                dot: 'bg-neutral-500' },
+  Completed: { pill: "bg-neutral-900 text-white", dot: "bg-neutral-900" },
+  "On-Going": { pill: "bg-blue-600 text-white", dot: "bg-blue-600" },
+  "Not Started": {
+    pill: "bg-neutral-200 text-neutral-700",
+    dot: "bg-neutral-400",
+  },
+  "For Procurement": {
+    pill: "bg-neutral-500 text-white",
+    dot: "bg-neutral-500",
+  },
 };
-const DEFAULT_STATUS = { pill: 'bg-neutral-200 text-neutral-700', dot: 'bg-neutral-400' };
+const DEFAULT_STATUS = {
+  pill: "bg-neutral-200 text-neutral-700",
+  dot: "bg-neutral-400",
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const formatCurrency = (n: number) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }).format(n);
+  new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+  }).format(n);
 
 const formatDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+  d
+    ? new Date(d).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "N/A";
 
 const getCategoryIcon = (cat: string) => CATEGORY_ICONS[cat] ?? FaBuilding;
-const getStatusStyle  = (s: string)   => STATUS_STYLES[s] ?? DEFAULT_STATUS;
+const getStatusStyle = (s: string) => STATUS_STYLES[s] ?? DEFAULT_STATUS;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -61,7 +100,7 @@ function ProgressBar({ pct }: { pct: number }) {
           initial={{ width: 0 }}
           whileInView={{ width: `${pct}%` }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
         />
       </div>
     </div>
@@ -72,14 +111,22 @@ function ProgressBar({ pct }: { pct: number }) {
 function StatusPill({ status }: { status: string }) {
   const s = getStatusStyle(status);
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.pill}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.pill}`}
+    >
       {status}
     </span>
   );
 }
 
 /** Grid card */
-function GridCard({ project, onClick }: { project: Project; onClick: () => void }) {
+function GridCard({
+  project,
+  onClick,
+}: {
+  project: Project;
+  onClick: () => void;
+}) {
   const Icon = getCategoryIcon(project.category);
   return (
     <motion.div
@@ -111,11 +158,15 @@ function GridCard({ project, onClick }: { project: Project; onClick: () => void 
         <div className="space-y-1.5 text-xs text-gray-600">
           <div className="flex items-center gap-2">
             <FaMoneyBillWave className="shrink-0 text-gray-400" />
-            <span className="font-semibold text-gray-800 truncate">{formatCurrency(project.budget)}</span>
+            <span className="font-semibold text-gray-800 truncate">
+              {formatCurrency(project.budget)}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <FaHardHat className="shrink-0 text-gray-400" />
-            <span className="truncate">{project.contractor.split('(')[0].trim()}</span>
+            <span className="truncate">
+              {project.contractor.split("(")[0].trim()}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <FaCalendarAlt className="shrink-0 text-gray-400" />
@@ -128,11 +179,23 @@ function GridCard({ project, onClick }: { project: Project; onClick: () => void 
 
         {/* footer */}
         <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center justify-between">
-          <span className="text-[10px] text-gray-400 font-mono">{project.contractId}</span>
+          <span className="text-[10px] text-gray-400 font-mono">
+            {project.contractId}
+          </span>
           <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 group-hover:text-gray-800 transition-colors">
             Details
-            <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            <svg
+              className="w-3 h-3 group-hover:translate-x-0.5 transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </span>
         </div>
@@ -142,7 +205,13 @@ function GridCard({ project, onClick }: { project: Project; onClick: () => void 
 }
 
 /** List row */
-function ListRow({ project, onClick }: { project: Project; onClick: () => void }) {
+function ListRow({
+  project,
+  onClick,
+}: {
+  project: Project;
+  onClick: () => void;
+}) {
   const Icon = getCategoryIcon(project.category);
   return (
     <motion.div
@@ -163,15 +232,31 @@ function ListRow({ project, onClick }: { project: Project; onClick: () => void }
         <div className="flex flex-wrap items-center gap-2 mb-1.5">
           <StatusPill status={project.status} />
           {project.progress > 0 && (
-            <span className="text-[11px] font-bold text-gray-600">{project.progress}%</span>
+            <span className="text-[11px] font-bold text-gray-600">
+              {project.progress}%
+            </span>
           )}
         </div>
-        <p className="text-sm font-bold text-gray-900 leading-snug mb-2">{project.description}</p>
+        <p className="text-sm font-bold text-gray-900 leading-snug mb-2">
+          {project.description}
+        </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-          <span className="flex items-center gap-1"><FaMoneyBillWave className="text-gray-400" />{formatCurrency(project.budget)}</span>
-          <span className="flex items-center gap-1"><FaHardHat className="text-gray-400" />{project.contractor.split('(')[0].trim()}</span>
-          <span className="flex items-center gap-1"><FaCalendarAlt className="text-gray-400" />{formatDate(project.startDate)}</span>
-          <span className="flex items-center gap-1"><FaMapMarkerAlt className="text-gray-400" />{project.location.province}</span>
+          <span className="flex items-center gap-1">
+            <FaMoneyBillWave className="text-gray-400" />
+            {formatCurrency(project.budget)}
+          </span>
+          <span className="flex items-center gap-1">
+            <FaHardHat className="text-gray-400" />
+            {project.contractor.split("(")[0].trim()}
+          </span>
+          <span className="flex items-center gap-1">
+            <FaCalendarAlt className="text-gray-400" />
+            {formatDate(project.startDate)}
+          </span>
+          <span className="flex items-center gap-1">
+            <FaMapMarkerAlt className="text-gray-400" />
+            {project.location.province}
+          </span>
         </div>
         {project.progress > 0 && (
           <div className="mt-2 h-1 w-full rounded-full bg-neutral-100 overflow-hidden">
@@ -180,15 +265,25 @@ function ListRow({ project, onClick }: { project: Project; onClick: () => void }
               initial={{ width: 0 }}
               whileInView={{ width: `${project.progress}%` }}
               viewport={{ once: true }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
             />
           </div>
         )}
       </div>
 
       <div className="shrink-0 flex items-center self-center">
-        <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        <svg
+          className="w-4 h-4 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
         </svg>
       </div>
     </motion.div>
@@ -196,21 +291,31 @@ function ListRow({ project, onClick }: { project: Project; onClick: () => void }
 }
 
 /** Project detail modal */
-function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
+function ProjectModal({
+  project,
+  onClose,
+}: {
+  project: Project;
+  onClose: () => void;
+}) {
   const Icon = getCategoryIcon(project.category);
 
   // close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-[9999999] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* backdrop */}
       <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -225,7 +330,10 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         {/* header */}
         <div className="flex-shrink-0 relative overflow-hidden bg-gray-900 px-6 pt-6 pb-5">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={DOT_BG} />
+          <div
+            className="absolute inset-0 opacity-[0.04] pointer-events-none"
+            style={DOT_BG}
+          />
 
           <button
             onClick={onClose}
@@ -241,7 +349,9 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <StatusPill status={project.status} />
-                <span className="text-[11px] text-gray-400 font-mono">{project.contractId}</span>
+                <span className="text-[11px] text-gray-400 font-mono">
+                  {project.contractId}
+                </span>
               </div>
               <h2 className="text-sm font-bold text-white leading-snug sm:text-base">
                 {project.description}
@@ -256,11 +366,18 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
           {project.progress > 0 && (
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
               <div className="flex justify-between mb-2">
-                <span className="text-xs font-semibold text-gray-700">Project Progress</span>
-                <span className="text-lg font-bold text-blue-600">{project.progress}%</span>
+                <span className="text-xs font-semibold text-gray-700">
+                  Project Progress
+                </span>
+                <span className="text-lg font-bold text-blue-600">
+                  {project.progress}%
+                </span>
               </div>
               <div className="h-2 w-full rounded-full bg-neutral-200 overflow-hidden">
-                <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${project.progress}%` }} />
+                <div
+                  className="h-full rounded-full bg-blue-600 transition-all"
+                  style={{ width: `${project.progress}%` }}
+                />
               </div>
             </div>
           )}
@@ -268,16 +385,34 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
           {/* financials */}
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              { icon: FaMoneyBillWave, label: 'Total Budget',  amount: project.budget     },
-              { icon: FaChartLine,     label: 'Amount Paid',   amount: project.amountPaid },
-            ].map(item => (
-              <div key={item.label} className="rounded-2xl border border-neutral-200 bg-white p-4">
+              {
+                icon: FaMoneyBillWave,
+                label: "Total Budget",
+                amount: project.budget,
+              },
+              {
+                icon: FaChartLine,
+                label: "Amount Paid",
+                amount: project.amountPaid,
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border border-neutral-200 bg-white p-4"
+              >
                 <div className="flex items-center gap-2 text-gray-500 mb-1.5">
                   <item.icon size={12} />
                   <span className="text-xs font-medium">{item.label}</span>
                 </div>
                 <p className="text-base font-bold text-gray-900">
-                  ₱<CountUp from={0} to={item.amount} duration={1.2} delay={0.1} separator="," />
+                  ₱
+                  <CountUp
+                    from={0}
+                    to={item.amount}
+                    duration={1.2}
+                    delay={0.1}
+                    separator=","
+                  />
                 </p>
               </div>
             ))}
@@ -285,17 +420,49 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
 
           {/* details grid */}
           <div className="space-y-2.5">
-            <DetailRow icon={FaHardHat} label="Contractor" value={project.contractor} />
-            <DetailRow icon={FaMapMarkerAlt} label="Location" value={`${project.location.province}, ${project.location.region}`} />
+            <DetailRow
+              icon={FaHardHat}
+              label="Contractor"
+              value={project.contractor}
+            />
+            <DetailRow
+              icon={FaMapMarkerAlt}
+              label="Location"
+              value={`${project.location.province}, ${project.location.region}`}
+            />
             <div className="grid gap-2.5 sm:grid-cols-2">
-              <DetailRow icon={FaCalendarAlt} label="Start Date" value={formatDate(project.startDate)} />
-              <DetailRow icon={FaCheckCircle} label="Completion" value={formatDate(project.completionDate)} />
+              <DetailRow
+                icon={FaCalendarAlt}
+                label="Start Date"
+                value={formatDate(project.startDate)}
+              />
+              <DetailRow
+                icon={FaCheckCircle}
+                label="Completion"
+                value={formatDate(project.completionDate)}
+              />
             </div>
-            <DetailRow icon={FaBuilding} label="Category" value={project.category} />
-            <DetailRow icon={FaMoneyBillWave} label="Program" value={project.programName} />
+            <DetailRow
+              icon={FaBuilding}
+              label="Category"
+              value={project.category}
+            />
+            <DetailRow
+              icon={FaMoneyBillWave}
+              label="Program"
+              value={project.programName}
+            />
             <div className="grid gap-2.5 sm:grid-cols-2">
-              <DetailRow icon={FaStream} label="Source of Funds" value={project.sourceOfFunds} />
-              <DetailRow icon={FaClock} label="Infrastructure Year" value={project.infraYear} />
+              <DetailRow
+                icon={FaStream}
+                label="Source of Funds"
+                value={project.sourceOfFunds}
+              />
+              <DetailRow
+                icon={FaClock}
+                label="Infrastructure Year"
+                value={project.infraYear}
+              />
             </div>
           </div>
         </div>
@@ -322,12 +489,22 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
   );
 }
 
-function DetailRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: string }) {
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
       <div className="flex items-center gap-1.5 text-gray-400 mb-1">
         <Icon size={11} />
-        <span className="text-[11px] font-semibold uppercase tracking-wide">{label}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-wide">
+          {label}
+        </span>
       </div>
       <p className="text-sm text-gray-800">{value}</p>
     </div>
@@ -337,65 +514,109 @@ function DetailRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ s
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export function TransparencyPage() {
-  const [projects, setProjects]           = useState<Project[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState<string | null>(null);
-  const [search, setSearch]               = useState('');
-  const [category, setCategory]           = useState('All');
-  const [status, setStatus]               = useState('All');
-  const [selected, setSelected]           = useState<Project | null>(null);
-  const [view, setView]                   = useState<'grid' | 'list'>('grid');
-  const [page, setPage]                   = useState(1);
-  const [summary, setSummary]             = useState<ProjectSummary>({
-    totalProjects: 0, completed: 0, ongoing: 0, notStarted: 0, totalBudget: 0,
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [status, setStatus] = useState("All");
+  const [selected, setSelected] = useState<Project | null>(null);
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
+  const [summary, setSummary] = useState<ProjectSummary>({
+    totalProjects: 0,
+    completed: 0,
+    ongoing: 0,
+    notStarted: 0,
+    totalBudget: 0,
   });
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetchProjects({ page: 1, limit: 100, search: 'Libmanan', region: 'Region V', province: 'CAMARINES SUR' });
+      const res = await fetchProjects({
+        page: 1,
+        limit: 100,
+        search: "Libmanan",
+        region: "Region V",
+        province: "CAMARINES SUR",
+      });
       setProjects(res.data.data);
       setSummary(res.data.summary);
     } catch {
-      setError('Failed to load projects. Please try again later.');
+      setError("Failed to load projects. Please try again later.");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { setPage(1); }, [search, category, status]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  useEffect(() => {
+    setPage(1);
+  }, [search, category, status]);
 
-  const categories = ['All', ...Array.from(new Set(projects.map(p => p.category)))];
-  const statuses   = ['All', ...Array.from(new Set(projects.map(p => p.status)))];
+  const categories = [
+    "All",
+    ...Array.from(new Set(projects.map((p) => p.category))),
+  ];
+  const statuses = [
+    "All",
+    ...Array.from(new Set(projects.map((p) => p.status))),
+  ];
 
-  const filtered = projects.filter(p => {
+  const filtered = projects.filter((p) => {
     const q = search.toLowerCase();
     return (
-      (p.description.toLowerCase().includes(q) || p.contractor.toLowerCase().includes(q)) &&
-      (category === 'All' || p.category === category) &&
-      (status   === 'All' || p.status   === status)
+      (p.description.toLowerCase().includes(q) ||
+        p.contractor.toLowerCase().includes(q)) &&
+      (category === "All" || p.category === category) &&
+      (status === "All" || p.status === status)
     );
   });
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const start      = (page - 1) * ITEMS_PER_PAGE;
-  const visible    = filtered.slice(start, start + ITEMS_PER_PAGE);
+  const start = (page - 1) * ITEMS_PER_PAGE;
+  const visible = filtered.slice(start, start + ITEMS_PER_PAGE);
 
   const summaryCards = [
-    { label: 'Total Projects', value: filtered.length, icon: FaBuilding,      accent: 'text-gray-700' },
-    { label: 'Completed',      value: filtered.filter(p => p.status === 'Completed').length, icon: FaCheckCircle, accent: 'text-gray-700' },
-    { label: 'On-Going',       value: filtered.filter(p => p.status === 'On-Going').length,  icon: FaSpinner,     accent: 'text-blue-600' },
-    { label: 'Total Budget',   value: null, budget: filtered.reduce((s, p) => s + p.budget, 0), icon: FaMoneyBillWave, accent: 'text-gray-700' },
+    {
+      label: "Total Projects",
+      value: filtered.length,
+      icon: FaBuilding,
+      accent: "text-gray-700",
+    },
+    {
+      label: "Completed",
+      value: filtered.filter((p) => p.status === "Completed").length,
+      icon: FaCheckCircle,
+      accent: "text-gray-700",
+    },
+    {
+      label: "On-Going",
+      value: filtered.filter((p) => p.status === "On-Going").length,
+      icon: FaSpinner,
+      accent: "text-blue-600",
+    },
+    {
+      label: "Total Budget",
+      value: null,
+      budget: filtered.reduce((s, p) => s + p.budget, 0),
+      icon: FaMoneyBillWave,
+      accent: "text-gray-700",
+    },
   ];
 
   return (
     <div className="min-h-screen bg-neutral-100">
-
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
-        <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={DOT_BG} />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={DOT_BG}
+        />
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -416,20 +637,25 @@ export function TransparencyPage() {
           <div className="mt-8 max-w-xl mx-auto">
             <div className="relative">
               <div className="absolute inset-0 rounded-xl backdrop-blur-sm bg-white/10 border border-white/10 pointer-events-none" />
-              <FaSearch size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+              <FaSearch
+                size={13}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"
+              />
               <input
                 type="text"
                 placeholder="Search projects or contractors…"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 className="relative z-10 w-full pl-11 pr-10 py-3.5 rounded-xl bg-transparent border border-transparent text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 transition-all"
               />
               <AnimatePresence>
                 {search && (
                   <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => setSearch('')}
+                    onClick={() => setSearch("")}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
                   >
                     <FaTimes size={12} />
@@ -442,15 +668,17 @@ export function TransparencyPage() {
           {/* hero KPIs */}
           <div className="mt-8 flex flex-wrap justify-center gap-8 sm:gap-12">
             {[
-              { label: 'Total Projects', value: summary.totalProjects },
-              { label: 'Completed',      value: summary.completed     },
-              { label: 'On-Going',       value: summary.ongoing       },
-            ].map(s => (
+              { label: "Total Projects", value: summary.totalProjects },
+              { label: "Completed", value: summary.completed },
+              { label: "On-Going", value: summary.ongoing },
+            ].map((s) => (
               <div key={s.label} className="text-center">
                 <p className="text-2xl font-bold text-white">
                   <CountUp from={0} to={s.value} duration={1.5} delay={0.3} />
                 </p>
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider mt-0.5">{s.label}</p>
+                <p className="text-[11px] text-gray-500 uppercase tracking-wider mt-0.5">
+                  {s.label}
+                </p>
               </div>
             ))}
           </div>
@@ -475,14 +703,28 @@ export function TransparencyPage() {
                   <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{card.label}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                        {card.label}
+                      </p>
                       {card.value !== null ? (
                         <p className={`text-2xl font-bold ${card.accent}`}>
-                          <CountUp from={0} to={card.value} duration={1.2} delay={0.2 + i * 0.08} />
+                          <CountUp
+                            from={0}
+                            to={card.value}
+                            duration={1.2}
+                            delay={0.2 + i * 0.08}
+                          />
                         </p>
                       ) : (
                         <p className="text-base font-bold text-gray-900">
-                          ₱<CountUp from={0} to={card.budget!} duration={1.4} delay={0.2 + i * 0.08} separator="," />
+                          ₱
+                          <CountUp
+                            from={0}
+                            to={card.budget!}
+                            duration={1.4}
+                            delay={0.2 + i * 0.08}
+                            separator=","
+                          />
                         </p>
                       )}
                     </div>
@@ -504,28 +746,45 @@ export function TransparencyPage() {
             {/* filters */}
             <div className="flex flex-wrap gap-2 items-center">
               <div className="relative">
-                <FaFilter size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <FaFilter
+                  size={11}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
                 <select
                   value={category}
-                  onChange={e => setCategory(e.target.value)}
+                  onChange={(e) => setCategory(e.target.value)}
                   className="appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-7 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                 >
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="relative">
-                <FaClock size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <FaClock
+                  size={11}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
                 <select
                   value={status}
-                  onChange={e => setStatus(e.target.value)}
+                  onChange={(e) => setStatus(e.target.value)}
                   className="appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-7 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                 >
-                  {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                  {statuses.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
                 </select>
               </div>
-              {(category !== 'All' || status !== 'All') && (
+              {(category !== "All" || status !== "All") && (
                 <button
-                  onClick={() => { setCategory('All'); setStatus('All'); }}
+                  onClick={() => {
+                    setCategory("All");
+                    setStatus("All");
+                  }}
                   className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
                 >
                   <FaTimes size={9} /> Clear
@@ -535,19 +794,22 @@ export function TransparencyPage() {
 
             <div className="flex items-center gap-3">
               <span className="text-xs text-gray-400">
-                {start + 1}–{Math.min(start + ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                {start + 1}–{Math.min(start + ITEMS_PER_PAGE, filtered.length)}{" "}
+                of {filtered.length}
               </span>
               {/* view toggle */}
               <div className="flex rounded-xl border border-neutral-200 overflow-hidden">
-                {(['grid', 'list'] as const).map(v => (
+                {(["grid", "list"] as const).map((v) => (
                   <button
                     key={v}
                     onClick={() => setView(v)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      view === v ? 'bg-neutral-900 text-white' : 'bg-white text-gray-600 hover:bg-neutral-50'
+                      view === v
+                        ? "bg-neutral-900 text-white"
+                        : "bg-white text-gray-600 hover:bg-neutral-50"
                     }`}
                   >
-                    {v === 'grid' ? <FaTh size={11} /> : <FaList size={11} />}
+                    {v === "grid" ? <FaTh size={11} /> : <FaList size={11} />}
                     <span className="hidden sm:inline capitalize">{v}</span>
                   </button>
                 ))}
@@ -565,18 +827,35 @@ export function TransparencyPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white shadow-sm">
                 <FaSpinner className="animate-spin text-gray-500" size={22} />
               </div>
-              <p className="text-sm font-medium text-gray-600">Loading projects…</p>
+              <p className="text-sm font-medium text-gray-600">
+                Loading projects…
+              </p>
             </div>
           ) : error ? (
             <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-100">
-                <svg className="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="h-6 w-6 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
-              <p className="text-base font-bold text-gray-900 mb-1">Something went wrong</p>
+              <p className="text-base font-bold text-gray-900 mb-1">
+                Something went wrong
+              </p>
               <p className="text-sm text-gray-500 mb-5">{error}</p>
-              <button onClick={load} className="rounded-xl border border-neutral-200 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors">
+              <button
+                onClick={load}
+                className="rounded-xl border border-neutral-200 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors"
+              >
                 Try Again
               </button>
             </div>
@@ -585,10 +864,18 @@ export function TransparencyPage() {
               <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
                 <FaSearch size={12} className="text-neutral-400" />
               </div>
-              <p className="text-sm font-semibold text-neutral-700 mb-1">No projects found</p>
-              <p className="text-xs text-neutral-400">Try adjusting your filters or search term.</p>
+              <p className="text-sm font-semibold text-neutral-700 mb-1">
+                No projects found
+              </p>
+              <p className="text-xs text-neutral-400">
+                Try adjusting your filters or search term.
+              </p>
               <button
-                onClick={() => { setSearch(''); setCategory('All'); setStatus('All'); }}
+                onClick={() => {
+                  setSearch("");
+                  setCategory("All");
+                  setStatus("All");
+                }}
                 className="mt-3 text-xs font-semibold text-gray-700 hover:text-gray-900 transition-colors"
               >
                 Clear all filters
@@ -598,17 +885,30 @@ export function TransparencyPage() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${view}-${page}`}
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className={view === 'grid'
-                  ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
-                  : 'space-y-3'
+                className={
+                  view === "grid"
+                    ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    : "space-y-3"
                 }
               >
-                {visible.map(project =>
-                  view === 'grid'
-                    ? <GridCard key={project.contractId} project={project} onClick={() => setSelected(project)} />
-                    : <ListRow  key={project.contractId} project={project} onClick={() => setSelected(project)} />
+                {visible.map((project) =>
+                  view === "grid" ? (
+                    <GridCard
+                      key={project.contractId}
+                      project={project}
+                      onClick={() => setSelected(project)}
+                    />
+                  ) : (
+                    <ListRow
+                      key={project.contractId}
+                      project={project}
+                      onClick={() => setSelected(project)}
+                    />
+                  ),
                 )}
               </motion.div>
             </AnimatePresence>
@@ -618,7 +918,7 @@ export function TransparencyPage() {
           {!loading && !error && totalPages > 1 && (
             <div className="mt-10 flex items-center justify-between gap-4">
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
@@ -629,37 +929,48 @@ export function TransparencyPage() {
                 {(() => {
                   const range: number[] = [];
                   const delta = 2;
-                  for (let i = Math.max(1, page - delta); i <= Math.min(totalPages, page + delta); i++) range.push(i);
+                  for (
+                    let i = Math.max(1, page - delta);
+                    i <= Math.min(totalPages, page + delta);
+                    i++
+                  )
+                    range.push(i);
                   if (range[0] > 1) {
                     range.unshift(-1);
                     if (range[1] > 2) range.unshift(1);
                   }
                   if (range[range.length - 1] < totalPages) {
                     range.push(-2);
-                    if (range[range.length - 2] < totalPages - 1) range.push(totalPages);
+                    if (range[range.length - 2] < totalPages - 1)
+                      range.push(totalPages);
                   }
                   return range.map((n, i) =>
                     n < 0 ? (
-                      <span key={`ellipsis-${i}`} className="text-gray-400 text-xs px-1">…</span>
+                      <span
+                        key={`ellipsis-${i}`}
+                        className="text-gray-400 text-xs px-1"
+                      >
+                        …
+                      </span>
                     ) : (
                       <button
                         key={n}
                         onClick={() => setPage(n)}
                         className={`h-8 w-8 rounded-lg text-xs font-bold transition-colors ${
                           page === n
-                            ? 'bg-neutral-900 text-white shadow-sm'
-                            : 'border border-neutral-200 bg-white text-gray-700 hover:bg-neutral-50'
+                            ? "bg-neutral-900 text-white shadow-sm"
+                            : "border border-neutral-200 bg-white text-gray-700 hover:bg-neutral-50"
                         }`}
                       >
                         {n}
                       </button>
-                    )
+                    ),
                   );
                 })()}
               </div>
 
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
@@ -672,7 +983,9 @@ export function TransparencyPage() {
           {!loading && !error && filtered.length > 0 && (
             <div className="mt-8 flex justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs text-gray-500 shadow-sm">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[9px] font-bold text-white">i</span>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[9px] font-bold text-white">
+                  i
+                </span>
                 Data source:
                 <a
                   href="https://www.dpwh.gov.ph/dpwh/transparency"
@@ -690,12 +1003,13 @@ export function TransparencyPage() {
 
       {/* ── Modal ─────────────────────────────────────────────────────── */}
       <AnimatePresence>
-        {selected && <ProjectModal project={selected} onClose={() => setSelected(null)} />}
+        {selected && (
+          <ProjectModal project={selected} onClose={() => setSelected(null)} />
+        )}
       </AnimatePresence>
-
     </div>
   );
 }
 
-TransparencyPage.displayName = 'TransparencyPage';
+TransparencyPage.displayName = "TransparencyPage";
 export default TransparencyPage;

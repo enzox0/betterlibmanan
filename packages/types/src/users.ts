@@ -1,5 +1,4 @@
-import { User } from './auth';
-import { BaseEntity } from './common';
+import { User } from "./auth";
 
 export interface UserProfile extends User {
   bio?: string;
@@ -17,7 +16,7 @@ export interface UserPreferences {
   pushNotifications: boolean;
   language: string;
   timezone: string;
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
 }
 
 export interface UpdateUserProfile {

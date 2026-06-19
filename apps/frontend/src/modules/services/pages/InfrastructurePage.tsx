@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function InfrastructurePage() {
   return <ServiceCategoryPage slug="infrastructure" />;
 }
 
-InfrastructurePage.displayName = 'InfrastructurePage';
+InfrastructurePage.displayName = "InfrastructurePage";
 export default InfrastructurePage;

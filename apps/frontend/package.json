@@ -10,6 +10,7 @@
     "start": "vite preview --outDir ../../build/frontend",
     "test": "vitest --run",
     "test:coverage": "vitest --run --coverage",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "echo \"Lint coming soon\""
   },
   "dependencies": {

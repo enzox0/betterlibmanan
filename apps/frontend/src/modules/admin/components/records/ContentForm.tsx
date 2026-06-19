@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { mockSections } from '../../data/mockSections';
-import { useAdminStore } from '../../store/adminStore';
-import { ImageUploadPlaceholder } from './ImageUploadPlaceholder';
-import { PreviewPanel } from '../preview/PreviewPanel';
-import type { ContentFormProps, ContentRecord, ContentStatus } from '../../types/admin.types';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { mockSections } from "../../data/mockSections";
+import { useAdminStore } from "../../store/adminStore";
+import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
+import { PreviewPanel } from "../preview/PreviewPanel";
+import type {
+  ContentFormProps,
+  ContentRecord,
+  ContentStatus,
+} from "../../types/admin.types";
 
 function isValidUrl(value: string): boolean {
   try {
@@ -15,17 +19,19 @@ function isValidUrl(value: string): boolean {
   }
 }
 
-function getTitleFieldKey(fields: { key: string; type: string; required: boolean }[]): string {
-  const firstRequiredText = fields.find((f) => f.type === 'text' && f.required);
+function getTitleFieldKey(
+  fields: { key: string; type: string; required: boolean }[],
+): string {
+  const firstRequiredText = fields.find((f) => f.type === "text" && f.required);
   if (firstRequiredText) return firstRequiredText.key;
 
-  if (fields.some((f) => f.key === 'title')) return 'title';
-  if (fields.some((f) => f.key === 'name')) return 'name';
+  if (fields.some((f) => f.key === "title")) return "title";
+  if (fields.some((f) => f.key === "name")) return "name";
 
-  const firstText = fields.find((f) => f.type === 'text');
+  const firstText = fields.find((f) => f.type === "text");
   if (firstText) return firstText.key;
 
-  return fields[0]?.key ?? 'title';
+  return fields[0]?.key ?? "title";
 }
 
 function buildInitialValues(
@@ -34,8 +40,8 @@ function buildInitialValues(
 ): Record<string, string> {
   const values: Record<string, string> = {};
   for (const field of fields) {
-    if (field.type === 'image') continue; // image handled by ImageUploadPlaceholder
-    values[field.key] = initialData?.fields[field.key] ?? '';
+    if (field.type === "image") continue; // image handled by ImageUploadPlaceholder
+    values[field.key] = initialData?.fields[field.key] ?? "";
   }
   return values;
 }
@@ -43,9 +49,9 @@ function buildInitialValues(
 const SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
 
 const slideVariants = {
-  hidden: { x: '100%' },
+  hidden: { x: "100%" },
   visible: { x: 0 },
-  exit: { x: '100%' },
+  exit: { x: "100%" },
 };
 
 const backdropVariants = {
@@ -70,7 +76,7 @@ export function ContentForm({
 
   // Status field (always present)
   const [status, setStatus] = useState<ContentStatus>(
-    initialData?.status ?? 'draft',
+    initialData?.status ?? "draft",
   );
 
   // Field values (excludes image fields — handled by ImageUploadPlaceholder internally)
@@ -102,12 +108,12 @@ export function ContentForm({
   // Escape key closes the form
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         handleClose();
       }
     }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleClose]);
 
   function handleFieldChange(key: string, value: string) {
@@ -126,16 +132,20 @@ export function ContentForm({
     const newErrors: Record<string, string> = {};
 
     for (const field of fields) {
-      if (field.type === 'image') continue;
+      if (field.type === "image") continue;
 
-      const value = fieldValues[field.key] ?? '';
+      const value = fieldValues[field.key] ?? "";
 
-      if (field.required && value.trim() === '') {
+      if (field.required && value.trim() === "") {
         newErrors[field.key] = `${field.label} is required.`;
         continue;
       }
 
-      if (field.type === 'url' && value.trim() !== '' && !isValidUrl(value.trim())) {
+      if (
+        field.type === "url" &&
+        value.trim() !== "" &&
+        !isValidUrl(value.trim())
+      ) {
         newErrors[field.key] = `${field.label} must be a valid URL.`;
       }
     }
@@ -152,11 +162,11 @@ export function ContentForm({
     const titleFieldKey = getTitleFieldKey(fields);
     const title =
       fieldValues[titleFieldKey] ??
-      fieldValues['title'] ??
-      fieldValues['name'] ??
-      '';
+      fieldValues["title"] ??
+      fieldValues["name"] ??
+      "";
 
-    if (mode === 'create') {
+    if (mode === "create") {
       addRecord(sectionKey, {
         title,
         status,
@@ -177,31 +187,30 @@ export function ContentForm({
 
   function renderField(field: (typeof fields)[number]) {
     const id = `cf-${field.key}`;
-    const value = fieldValues[field.key] ?? '';
+    const value = fieldValues[field.key] ?? "";
     const error = errors[field.key];
 
     const commonInputClass = [
-      'w-full rounded-lg border px-3 py-2 text-sm text-gray-800',
-      'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white',
-      'transition-all',
-      error ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50',
-    ].join(' ');
+      "w-full rounded-lg border px-3 py-2 text-sm text-gray-800",
+      "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white",
+      "transition-all",
+      error ? "border-red-300 bg-red-50" : "border-gray-200 bg-gray-50",
+    ].join(" ");
 
     return (
       <div key={field.key} className="flex flex-col gap-1.5">
-        <label
-          htmlFor={id}
-          className="text-sm font-medium text-gray-700"
-        >
+        <label htmlFor={id} className="text-sm font-medium text-gray-700">
           {field.label}
           {field.required && (
-            <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+            <span className="ml-1 text-red-500" aria-hidden="true">
+              *
+            </span>
           )}
         </label>
 
-        {field.type === 'image' ? (
+        {field.type === "image" ? (
           <ImageUploadPlaceholder />
-        ) : field.type === 'textarea' ? (
+        ) : field.type === "textarea" ? (
           <textarea
             id={id}
             value={value}
@@ -211,7 +220,7 @@ export function ContentForm({
             aria-invalid={!!error}
             aria-describedby={error ? `${id}-error` : undefined}
           />
-        ) : field.type === 'select' ? (
+        ) : field.type === "select" ? (
           <select
             id={id}
             value={value}
@@ -230,7 +239,13 @@ export function ContentForm({
         ) : (
           <input
             id={id}
-            type={field.type === 'url' ? 'url' : field.type === 'date' ? 'date' : 'text'}
+            type={
+              field.type === "url"
+                ? "url"
+                : field.type === "date"
+                  ? "date"
+                  : "text"
+            }
             value={value}
             onChange={(e) => handleFieldChange(field.key, e.target.value)}
             className={commonInputClass}
@@ -240,11 +255,7 @@ export function ContentForm({
         )}
 
         {error && (
-          <p
-            id={`${id}-error`}
-            role="alert"
-            className="text-xs text-red-600"
-          >
+          <p id={`${id}-error`} role="alert" className="text-xs text-red-600">
             {error}
           </p>
         )}
@@ -271,25 +282,27 @@ export function ContentForm({
         key="cf-panel"
         role="dialog"
         aria-modal="true"
-        aria-label={mode === 'create' ? 'New Record' : 'Edit Record'}
+        aria-label={mode === "create" ? "New Record" : "Edit Record"}
         variants={slideVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
         transition={{ duration: 0.4, ease: SLIDE_EASE }}
         className={[
-          'fixed right-0 top-0 z-50 flex h-full flex-col bg-white shadow-2xl !mt-0',
-          showPreview ? 'w-full max-w-5xl' : 'w-full max-w-[480px]',
-        ].join(' ')}
+          "fixed right-0 top-0 z-50 flex h-full flex-col bg-white shadow-2xl !mt-0",
+          showPreview ? "w-full max-w-5xl" : "w-full max-w-[480px]",
+        ].join(" ")}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/80 px-6 py-4">
           <div>
             <h2 className="text-base font-bold text-gray-900">
-              {mode === 'create' ? 'New Record' : 'Edit Record'}
+              {mode === "create" ? "New Record" : "Edit Record"}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              {mode === 'create' ? 'Fill in the fields below to create a new record.' : 'Update the fields below.'}
+              {mode === "create"
+                ? "Fill in the fields below to create a new record."
+                : "Update the fields below."}
             </p>
           </div>
 
@@ -300,15 +313,15 @@ export function ContentForm({
                 type="button"
                 onClick={() => setShowPreview((v) => !v)}
                 className={[
-                  'rounded-lg px-3 py-1.5 text-sm font-semibold transition-all',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+                  "rounded-lg px-3 py-1.5 text-sm font-semibold transition-all",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
                   showPreview
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'border border-gray-200 text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700',
-                ].join(' ')}
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "border border-gray-200 text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700",
+                ].join(" ")}
                 aria-pressed={showPreview}
               >
-                {showPreview ? 'Hide Preview' : 'Preview'}
+                {showPreview ? "Hide Preview" : "Preview"}
               </button>
             )}
 
@@ -320,7 +333,13 @@ export function ContentForm({
               aria-label="Close"
               className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
                 <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
               </svg>
             </button>
@@ -342,7 +361,10 @@ export function ContentForm({
 
               {/* Status field — always present */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="cf-status" className="text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="cf-status"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Status
                 </label>
                 <select
@@ -383,7 +405,7 @@ export function ContentForm({
             form="content-form"
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
           >
-            {mode === 'create' ? 'Create Record' : 'Save Changes'}
+            {mode === "create" ? "Create Record" : "Save Changes"}
           </button>
         </div>
       </motion.aside>

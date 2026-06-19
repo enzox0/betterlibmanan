@@ -1,16 +1,21 @@
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '@/shared/logger';
-import { dpwhProxyRequest } from './dpwh-proxy.service';
-import { buildCacheKey, getCached, setCached, DEFAULT_CACHE_TTL_MS } from './dpwh-cache.service';
+import { Request, Response, NextFunction } from "express";
+import { logger } from "@/shared/logger";
+import { dpwhProxyRequest } from "./dpwh-proxy.service";
+import {
+  buildCacheKey,
+  getCached,
+  setCached,
+  DEFAULT_CACHE_TTL_MS,
+} from "./dpwh-cache.service";
 
 /**
  * Default filters tuned for the BetterLibmanan transparency page.
  * Callers can still override these by passing the corresponding query params.
  */
 const DEFAULT_PROJECT_FILTERS = {
-  search: 'Libmanan',
-  region: 'Region V',
-  province: 'CAMARINES SUR'
+  search: "Libmanan",
+  region: "Region V",
+  province: "CAMARINES SUR",
 };
 
 /**
@@ -18,8 +23,8 @@ const DEFAULT_PROJECT_FILTERS = {
  * `string | string[] | ParsedQs | ParsedQs[]`.
  */
 const asString = (value: unknown): string | undefined => {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
+  if (typeof value === "string") return value;
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0];
   return undefined;
 };
 
@@ -31,7 +36,7 @@ const asString = (value: unknown): string | undefined => {
 const tryLiveFetchAndCache = async (
   cacheKey: string,
   path: string,
-  query?: Record<string, string | string[] | undefined>
+  query?: Record<string, string | string[] | undefined>,
 ) => {
   const startedAt = Date.now();
   try {
@@ -41,13 +46,13 @@ const tryLiveFetchAndCache = async (
       data: result.body,
       upstreamStatus: result.status,
       ttlMs: DEFAULT_CACHE_TTL_MS,
-      fetchDurationMs: Date.now() - startedAt
+      fetchDurationMs: Date.now() - startedAt,
     });
     return result;
   } catch (err) {
     logger.warn(
       `[DPWH][cache] live refresh failed for ${cacheKey}, falling back to cache. ` +
-        `reason=${(err as any).reason ?? 'unknown'}`
+        `reason=${(err as any).reason ?? "unknown"}`,
     );
     return null;
   }
@@ -66,49 +71,56 @@ const tryLiveFetchAndCache = async (
  * The cache is normally populated out-of-band by `npm run refresh-dpwh-cache`
  * running on a residential connection — see the script for details.
  */
-export const getProjects = async (req: Request, res: Response, next: NextFunction) => {
+export const getProjects = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const page = asString(req.query.page) ?? '1';
-    const limit = asString(req.query.limit) ?? '10000';
+    const page = asString(req.query.page) ?? "1";
+    const limit = asString(req.query.limit) ?? "10000";
     const search = asString(req.query.search) ?? DEFAULT_PROJECT_FILTERS.search;
     const region = asString(req.query.region) ?? DEFAULT_PROJECT_FILTERS.region;
-    const province = asString(req.query.province) ?? DEFAULT_PROJECT_FILTERS.province;
+    const province =
+      asString(req.query.province) ?? DEFAULT_PROJECT_FILTERS.province;
 
     const filters = { page, limit, search, region, province };
-    const cacheKey = buildCacheKey('/projects', filters);
+    const cacheKey = buildCacheKey("/projects", filters);
     const cached = await getCached(cacheKey);
 
     if (cached) {
       // Stale-while-revalidate: serve immediately, refresh in the background.
       // We swallow the background error because the user already has a response.
       if (!cached.fresh) {
-        tryLiveFetchAndCache(cacheKey, '/projects', filters).catch(() => {});
+        tryLiveFetchAndCache(cacheKey, "/projects", filters).catch(() => {});
       }
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader("Content-Type", "application/json");
       res.setHeader(
-        'X-Cache',
-        cached.fresh ? `HIT; fetched=${cached.fetchedAt.toISOString()}` : `STALE; fetched=${cached.fetchedAt.toISOString()}`
+        "X-Cache",
+        cached.fresh
+          ? `HIT; fetched=${cached.fetchedAt.toISOString()}`
+          : `STALE; fetched=${cached.fetchedAt.toISOString()}`,
       );
       res.send(cached.data);
       return;
     }
 
     // Cold cache — try live, then surface a clear 503 if even that fails.
-    const live = await tryLiveFetchAndCache(cacheKey, '/projects', filters);
+    const live = await tryLiveFetchAndCache(cacheKey, "/projects", filters);
     if (live) {
       res.status(live.status);
-      if (live.contentType) res.setHeader('Content-Type', live.contentType);
-      res.setHeader('X-Cache', 'MISS');
+      if (live.contentType) res.setHeader("Content-Type", live.contentType);
+      res.setHeader("X-Cache", "MISS");
       res.send(live.body);
       return;
     }
 
     res.status(503).json({
       status: 503,
-      code: 'DPWH_CACHE_EMPTY',
+      code: "DPWH_CACHE_EMPTY",
       message:
-        'No cached DPWH data is available yet, and the upstream is unreachable from this server. ' +
-        'Run `npm run refresh-dpwh-cache` from a residential connection to populate the cache.'
+        "No cached DPWH data is available yet, and the upstream is unreachable from this server. " +
+        "Run `npm run refresh-dpwh-cache` from a residential connection to populate the cache.",
     });
   } catch (err) {
     next(err);
@@ -120,11 +132,17 @@ export const getProjects = async (req: Request, res: Response, next: NextFunctio
  *
  * Same cache-first flow as `getProjects`, scoped to a single contractId.
  */
-export const getProjectById = async (req: Request, res: Response, next: NextFunction) => {
+export const getProjectById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { contractId } = req.params;
     if (!contractId) {
-      return res.status(400).json({ success: false, message: 'contractId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "contractId is required" });
     }
 
     const path = `/projects/${encodeURIComponent(contractId)}`;
@@ -135,10 +153,12 @@ export const getProjectById = async (req: Request, res: Response, next: NextFunc
       if (!cached.fresh) {
         tryLiveFetchAndCache(cacheKey, path).catch(() => {});
       }
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader("Content-Type", "application/json");
       res.setHeader(
-        'X-Cache',
-        cached.fresh ? `HIT; fetched=${cached.fetchedAt.toISOString()}` : `STALE; fetched=${cached.fetchedAt.toISOString()}`
+        "X-Cache",
+        cached.fresh
+          ? `HIT; fetched=${cached.fetchedAt.toISOString()}`
+          : `STALE; fetched=${cached.fetchedAt.toISOString()}`,
       );
       return res.send(cached.data);
     }
@@ -146,15 +166,15 @@ export const getProjectById = async (req: Request, res: Response, next: NextFunc
     const live = await tryLiveFetchAndCache(cacheKey, path);
     if (live) {
       res.status(live.status);
-      if (live.contentType) res.setHeader('Content-Type', live.contentType);
-      res.setHeader('X-Cache', 'MISS');
+      if (live.contentType) res.setHeader("Content-Type", live.contentType);
+      res.setHeader("X-Cache", "MISS");
       return res.send(live.body);
     }
 
     res.status(503).json({
       status: 503,
-      code: 'DPWH_CACHE_EMPTY',
-      message: `No cached data for contract ${contractId}, and upstream is unreachable.`
+      code: "DPWH_CACHE_EMPTY",
+      message: `No cached data for contract ${contractId}, and upstream is unreachable.`,
     });
   } catch (err) {
     next(err);
@@ -170,9 +190,10 @@ export const getProjectById = async (req: Request, res: Response, next: NextFunc
 export const getProxyHealth = (_req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'DPWH proxy is reachable',
-    upstream: process.env.DPWH_API_BASE_URL || 'https://api.transparency.dpwh.gov.ph',
-    timestamp: new Date().toISOString()
+    message: "DPWH proxy is reachable",
+    upstream:
+      process.env.DPWH_API_BASE_URL || "https://api.transparency.dpwh.gov.ph",
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -184,29 +205,38 @@ export const getProxyHealth = (_req: Request, res: Response) => {
  */
 export const getProxyDiagnostic = async (_req: Request, res: Response) => {
   const config = {
-    baseUrl: process.env.DPWH_API_BASE_URL || 'https://api.transparency.dpwh.gov.ph',
+    baseUrl:
+      process.env.DPWH_API_BASE_URL || "https://api.transparency.dpwh.gov.ph",
     proxyConfigured: Boolean(process.env.DPWH_PROXY_URL),
-    proxyHost: process.env.DPWH_PROXY_URL ? new URL(process.env.DPWH_PROXY_URL).host : null,
-    timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || '70000', 10),
-    nodeEnv: process.env.NODE_ENV
+    proxyHost: process.env.DPWH_PROXY_URL
+      ? new URL(process.env.DPWH_PROXY_URL).host
+      : null,
+    timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || "70000", 10),
+    nodeEnv: process.env.NODE_ENV,
   };
 
   // Inspect the canonical Libmanan cache entry so the diagnostic tells us
   // both whether we have data on disk AND whether live fetch works.
-  const defaultKey = buildCacheKey('/projects', {
-    page: '1',
-    limit: '10000',
-    search: 'Libmanan',
-    region: 'Region V',
-    province: 'CAMARINES SUR'
+  const defaultKey = buildCacheKey("/projects", {
+    page: "1",
+    limit: "10000",
+    search: "Libmanan",
+    region: "Region V",
+    province: "CAMARINES SUR",
   });
   const cached = await getCached(defaultKey);
 
   try {
     const startedAt = Date.now();
     const result = await dpwhProxyRequest({
-      path: '/projects',
-      query: { page: '1', limit: '1', search: 'Libmanan', region: 'Region V', province: 'CAMARINES SUR' }
+      path: "/projects",
+      query: {
+        page: "1",
+        limit: "1",
+        search: "Libmanan",
+        region: "Region V",
+        province: "CAMARINES SUR",
+      },
     });
     res.json({
       success: true,
@@ -215,7 +245,7 @@ export const getProxyDiagnostic = async (_req: Request, res: Response) => {
       upstreamStatus: result.status,
       contentType: result.contentType,
       bodyPreview:
-        typeof result.body === 'string'
+        typeof result.body === "string"
           ? (result.body as string).slice(0, 200)
           : JSON.stringify(result.body).slice(0, 200),
       config,
@@ -225,15 +255,15 @@ export const getProxyDiagnostic = async (_req: Request, res: Response) => {
             fresh: cached.fresh,
             fetchedAt: cached.fetchedAt,
             expiresAt: cached.expiresAt,
-            upstreamStatus: cached.upstreamStatus
+            upstreamStatus: cached.upstreamStatus,
           }
-        : { present: false }
+        : { present: false },
     });
   } catch (err) {
     res.status(200).json({
       success: false,
       ok: false,
-      reason: (err as any).reason ?? 'unknown',
+      reason: (err as any).reason ?? "unknown",
       message: (err as Error).message,
       cause: (err as any).cause,
       diagnostic: (err as any).diagnostic,
@@ -244,12 +274,12 @@ export const getProxyDiagnostic = async (_req: Request, res: Response) => {
             fresh: cached.fresh,
             fetchedAt: cached.fetchedAt,
             expiresAt: cached.expiresAt,
-            upstreamStatus: cached.upstreamStatus
+            upstreamStatus: cached.upstreamStatus,
           }
         : { present: false },
       hint: cached
-        ? 'Live upstream is unreachable, but the cache has data so the transparency page will still work. Refresh the cache from a residential connection: `npm run refresh-dpwh-cache`.'
-        : 'Cache is empty AND live upstream is unreachable. Run `npm run refresh-dpwh-cache` from a residential connection (e.g. your home Windows machine) to populate the cache.'
+        ? "Live upstream is unreachable, but the cache has data so the transparency page will still work. Refresh the cache from a residential connection: `npm run refresh-dpwh-cache`."
+        : "Cache is empty AND live upstream is unreachable. Run `npm run refresh-dpwh-cache` from a residential connection (e.g. your home Windows machine) to populate the cache.",
     });
   }
 };

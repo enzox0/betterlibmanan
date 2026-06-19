@@ -1,18 +1,22 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
-  FaScroll, FaSearch, FaTimes,
-  FaExternalLinkAlt, FaArrowLeft, FaCheckCircle,
-} from 'react-icons/fa';
-import { mockLegislativeData } from '../data/mockData';
+  FaScroll,
+  FaSearch,
+  FaTimes,
+  FaExternalLinkAlt,
+  FaArrowLeft,
+  FaCheckCircle,
+} from "react-icons/fa";
+import { mockLegislativeData } from "../data/mockData";
 
 export function OrdinanceFrameworkPage() {
   const data = mockLegislativeData.ordinance;
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  const filtered = data.documents.filter(doc => {
+  const filtered = data.documents.filter((doc) => {
     const matchesSearch =
       !search.trim() ||
       doc.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -22,7 +26,6 @@ export function OrdinanceFrameworkPage() {
 
   return (
     <div className="min-h-screen bg-neutral-100">
-
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
@@ -30,8 +33,8 @@ export function OrdinanceFrameworkPage() {
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
             backgroundImage:
-              'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
@@ -58,7 +61,8 @@ export function OrdinanceFrameworkPage() {
               Ordinance Framework
             </h1>
             <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
-              Municipal ordinances enacted by the Sangguniang Bayan ng Libmanan, Camarines Sur.
+              Municipal ordinances enacted by the Sangguniang Bayan ng Libmanan,
+              Camarines Sur.
             </p>
           </div>
 
@@ -66,12 +70,15 @@ export function OrdinanceFrameworkPage() {
           <div className="mt-8 max-w-xl mx-auto">
             <div className="relative">
               <div className="absolute inset-0 rounded-xl backdrop-blur-sm bg-white/10 border border-white/10 pointer-events-none" />
-              <FaSearch size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+              <FaSearch
+                size={13}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"
+              />
               <input
                 type="text"
                 placeholder="Search ordinances by title or number…"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 className="relative z-10 w-full pl-11 pr-10 py-3.5 rounded-xl bg-transparent border border-transparent text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/60 transition-all"
               />
               <AnimatePresence>
@@ -81,7 +88,7 @@ export function OrdinanceFrameworkPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => setSearch('')}
+                    onClick={() => setSearch("")}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     <FaTimes size={12} />
@@ -94,12 +101,14 @@ export function OrdinanceFrameworkPage() {
           {/* Stats */}
           <div className="mt-6 flex flex-wrap justify-center gap-8 sm:gap-12">
             {[
-              { label: 'Total Ordinances', value: data.documents.length },
-              { label: 'Categories',       value: data.categories.length },
-            ].map(stat => (
+              { label: "Total Ordinances", value: data.documents.length },
+              { label: "Categories", value: data.categories.length },
+            ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-xl font-bold text-white">{stat.value}</p>
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
@@ -110,7 +119,6 @@ export function OrdinanceFrameworkPage() {
       <section className="py-10 sm:py-14">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-2">
-
             {/* Definition */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -123,8 +131,12 @@ export function OrdinanceFrameworkPage() {
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600">
                 <FaScroll size={15} />
               </div>
-              <h2 className="text-base font-bold text-gray-900 mb-2">What is an Ordinance?</h2>
-              <p className="text-sm text-gray-500 leading-relaxed">{data.definition}</p>
+              <h2 className="text-base font-bold text-gray-900 mb-2">
+                What is an Ordinance?
+              </h2>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                {data.definition}
+              </p>
             </motion.div>
 
             {/* Categories */}
@@ -135,8 +147,12 @@ export function OrdinanceFrameworkPage() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm"
             >
-              <h2 className="text-base font-bold text-gray-900 mb-1">Categories</h2>
-              <p className="text-xs text-gray-500 mb-4">Filter documents by ordinance category</p>
+              <h2 className="text-base font-bold text-gray-900 mb-1">
+                Categories
+              </h2>
+              <p className="text-xs text-gray-500 mb-4">
+                Filter documents by ordinance category
+              </p>
               <div className="flex flex-wrap gap-2">
                 {data.categories.map((cat, index) => {
                   const isActive = activeCategory === cat;
@@ -149,11 +165,11 @@ export function OrdinanceFrameworkPage() {
                       transition={{ duration: 0.25, delay: index * 0.04 }}
                       onClick={() => setActiveCategory(isActive ? null : cat)}
                       className={[
-                        'rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200',
+                        "rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200",
                         isActive
-                          ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
-                          : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100',
-                      ].join(' ')}
+                          ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                          : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100",
+                      ].join(" ")}
                     >
                       {cat}
                     </motion.button>
@@ -169,7 +185,6 @@ export function OrdinanceFrameworkPage() {
                 </button>
               )}
             </motion.div>
-
           </div>
         </div>
       </section>
@@ -185,11 +200,13 @@ export function OrdinanceFrameworkPage() {
             className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
           >
             <div>
-              <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">2025 Ordinances</h2>
+              <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                2025 Ordinances
+              </h2>
               <p className="mt-1 text-sm text-gray-500">
                 {filtered.length > 0
-                  ? `${filtered.length} ordinance${filtered.length !== 1 ? 's' : ''}${search || activeCategory ? ' matched' : ''}`
-                  : 'No ordinances matched'}
+                  ? `${filtered.length} ordinance${filtered.length !== 1 ? "s" : ""}${search || activeCategory ? " matched" : ""}`
+                  : "No ordinances matched"}
               </p>
             </div>
             <a
@@ -221,15 +238,22 @@ export function OrdinanceFrameworkPage() {
                     transition={{ duration: 0.3, delay: index * 0.04 }}
                     className="group flex items-start gap-4 rounded-xl border border-neutral-200 bg-white p-4 transition-all duration-200 hover:border-neutral-300 hover:shadow-sm"
                   >
-                    <FaCheckCircle className="mt-0.5 shrink-0 text-blue-500" size={14} />
+                    <FaCheckCircle
+                      className="mt-0.5 shrink-0 text-blue-500"
+                      size={14}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
                         <span className="text-[11px] font-bold text-blue-600 tabular-nums">
                           #{doc.number}
                         </span>
-                        <span className="text-[11px] text-gray-400">{doc.sessionDate}</span>
+                        <span className="text-[11px] text-gray-400">
+                          {doc.sessionDate}
+                        </span>
                       </div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{doc.title}</p>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {doc.title}
+                      </p>
                     </div>
                   </motion.div>
                 ))}
@@ -245,10 +269,17 @@ export function OrdinanceFrameworkPage() {
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
                   <FaSearch size={12} className="text-neutral-400" />
                 </div>
-                <p className="text-sm font-semibold text-neutral-700 mb-1">No ordinances matched</p>
-                <p className="text-xs text-neutral-400">Try a different keyword or clear the filter.</p>
+                <p className="text-sm font-semibold text-neutral-700 mb-1">
+                  No ordinances matched
+                </p>
+                <p className="text-xs text-neutral-400">
+                  Try a different keyword or clear the filter.
+                </p>
                 <button
-                  onClick={() => { setSearch(''); setActiveCategory(null); }}
+                  onClick={() => {
+                    setSearch("");
+                    setActiveCategory(null);
+                  }}
                   className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   Show all ordinances
@@ -258,11 +289,10 @@ export function OrdinanceFrameworkPage() {
           </AnimatePresence>
         </div>
       </section>
-
     </div>
   );
 }
 
-OrdinanceFrameworkPage.displayName = 'OrdinanceFrameworkPage';
+OrdinanceFrameworkPage.displayName = "OrdinanceFrameworkPage";
 
 export default OrdinanceFrameworkPage;

@@ -1,2 +1,2 @@
 // Jobs coming soon
-export {}
+export {};

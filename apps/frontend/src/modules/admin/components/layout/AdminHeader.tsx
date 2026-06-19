@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
@@ -8,7 +8,17 @@ interface AdminHeaderProps {
 
 function BellIcon({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
@@ -17,7 +27,17 @@ function BellIcon({ className }: { className?: string }) {
 
 function HamburgerIcon({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <line x1="3" y1="6" x2="21" y2="6" />
       <line x1="3" y1="12" x2="21" y2="12" />
       <line x1="3" y1="18" x2="21" y2="18" />
@@ -27,7 +47,17 @@ function HamburgerIcon({ className }: { className?: string }) {
 
 function SearchIcon({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
@@ -73,7 +103,10 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
         >
           <BellIcon className="h-5 w-5" />
           {/* Notification dot */}
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" aria-hidden="true" />
+          <span
+            className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white"
+            aria-hidden="true"
+          />
         </button>
 
         {/* Divider */}
@@ -86,8 +119,12 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
           aria-label="My Account"
         >
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-sm font-semibold text-gray-700 leading-tight">Admin</span>
-            <span className="text-xs text-gray-400 leading-tight">Administrator</span>
+            <span className="text-sm font-semibold text-gray-700 leading-tight">
+              Admin
+            </span>
+            <span className="text-xs text-gray-400 leading-tight">
+              Administrator
+            </span>
           </div>
           {/* Avatar */}
           <div

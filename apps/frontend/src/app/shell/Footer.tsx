@@ -1,6 +1,13 @@
-import { Link } from 'react-router-dom';
-import { FaFacebook, FaLinkedin, FaDiscord, FaEnvelope, FaGithub, FaMoneyBillWave } from 'react-icons/fa';
-import { SiReact } from 'react-icons/si';
+import { Link } from "react-router-dom";
+import {
+  FaFacebook,
+  FaLinkedin,
+  FaDiscord,
+  FaEnvelope,
+  FaGithub,
+  FaMoneyBillWave,
+} from "react-icons/fa";
+import { SiReact } from "react-icons/si";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -12,23 +19,33 @@ export function Footer() {
           {/* Logo & Tagline */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <img 
-                src="/betterlibmanan.png" 
-                alt="Better Libmanan Logo" 
-                className="h-12 sm:h-16" 
+              <img
+                src="/betterlibmanan.png"
+                alt="Better Libmanan Logo"
+                className="h-12 sm:h-16"
               />
             </div>
             <p className="text-gray-400 mb-6 text-sm sm:text-base">
-              Empowering the people of Libmanan with transparent access to the services, programs, and public funds of LGU Libmanan.
+              Empowering the people of Libmanan with transparent access to the
+              services, programs, and public funds of LGU Libmanan.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+              <a
+                href="#"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
+              >
                 <FaFacebook size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+              <a
+                href="#"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
+              >
                 <FaLinkedin size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+              <a
+                href="#"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
+              >
                 <FaDiscord size={18} />
               </a>
             </div>
@@ -36,40 +53,63 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">Quick Links</h3>
+            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">
+              Quick Links
+            </h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/quiz" className="hover:text-white transition-colors text-sm">
+                <Link
+                  to="/quiz"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Libmanan Quiz
                 </Link>
               </li>
               <li>
-                <Link to="/sitemap" className="hover:text-white transition-colors text-sm">
+                <Link
+                  to="/sitemap"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Sitemap
                 </Link>
               </li>
               <li>
-                <Link to="/charter" className="hover:text-white transition-colors text-sm">
+                <Link
+                  to="/charter"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Citizen's Charter
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="hover:text-white transition-colors text-sm">
+                <Link
+                  to="/terms"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Terms of Use
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="hover:text-white transition-colors text-sm">
+                <Link
+                  to="/privacy"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/accessibility" className="hover:text-white transition-colors text-sm">
+                <Link
+                  to="/accessibility"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Accessibility
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="hover:text-white transition-colors text-sm">
+                <Link
+                  to="/faq"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   FAQ
                 </Link>
               </li>
@@ -78,40 +118,69 @@ export function Footer() {
 
           {/* Resources */}
           <div>
-            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">Resources</h3>
+            <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">
+              Resources
+            </h3>
             <ul className="space-y-3">
               <li>
-                <a href="https://data.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-sm">
+                <a
+                  href="https://data.gov.ph"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Open Data Philippines
                 </a>
               </li>
               <li>
-                <a href="https://foi.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-sm">
+                <a
+                  href="https://foi.gov.ph"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Freedom of Information
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors text-sm">
+                <a
+                  href="#"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Official LGU Libmanan Portal
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors text-sm">
+                <a
+                  href="#"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   Sangguniang Bayan
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors text-sm">
+                <a
+                  href="#"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   LGU Libmanan Facebook
                 </a>
               </li>
               <li>
-                <a href="https://blgf.gov.ph" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-sm">
+                <a
+                  href="https://blgf.gov.ph"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   BLGF Portal
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors text-sm">
+                <a
+                  href="#"
+                  className="hover:text-white transition-colors text-sm"
+                >
                   CMCI DTI Portal
                 </a>
               </li>
@@ -136,15 +205,15 @@ export function Footer() {
             </div>
             <div className="flex items-center gap-8">
               <div className="flex flex-col items-center gap-1">
-                <a 
-                  href="https://bettergov.ph/" 
-                  target="_blank" 
+                <a
+                  href="https://bettergov.ph/"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="opacity-70 hover:opacity-100 transition-opacity duration-300"
                 >
-                  <img 
-                    src="/bettergov-logo.svg" 
-                    alt="Better Gov" 
+                  <img
+                    src="/bettergov-logo.svg"
+                    alt="Better Gov"
                     className="h-16 sm:h-20"
                   />
                 </a>
@@ -156,7 +225,8 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
           <p className="text-gray-500 text-xs sm:text-sm text-center md:text-left">
-            © {currentYear} BetterLibmanan.org | MIT | CC BY 4.0. All public information sourced from official government portals.
+            © {currentYear} BetterLibmanan.org | MIT | CC BY 4.0. All public
+            information sourced from official government portals.
           </p>
           <div className="flex items-center gap-2 text-gray-500 text-xs sm:text-sm">
             <span>Ver. 0.0.0</span>

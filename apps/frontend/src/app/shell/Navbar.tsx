@@ -1,61 +1,61 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
-import { FaBars, FaTimes, FaChevronDown } from 'react-icons/fa';
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
 
 export function Navbar() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const dropdownTimeoutRef = useRef<number | null>(null);
+  const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navItems = [
-    { name: 'Home', path: '/' },
+    { name: "Home", path: "/" },
     {
-      name: 'Services',
-      path: '/services',
+      name: "Services",
+      path: "/services",
       hasDropdown: true,
       dropdownItems: [
-        { name: 'Certificates', path: '/services/certificates' },
-        { name: 'Business', path: '/services/business' },
-        { name: 'Tax Payments', path: '/services/tax-payments' },
-        { name: 'Social Services', path: '/services/social-services' },
-        { name: 'Health', path: '/services/health' },
-        { name: 'Agriculture', path: '/services/agriculture' },
-        { name: 'Infrastructure', path: '/services/infrastructure' },
-        { name: 'Education', path: '/services/education' },
-        { name: 'Public Safety', path: '/services/public-safety' },
-        { name: 'Environment', path: '/services/environment' }
-      ]
+        { name: "Certificates", path: "/services/certificates" },
+        { name: "Business", path: "/services/business" },
+        { name: "Tax Payments", path: "/services/tax-payments" },
+        { name: "Social Services", path: "/services/social-services" },
+        { name: "Health", path: "/services/health" },
+        { name: "Agriculture", path: "/services/agriculture" },
+        { name: "Infrastructure", path: "/services/infrastructure" },
+        { name: "Education", path: "/services/education" },
+        { name: "Public Safety", path: "/services/public-safety" },
+        { name: "Environment", path: "/services/environment" },
+      ],
     },
-    { name: 'Government', path: '/government' },
-    { name: 'Statistics', path: '/statistics' },
+    { name: "Government", path: "/government" },
+    { name: "Statistics", path: "/statistics" },
     {
-      name: 'Legislative',
-      path: '/legislative',
+      name: "Legislative",
+      path: "/legislative",
       hasDropdown: true,
       dropdownItems: [
-        { name: 'Ordinance Framework', path: '/legislative/ordinances' },
-        { name: 'Resolution Framework', path: '/legislative/resolutions' }
-      ]
+        { name: "Ordinance Framework", path: "/legislative/ordinances" },
+        { name: "Resolution Framework", path: "/legislative/resolutions" },
+      ],
     },
-    { name: 'Transparency', path: '/transparency' },
-    { name: 'Contact', path: '/contact' },
+    { name: "Transparency", path: "/transparency" },
+    { name: "Contact", path: "/contact" },
     {
-      name: 'Others',
-      path: '/others',
+      name: "Others",
+      path: "/others",
       hasDropdown: true,
       dropdownOnly: true,
       dropdownItems: [
-        { name: 'Tourism', path: '/tourism' },
-        { name: 'About', path: '/about' }
-      ]
-    }
+        { name: "Tourism", path: "/tourism" },
+        { name: "About", path: "/about" },
+      ],
+    },
   ];
 
   const languageButtons = [
-    { code: 'EN', active: true },
-    { code: 'FIL', active: false },
-    { code: 'BIK', active: false }
+    { code: "EN", active: true },
+    { code: "FIL", active: false },
+    { code: "BIK", active: false },
   ];
 
   const toggleDropdown = (name: string) => {
@@ -104,8 +104,12 @@ export function Navbar() {
               <div
                 key={item.name}
                 className="relative"
-                onMouseEnter={() => item.hasDropdown && handleDropdownMouseEnter(item.name)}
-                onMouseLeave={() => item.hasDropdown && handleDropdownMouseLeave()}
+                onMouseEnter={() =>
+                  item.hasDropdown && handleDropdownMouseEnter(item.name)
+                }
+                onMouseLeave={() =>
+                  item.hasDropdown && handleDropdownMouseLeave()
+                }
               >
                 {item.hasDropdown ? (
                   item.dropdownOnly ? (
@@ -114,21 +118,25 @@ export function Navbar() {
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-default select-none"
                     >
                       {item.name}
-                      <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
+                      <FaChevronDown
+                        className={`text-xs transition-transform ${activeDropdown === item.name ? "rotate-180" : ""}`}
+                      />
                     </span>
                   ) : (
-                  <Link
-                    to={item.path}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(item.path);
-                    }}
-                    onMouseEnter={() => handleDropdownMouseEnter(item.name)}
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-pointer"
-                  >
-                    {item.name}
-                    <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
-                  </Link>
+                    <Link
+                      to={item.path}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(item.path);
+                      }}
+                      onMouseEnter={() => handleDropdownMouseEnter(item.name)}
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-pointer"
+                    >
+                      {item.name}
+                      <FaChevronDown
+                        className={`text-xs transition-transform ${activeDropdown === item.name ? "rotate-180" : ""}`}
+                      />
+                    </Link>
                   )
                 ) : (
                   <Link
@@ -167,10 +175,11 @@ export function Navbar() {
             {languageButtons.map((lang) => (
               <button
                 key={lang.code}
-                className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${lang.active
-                    ? 'bg-blue-800 text-white border-blue-800'
-                    : 'bg-white text-blue-800 border-blue-800 hover:bg-blue-50'
-                  }`}
+                className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${
+                  lang.active
+                    ? "bg-blue-800 text-white border-blue-800"
+                    : "bg-white text-blue-800 border-blue-800 hover:bg-blue-50"
+                }`}
               >
                 {lang.code}
               </button>
@@ -182,7 +191,11 @@ export function Navbar() {
             className="lg:hidden flex items-center justify-center text-gray-700 p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <FaTimes className="h-6 w-6" /> : <FaBars className="h-6 w-6" />}
+            {isMobileMenuOpen ? (
+              <FaTimes className="h-6 w-6" />
+            ) : (
+              <FaBars className="h-6 w-6" />
+            )}
           </button>
         </div>
 
@@ -199,7 +212,9 @@ export function Navbar() {
                         className="w-full text-left text-gray-700 hover:text-blue-600 font-medium transition-colors text-base py-2 flex items-center justify-between"
                       >
                         {item.name}
-                        <FaChevronDown className={`text-xs transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
+                        <FaChevronDown
+                          className={`text-xs transition-transform ${activeDropdown === item.name ? "rotate-180" : ""}`}
+                        />
                       </button>
 
                       {/* Mobile Dropdown */}
@@ -237,10 +252,11 @@ export function Navbar() {
               {languageButtons.map((lang) => (
                 <button
                   key={lang.code}
-                  className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${lang.active
-                      ? 'bg-blue-800 text-white border-blue-800'
-                      : 'bg-white text-blue-800 border-blue-800 hover:bg-blue-50'
-                    }`}
+                  className={`px-3 py-1 rounded-lg border-2 font-medium text-sm transition-colors ${
+                    lang.active
+                      ? "bg-blue-800 text-white border-blue-800"
+                      : "bg-white text-blue-800 border-blue-800 hover:bg-blue-50"
+                  }`}
                 >
                   {lang.code}
                 </button>

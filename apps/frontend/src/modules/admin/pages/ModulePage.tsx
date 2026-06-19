@@ -1,13 +1,13 @@
-import { Navigate, useParams } from 'react-router-dom';
-import { ModulePlaceholder } from '../components/placeholders/ModulePlaceholder';
+import { Navigate, useParams } from "react-router-dom";
+import { ModulePlaceholder } from "../components/placeholders/ModulePlaceholder";
 
 const MODULE_NAMES: Record<string, string> = {
-  services: 'Services',
-  government: 'Government',
-  statistics: 'Statistics',
-  legislative: 'Legislative',
-  transparency: 'Transparency',
-  contacts: 'Contacts',
+  services: "Services",
+  government: "Government",
+  statistics: "Statistics",
+  legislative: "Legislative",
+  transparency: "Transparency",
+  contacts: "Contacts",
 };
 
 function slugToDisplayName(slug: string): string {
@@ -22,7 +22,7 @@ export function ModulePage() {
   const { module } = useParams<{ module: string }>();
 
   // `home` slug and missing module param both redirect to the admin root
-  if (!module || module === 'home') {
+  if (!module || module === "home") {
     return <Navigate to="/admin" replace />;
   }
 

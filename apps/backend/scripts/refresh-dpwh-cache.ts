@@ -30,16 +30,20 @@
  * `FILTERS_TO_REFRESH` below if the frontend ever queries with different
  * parameters.
  */
-import dotenv from 'dotenv';
-import path from 'path';
+import dotenv from "dotenv";
+import path from "path";
 // Load env from the monorepo root, since the backend doesn't have its own .env.
 // __dirname here is apps/backend/scripts during dev (tsx) or apps/backend after build.
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-dotenv.config({ path: path.resolve(__dirname, '../.env'), override: false }); // also support a backend-local .env if present
-import mongoose from 'mongoose';
-import { dpwhProxyRequest } from '../src/modules/dpwh-proxy/dpwh-proxy.service';
-import { buildCacheKey, setCached, DEFAULT_CACHE_TTL_MS } from '../src/modules/dpwh-proxy/dpwh-cache.service';
-import { logger } from '../src/shared/logger';
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env"), override: false }); // also support a backend-local .env if present
+import mongoose from "mongoose";
+import { dpwhProxyRequest } from "../src/modules/dpwh-proxy/dpwh-proxy.service";
+import {
+  buildCacheKey,
+  setCached,
+  DEFAULT_CACHE_TTL_MS,
+} from "../src/modules/dpwh-proxy/dpwh-cache.service";
+import { logger } from "../src/shared/logger";
 
 interface RefreshTarget {
   path: string;
@@ -54,15 +58,15 @@ interface RefreshTarget {
  */
 const FILTERS_TO_REFRESH: RefreshTarget[] = [
   {
-    path: '/projects',
+    path: "/projects",
     query: {
-      page: '1',
-      limit: '10000',
-      search: 'Libmanan',
-      region: 'Region V',
-      province: 'CAMARINES SUR'
-    }
-  }
+      page: "1",
+      limit: "10000",
+      search: "Libmanan",
+      region: "Region V",
+      province: "CAMARINES SUR",
+    },
+  },
 ];
 
 async function refreshOne(target: RefreshTarget): Promise<boolean> {
@@ -70,24 +74,29 @@ async function refreshOne(target: RefreshTarget): Promise<boolean> {
   logger.info(`[refresh] starting target ${cacheKey}`);
   const startedAt = Date.now();
   try {
-    const result = await dpwhProxyRequest({ path: target.path, query: target.query });
+    const result = await dpwhProxyRequest({
+      path: target.path,
+      query: target.query,
+    });
     const dataSize =
-      typeof result.body === 'string' ? result.body.length : JSON.stringify(result.body).length;
+      typeof result.body === "string"
+        ? result.body.length
+        : JSON.stringify(result.body).length;
     await setCached({
       cacheKey,
       data: result.body,
       upstreamStatus: result.status,
       ttlMs: target.ttlMs ?? DEFAULT_CACHE_TTL_MS,
-      fetchDurationMs: Date.now() - startedAt
+      fetchDurationMs: Date.now() - startedAt,
     });
     logger.info(
-      `[refresh] OK key=${cacheKey} status=${result.status} bytes=${dataSize} elapsedMs=${Date.now() - startedAt}`
+      `[refresh] OK key=${cacheKey} status=${result.status} bytes=${dataSize} elapsedMs=${Date.now() - startedAt}`,
     );
     return true;
   } catch (err) {
     logger.error(
-      `[refresh] FAILED key=${cacheKey} reason=${(err as any).reason ?? 'unknown'} ` +
-        `message=${(err as Error).message}`
+      `[refresh] FAILED key=${cacheKey} reason=${(err as any).reason ?? "unknown"} ` +
+        `message=${(err as Error).message}`,
     );
     return false;
   }
@@ -96,11 +105,11 @@ async function refreshOne(target: RefreshTarget): Promise<boolean> {
 async function main() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
-    logger.error('[refresh] MONGODB_URI is not set. Aborting.');
+    logger.error("[refresh] MONGODB_URI is not set. Aborting.");
     process.exit(1);
   }
 
-  logger.info('[refresh] connecting to MongoDB…');
+  logger.info("[refresh] connecting to MongoDB…");
   await mongoose.connect(mongoUri);
 
   let okCount = 0;
@@ -110,13 +119,15 @@ async function main() {
   }
 
   await mongoose.disconnect();
-  logger.info(`[refresh] done. ${okCount}/${FILTERS_TO_REFRESH.length} targets refreshed.`);
+  logger.info(
+    `[refresh] done. ${okCount}/${FILTERS_TO_REFRESH.length} targets refreshed.`,
+  );
 
   // Non-zero exit when nothing was refreshed so a scheduler can detect failures.
   if (okCount === 0) process.exit(2);
 }
 
 main().catch((err) => {
-  logger.error('[refresh] fatal error', err);
+  logger.error("[refresh] fatal error", err);
   mongoose.disconnect().finally(() => process.exit(1));
 });

@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function HealthPage() {
   return <ServiceCategoryPage slug="health" />;
 }
 
-HealthPage.displayName = 'HealthPage';
+HealthPage.displayName = "HealthPage";
 export default HealthPage;

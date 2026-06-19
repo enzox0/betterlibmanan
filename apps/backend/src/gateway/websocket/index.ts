@@ -1,2 +1,2 @@
 // WebSocket coming soon
-export {}
+export {};

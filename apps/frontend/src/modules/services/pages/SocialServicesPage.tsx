@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function SocialServicesPage() {
   return <ServiceCategoryPage slug="social-services" />;
 }
 
-SocialServicesPage.displayName = 'SocialServicesPage';
+SocialServicesPage.displayName = "SocialServicesPage";
 export default SocialServicesPage;

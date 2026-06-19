@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function PublicSafetyPage() {
   return <ServiceCategoryPage slug="public-safety" />;
 }
 
-PublicSafetyPage.displayName = 'PublicSafetyPage';
+PublicSafetyPage.displayName = "PublicSafetyPage";
 export default PublicSafetyPage;

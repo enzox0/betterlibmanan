@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IRefreshToken extends Document {
   token: string;
@@ -20,7 +20,7 @@ const RefreshTokenSchema = new Schema<IRefreshToken>(
     },
     adminId: {
       type: Schema.Types.ObjectId,
-      ref: 'Admin',
+      ref: "Admin",
       required: true,
       index: true,
     },
@@ -45,4 +45,7 @@ const RefreshTokenSchema = new Schema<IRefreshToken>(
   },
 );
 
-export const RefreshTokenModel = mongoose.model<IRefreshToken>('RefreshToken', RefreshTokenSchema);
+export const RefreshTokenModel = mongoose.model<IRefreshToken>(
+  "RefreshToken",
+  RefreshTokenSchema,
+);

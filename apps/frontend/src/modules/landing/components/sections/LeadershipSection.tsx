@@ -1,21 +1,25 @@
-import { FaEnvelope, FaPhone, FaUserTie } from 'react-icons/fa';
-import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '@/shared/ui';
+import { FaEnvelope, FaPhone, FaUserTie } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { Skeleton, SkeletonCard } from "@/shared/ui";
 
-export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }) {
+export function LeadershipSection({
+  isLoading = false,
+}: {
+  isLoading?: boolean;
+}) {
   const officials = [
     {
-      position: 'Municipal Mayor',
-      name: 'Hon. Edelson M. Marfil',
-      email: 'mayor@libmanan.gov.ph',
-      phone: '(054) 123-4567'
+      position: "Municipal Mayor",
+      name: "Hon. Edelson M. Marfil",
+      email: "mayor@libmanan.gov.ph",
+      phone: "(054) 123-4567",
     },
     {
-      position: 'Municipal Vice Mayor',
-      name: 'Hon. Ariel Oriño',
-      email: 'vicemayor@libmanan.gov.ph',
-      phone: '(054) 123-4568'
-    }
+      position: "Municipal Vice Mayor",
+      name: "Hon. Ariel Oriño",
+      email: "vicemayor@libmanan.gov.ph",
+      phone: "(054) 123-4568",
+    },
   ];
 
   return (
@@ -23,7 +27,7 @@ export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.7 }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -36,8 +40,12 @@ export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">Municipal Leadership</h2>
-                  <p className="mt-2 text-sm text-neutral-500">Meet our dedicated public servants</p>
+                  <h2 className="text-2xl font-bold text-neutral-900 lg:text-3xl">
+                    Municipal Leadership
+                  </h2>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    Meet our dedicated public servants
+                  </p>
                 </>
               )}
             </div>
@@ -84,7 +92,9 @@ export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }
                       </div>
                     </div>
 
-                    <h3 className="text-xl font-bold text-neutral-900">{official.name}</h3>
+                    <h3 className="text-xl font-bold text-neutral-900">
+                      {official.name}
+                    </h3>
 
                     <div className="mt-5 space-y-3">
                       <a
@@ -111,6 +121,6 @@ export function LeadershipSection({ isLoading = false }: { isLoading?: boolean }
   );
 }
 
-LeadershipSection.displayName = 'LeadershipSection';
+LeadershipSection.displayName = "LeadershipSection";
 
 export default LeadershipSection;

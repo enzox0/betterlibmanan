@@ -1,30 +1,30 @@
-import { FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
-import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '@/shared/ui';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { Skeleton, SkeletonCard } from "@/shared/ui";
 
 export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
   const contactInfo = [
     {
       icon: FaPhone,
-      title: 'Phone',
-      value: '(054) 123-4567',
-      href: 'tel:(054)123-4567',
-      description: 'Mon-Fri: 8:00 AM - 5:00 PM'
+      title: "Phone",
+      value: "(054) 123-4567",
+      href: "tel:(054)123-4567",
+      description: "Mon-Fri: 8:00 AM - 5:00 PM",
     },
     {
       icon: FaEnvelope,
-      title: 'Email',
-      value: 'lgulibmanan@gmail.com',
-      href: 'mailto:lgulibmanan@gmail.com',
-      description: "We'll respond within 24 hours"
+      title: "Email",
+      value: "lgulibmanan@gmail.com",
+      href: "mailto:lgulibmanan@gmail.com",
+      description: "We'll respond within 24 hours",
     },
     {
       icon: FaMapMarkerAlt,
-      title: 'Address',
-      value: 'Municipal Hall, Libmanan, Camarines Sur 4418',
-      href: '#',
-      description: 'Visit us during office hours'
-    }
+      title: "Address",
+      value: "Municipal Hall, Libmanan, Camarines Sur 4418",
+      href: "#",
+      description: "Visit us during office hours",
+    },
   ];
 
   return (
@@ -32,7 +32,7 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.8 }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -44,7 +44,9 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
               </>
             ) : (
               <>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">Contact Information</h2>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">
+                  Contact Information
+                </h2>
                 <p className="mt-2 max-w-2xl text-sm text-neutral-500">
                   Get in touch with us for inquiries, concerns, or assistance
                 </p>
@@ -74,9 +76,15 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
                         <Icon className="text-sm" />
                       </div>
 
-                      <h3 className="text-base font-semibold text-neutral-900">{info.title}</h3>
-                      <p className="mt-3 text-sm font-medium text-neutral-900">{info.value}</p>
-                      <p className="mt-2 text-sm text-neutral-500">{info.description}</p>
+                      <h3 className="text-base font-semibold text-neutral-900">
+                        {info.title}
+                      </h3>
+                      <p className="mt-3 text-sm font-medium text-neutral-900">
+                        {info.value}
+                      </p>
+                      <p className="mt-2 text-sm text-neutral-500">
+                        {info.description}
+                      </p>
                     </a>
                   );
                 })}
@@ -87,6 +95,6 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
   );
 }
 
-ContactSection.displayName = 'ContactSection';
+ContactSection.displayName = "ContactSection";
 
 export default ContactSection;

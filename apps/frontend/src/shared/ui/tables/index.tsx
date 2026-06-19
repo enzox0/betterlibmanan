@@ -1,2 +1,2 @@
 // Tables coming soon
-export {}
+export {};

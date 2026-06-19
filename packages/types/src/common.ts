@@ -18,7 +18,7 @@ export interface PaginatedResponse<T> {
 
 export interface SortOptions {
   field: string;
-  order: 'asc' | 'desc';
+  order: "asc" | "desc";
 }
 
 export interface PaginationOptions {

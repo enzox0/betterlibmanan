@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useAdminStore } from '../../store/adminStore';
-import type { ContentRecord } from '../../types/admin.types';
+import { useEffect } from "react";
+import ReactDOM from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { useAdminStore } from "../../store/adminStore";
+import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
   record: ContentRecord;
@@ -25,12 +25,16 @@ const dialogVariants = {
   exit: { opacity: 0, scale: 0.95 },
 };
 
-function DialogContent({ record, sectionKey, onClose }: DeleteConfirmDialogProps) {
+function DialogContent({
+  record,
+  sectionKey,
+  onClose,
+}: DeleteConfirmDialogProps) {
   const deleteRecord = useAdminStore((s) => s.deleteRecord);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previous;
     };
@@ -38,12 +42,12 @@ function DialogContent({ record, sectionKey, onClose }: DeleteConfirmDialogProps
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
   function handleConfirmDelete() {
@@ -80,7 +84,10 @@ function DialogContent({ record, sectionKey, onClose }: DeleteConfirmDialogProps
         transition={transition}
       >
         {/* Top accent */}
-        <div className="h-1 bg-gradient-to-r from-red-500 to-red-700" aria-hidden="true" />
+        <div
+          className="h-1 bg-gradient-to-r from-red-500 to-red-700"
+          aria-hidden="true"
+        />
 
         <div className="p-6">
           {/* Icon */}
@@ -112,10 +119,15 @@ function DialogContent({ record, sectionKey, onClose }: DeleteConfirmDialogProps
 
           {/* Body */}
           <p className="text-center text-sm text-gray-500 mb-6">
-            Are you sure you want to delete{' '}
-            <span className="font-semibold text-gray-800">&ldquo;{record.title}&rdquo;</span>?
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-gray-800">
+              &ldquo;{record.title}&rdquo;
+            </span>
+            ?
             <br />
-            <span className="text-xs text-gray-400">This action cannot be undone.</span>
+            <span className="text-xs text-gray-400">
+              This action cannot be undone.
+            </span>
           </p>
 
           {/* Actions */}

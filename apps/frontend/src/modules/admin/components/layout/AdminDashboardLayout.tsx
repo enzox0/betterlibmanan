@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { AdminSidebar } from './AdminSidebar';
-import { AdminHeader } from './AdminHeader';
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { AdminSidebar } from "./AdminSidebar";
+import { AdminHeader } from "./AdminHeader";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -13,9 +13,9 @@ const overlayVariants = {
 };
 
 const sidebarMobileVariants = {
-  hidden: { x: '-100%' },
+  hidden: { x: "-100%" },
   visible: { x: 0 },
-  exit: { x: '-100%' },
+  exit: { x: "-100%" },
 };
 
 export function AdminDashboardLayout() {

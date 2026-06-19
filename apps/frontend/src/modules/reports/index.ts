@@ -1,2 +1,2 @@
 // Reports module coming soon
-export {}
+export {};

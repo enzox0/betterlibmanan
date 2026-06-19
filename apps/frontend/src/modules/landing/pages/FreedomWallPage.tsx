@@ -1,4 +1,4 @@
-import { FreedomWallSection } from '../components/sections/FreedomWallSection';
+import { FreedomWallSection } from "../components/sections/FreedomWallSection";
 
 export function FreedomWallPage() {
   // flex-1 so the section fills the <main> flex column provided by Layout
@@ -9,6 +9,6 @@ export function FreedomWallPage() {
   );
 }
 
-FreedomWallPage.displayName = 'FreedomWallPage';
+FreedomWallPage.displayName = "FreedomWallPage";
 
 export default FreedomWallPage;

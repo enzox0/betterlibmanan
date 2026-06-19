@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 interface ModulePlaceholderProps {
   moduleName: string;
@@ -25,7 +25,6 @@ export function ModulePlaceholder({ moduleName }: ModulePlaceholderProps) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
       >
-
         <div className="text-center">
           <p className="text-base font-semibold text-gray-700">Coming Soon</p>
           <p className="mt-1 text-sm text-gray-400 max-w-xs">

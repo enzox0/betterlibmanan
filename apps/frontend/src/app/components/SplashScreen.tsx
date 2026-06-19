@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import logo from '/betterlibmanan.png';
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import logo from "/betterlibmanan.png";
 
-const SESSION_KEY = 'splash_shown';
+const SESSION_KEY = "splash_shown";
 
 /** Returns true if the splash has already been shown this browser session. */
 export function hasSplashBeenShown(): boolean {
-  return sessionStorage.getItem(SESSION_KEY) === 'true';
+  return sessionStorage.getItem(SESSION_KEY) === "true";
 }
 
 interface SplashScreenProps {
@@ -27,7 +27,7 @@ export function SplashScreen({ duration = 2000, onFinish }: SplashScreenProps) {
   }, [duration]);
 
   function handleExitComplete() {
-    sessionStorage.setItem(SESSION_KEY, 'true');
+    sessionStorage.setItem(SESSION_KEY, "true");
     onFinish?.();
   }
 
@@ -38,7 +38,7 @@ export function SplashScreen({ duration = 2000, onFinish }: SplashScreenProps) {
           key="splash"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.6, ease: 'easeInOut' }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
           aria-label="Loading"
           role="status"
@@ -48,7 +48,7 @@ export function SplashScreen({ duration = 2000, onFinish }: SplashScreenProps) {
             alt="BetterLibmanan"
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="w-[clamp(120px,30vw,280px)] h-auto select-none pointer-events-none"
             draggable={false}
           />

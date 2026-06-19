@@ -5,17 +5,17 @@ import {
   FaBuilding,
   FaExclamationTriangle,
   FaBroadcastTower,
-} from 'react-icons/fa';
-import type { IconType } from 'react-icons';
-import { useAdminStore } from '@/modules/admin/store/adminStore';
+} from "react-icons/fa";
+import type { IconType } from "react-icons";
+import { useAdminStore } from "@/modules/admin/store/adminStore";
 
 // Maps the icon slug stored in the admin store to the matching react-icons component.
 const ICON_MAP: Record<string, IconType> = {
-  shield:    FaShieldAlt,
-  hospital:  FaHospital,
-  fire:      FaFire,
-  building:  FaBuilding,
-  warning:   FaExclamationTriangle,
+  shield: FaShieldAlt,
+  hospital: FaHospital,
+  fire: FaFire,
+  building: FaBuilding,
+  warning: FaExclamationTriangle,
   broadcast: FaBroadcastTower,
 };
 
@@ -23,8 +23,8 @@ export function TopUtilityBar() {
   const allRecords = useAdminStore((s) => s.records);
 
   // Only published emergency contacts are shown in the marquee.
-  const emergencyContacts = (allRecords['emergency-contacts'] ?? []).filter(
-    (r) => r.status === 'published',
+  const emergencyContacts = (allRecords["emergency-contacts"] ?? []).filter(
+    (r) => r.status === "published",
   );
 
   // Nothing to show — render nothing rather than an empty red bar.
@@ -35,17 +35,19 @@ export function TopUtilityBar() {
       <div className="flex whitespace-nowrap animate-marquee">
         {/* Duplicate the list so the marquee loops seamlessly */}
         {[...emergencyContacts, ...emergencyContacts].map((contact, index) => {
-          const Icon = ICON_MAP[contact.fields.icon ?? 'shield'] ?? FaShieldAlt;
-          const number = contact.fields.number ?? '';
+          const Icon = ICON_MAP[contact.fields.icon ?? "shield"] ?? FaShieldAlt;
+          const number = contact.fields.number ?? "";
           const name = contact.fields.name ?? contact.title;
           return (
             <a
               key={`${contact.id}-${index}`}
-              href={`tel:${number.replace(/\s/g, '')}`}
+              href={`tel:${number.replace(/\s/g, "")}`}
               className="flex items-center gap-2 mx-6 sm:mx-12 hover:text-yellow-300 transition-colors text-[11px] sm:text-xs font-medium"
             >
               <Icon size={12} className="shrink-0" />
-              <span>{name}: {number}</span>
+              <span>
+                {name}: {number}
+              </span>
             </a>
           );
         })}

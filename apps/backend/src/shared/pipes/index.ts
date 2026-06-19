@@ -1,2 +1,2 @@
 // Pipes coming soon
-export {}
+export {};

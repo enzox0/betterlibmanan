@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAdminStore } from '../store/adminStore';
+import { useEffect, useState } from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAdminStore } from "../store/adminStore";
 
 /**
  * AdminRoute — protects all child routes under /admin.
@@ -12,12 +12,13 @@ import { useAdminStore } from '../store/adminStore';
  *   - If nothing is available, redirect to /admin/login.
  */
 export function AdminRoute() {
-  const { isAuthenticated, accessToken, refreshToken, refreshTokens } = useAdminStore((s) => ({
-    isAuthenticated: s.isAuthenticated,
-    accessToken: s.accessToken,
-    refreshToken: s.refreshToken,
-    refreshTokens: s.refreshTokens,
-  }));
+  const { isAuthenticated, accessToken, refreshToken, refreshTokens } =
+    useAdminStore((s) => ({
+      isAuthenticated: s.isAuthenticated,
+      accessToken: s.accessToken,
+      refreshToken: s.refreshToken,
+      refreshTokens: s.refreshTokens,
+    }));
 
   const [checking, setChecking] = useState(!isAuthenticated && !!refreshToken);
 
@@ -38,8 +39,19 @@ export function AdminRoute() {
           viewBox="0 0 24 24"
           aria-label="Loading"
         >
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
         </svg>
       </div>
     );

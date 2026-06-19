@@ -1,2 +1,2 @@
 // Sidebar coming soon
-export {}
+export {};

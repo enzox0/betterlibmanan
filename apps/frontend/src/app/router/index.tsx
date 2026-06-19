@@ -1,9 +1,9 @@
-import { Routes, Route, useRoutes } from 'react-router-dom';
-import { lazyLoad } from '@/app/router/lazy-loader';
-import { Layout, LayoutEager } from '@/app/shell/Layout';
-import HomePage from '@/modules/landing';
-import { adminRoutes } from '../../modules/admin/routes/adminRouter';
-import { useAdminShortcut } from '../../modules/admin/hooks/useAdminShortcut';
+import { Routes, Route, useRoutes } from "react-router-dom";
+import { lazyLoad } from "@/app/router/lazy-loader";
+import { Layout, LayoutEager } from "@/app/shell/Layout";
+import HomePage from "@/modules/landing";
+import { adminRoutes } from "../../modules/admin/routes/adminRouter";
+import { useAdminShortcut } from "../../modules/admin/hooks/useAdminShortcut";
 
 // Admin subtree rendered via useRoutes so the RouteObject[] array integrates
 // cleanly with the existing JSX-based <Routes> pattern.
@@ -11,251 +11,291 @@ function AdminRouterOutlet() {
   return useRoutes(adminRoutes);
 }
 
-const NotFoundPage = lazyLoad(() => import('@/modules/errors').then(m => ({ default: m.NotFoundPage })));
-const ContactPage = lazyLoad(() => import('@/modules/contact'));
-const TransparencyPage = lazyLoad(() => import('@/modules/transparency'));
-const GovernmentPage = lazyLoad(() => import('@/modules/government'));
-const StatisticsPage = lazyLoad(() => import('@/modules/statistics'));
-const LegislativePage = lazyLoad(() => import('@/modules/legislative'));
-const OrdinanceFrameworkPage = lazyLoad(() => import('@/modules/legislative').then(m => ({ default: m.OrdinanceFrameworkPage })));
-const ResolutionFrameworkPage = lazyLoad(() => import('@/modules/legislative').then(m => ({ default: m.ResolutionFrameworkPage })));
-const ServicesPage = lazyLoad(() => import('@/modules/services'));
-const CertificatesPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.CertificatesPage })));
-const BusinessPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.BusinessPage })));
-const TaxPaymentsPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.TaxPaymentsPage })));
-const SocialServicesPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.SocialServicesPage })));
-const HealthPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.HealthPage })));
-const AgriculturePage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.AgriculturePage })));
-const InfrastructurePage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.InfrastructurePage })));
-const EducationPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.EducationPage })));
-const PublicSafetyPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.PublicSafetyPage })));
-const EnvironmentPage = lazyLoad(() => import('@/modules/services').then(m => ({ default: m.EnvironmentPage })));
-const ComingSoonPage = lazyLoad(() => import('@/modules/common').then(m => ({ default: m.ComingSoonPage })));
-const AboutPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.AboutPage })));
-const FreedomWallPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.FreedomWallPage })));
-const CommunityPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.CommunityPage })));
-const QuizPage = lazyLoad(() => import('@/modules/landing').then(m => ({ default: m.QuizPage })));
-const TourismPage = lazyLoad(() => import('@/modules/tourism'));
+const NotFoundPage = lazyLoad(() =>
+  import("@/modules/errors").then((m) => ({ default: m.NotFoundPage })),
+);
+const ContactPage = lazyLoad(() => import("@/modules/contact"));
+const TransparencyPage = lazyLoad(() => import("@/modules/transparency"));
+const GovernmentPage = lazyLoad(() => import("@/modules/government"));
+const StatisticsPage = lazyLoad(() => import("@/modules/statistics"));
+const LegislativePage = lazyLoad(() => import("@/modules/legislative"));
+const OrdinanceFrameworkPage = lazyLoad(() =>
+  import("@/modules/legislative").then((m) => ({
+    default: m.OrdinanceFrameworkPage,
+  })),
+);
+const ResolutionFrameworkPage = lazyLoad(() =>
+  import("@/modules/legislative").then((m) => ({
+    default: m.ResolutionFrameworkPage,
+  })),
+);
+const ServicesPage = lazyLoad(() => import("@/modules/services"));
+const CertificatesPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.CertificatesPage })),
+);
+const BusinessPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.BusinessPage })),
+);
+const TaxPaymentsPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.TaxPaymentsPage })),
+);
+const SocialServicesPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.SocialServicesPage })),
+);
+const HealthPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.HealthPage })),
+);
+const AgriculturePage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.AgriculturePage })),
+);
+const InfrastructurePage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.InfrastructurePage })),
+);
+const EducationPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.EducationPage })),
+);
+const PublicSafetyPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.PublicSafetyPage })),
+);
+const EnvironmentPage = lazyLoad(() =>
+  import("@/modules/services").then((m) => ({ default: m.EnvironmentPage })),
+);
+const ComingSoonPage = lazyLoad(() =>
+  import("@/modules/common").then((m) => ({ default: m.ComingSoonPage })),
+);
+const AboutPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.AboutPage })),
+);
+const FreedomWallPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.FreedomWallPage })),
+);
+const CommunityPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.CommunityPage })),
+);
+const QuizPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.QuizPage })),
+);
+const TourismPage = lazyLoad(() => import("@/modules/tourism"));
 
 export function AppRouter() {
   useAdminShortcut();
 
   return (
     <Routes>
-        <Route
-          path="/"
-          element={
-            <LayoutEager>
-              <HomePage />
-            </LayoutEager>
-          }
-        />
-        {/* Admin Routes */}
-        <Route path="/admin/*" element={<AdminRouterOutlet />} />
-        {/* Services Routes */}
-        <Route
-          path="/services"
-          element={
-            <Layout>
-              <ServicesPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/certificates"
-          element={
-            <Layout>
-              <CertificatesPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/business"
-          element={
-            <Layout>
-              <BusinessPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/tax-payments"
-          element={
-            <Layout>
-              <TaxPaymentsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/social-services"
-          element={
-            <Layout>
-              <SocialServicesPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/health"
-          element={
-            <Layout>
-              <HealthPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/agriculture"
-          element={
-            <Layout>
-              <AgriculturePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/infrastructure"
-          element={
-            <Layout>
-              <InfrastructurePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/education"
-          element={
-            <Layout>
-              <EducationPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/public-safety"
-          element={
-            <Layout>
-              <PublicSafetyPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/services/environment"
-          element={
-            <Layout>
-              <EnvironmentPage />
-            </Layout>
-          }
-        />
-        {/* Legislative Routes */}
-        <Route
-          path="/legislative"
-          element={
-            <Layout>
-              <LegislativePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/legislative/ordinances"
-          element={
-            <Layout>
-              <OrdinanceFrameworkPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/legislative/resolutions"
-          element={
-            <Layout>
-              <ResolutionFrameworkPage />
-            </Layout>
-          }
-        />
-        {/* Other Nav Items */}
-        <Route
-          path="/government"
-          element={
-            <Layout>
-              <GovernmentPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/statistics"
-          element={
-            <Layout>
-              <StatisticsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/transparency"
-          element={
-            <Layout>
-              <TransparencyPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/contact"
-          element={
-            <Layout>
-              <ContactPage />
-            </Layout>
-          }
-        />
-        {/* 404 Not Found */}
-        <Route
-          path="/coming-soon"
-          element={
-            <Layout>
-              <ComingSoonPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/tourism"
-          element={
-            <Layout>
-              <TourismPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/about"
-          element={
-            <Layout>
-              <AboutPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/freedom-wall"
-          element={
-            <Layout>
-              <FreedomWallPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/quiz"
-          element={
-            <Layout>
-              <QuizPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/community"
-          element={
-            <Layout>
-              <CommunityPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="*"
-          element={
-            <Layout>
-              <NotFoundPage />
-            </Layout>
-          }
-        />
-      </Routes>
+      <Route
+        path="/"
+        element={
+          <LayoutEager>
+            <HomePage />
+          </LayoutEager>
+        }
+      />
+      {/* Admin Routes */}
+      <Route path="/admin/*" element={<AdminRouterOutlet />} />
+      {/* Services Routes */}
+      <Route
+        path="/services"
+        element={
+          <Layout>
+            <ServicesPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/certificates"
+        element={
+          <Layout>
+            <CertificatesPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/business"
+        element={
+          <Layout>
+            <BusinessPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/tax-payments"
+        element={
+          <Layout>
+            <TaxPaymentsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/social-services"
+        element={
+          <Layout>
+            <SocialServicesPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/health"
+        element={
+          <Layout>
+            <HealthPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/agriculture"
+        element={
+          <Layout>
+            <AgriculturePage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/infrastructure"
+        element={
+          <Layout>
+            <InfrastructurePage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/education"
+        element={
+          <Layout>
+            <EducationPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/public-safety"
+        element={
+          <Layout>
+            <PublicSafetyPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services/environment"
+        element={
+          <Layout>
+            <EnvironmentPage />
+          </Layout>
+        }
+      />
+      {/* Legislative Routes */}
+      <Route
+        path="/legislative"
+        element={
+          <Layout>
+            <LegislativePage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/legislative/ordinances"
+        element={
+          <Layout>
+            <OrdinanceFrameworkPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/legislative/resolutions"
+        element={
+          <Layout>
+            <ResolutionFrameworkPage />
+          </Layout>
+        }
+      />
+      {/* Other Nav Items */}
+      <Route
+        path="/government"
+        element={
+          <Layout>
+            <GovernmentPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/statistics"
+        element={
+          <Layout>
+            <StatisticsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/transparency"
+        element={
+          <Layout>
+            <TransparencyPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/contact"
+        element={
+          <Layout>
+            <ContactPage />
+          </Layout>
+        }
+      />
+      {/* 404 Not Found */}
+      <Route
+        path="/coming-soon"
+        element={
+          <Layout>
+            <ComingSoonPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/tourism"
+        element={
+          <Layout>
+            <TourismPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/about"
+        element={
+          <Layout>
+            <AboutPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/freedom-wall"
+        element={
+          <Layout>
+            <FreedomWallPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/quiz"
+        element={
+          <Layout>
+            <QuizPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/community"
+        element={
+          <Layout>
+            <CommunityPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="*"
+        element={
+          <Layout>
+            <NotFoundPage />
+          </Layout>
+        }
+      />
+    </Routes>
   );
 }

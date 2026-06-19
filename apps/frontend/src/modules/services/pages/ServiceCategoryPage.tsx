@@ -1,9 +1,16 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { FaArrowLeft, FaCheckCircle, FaClock, FaMoneyBillWave, FaListUl, FaChevronRight } from 'react-icons/fa';
-import { mockServicesData } from '../data/mockData';
-import type { ServiceItem } from '../types/types';
-import { IconType } from 'react-icons';
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import {
+  FaArrowLeft,
+  FaCheckCircle,
+  FaClock,
+  FaMoneyBillWave,
+  FaListUl,
+  FaChevronRight,
+} from "react-icons/fa";
+import { mockServicesData } from "../data/mockData";
+import type { ServiceItem } from "../types/types";
+import { IconType } from "react-icons";
 
 interface ServiceCategoryPageProps {
   slug: string;
@@ -11,7 +18,13 @@ interface ServiceCategoryPageProps {
 
 // ── Service Card ─────────────────────────────────────────────────────────────
 
-function ServiceCard({ service, index }: { service: ServiceItem; index: number }) {
+function ServiceCard({
+  service,
+  index,
+}: {
+  service: ServiceItem;
+  index: number;
+}) {
   const hasDetails = service.requirements || service.steps;
 
   return (
@@ -64,7 +77,10 @@ function ServiceCard({ service, index }: { service: ServiceItem; index: number }
               </p>
               <ul className="space-y-2">
                 {service.requirements.map((req, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-700">
+                  <li
+                    key={i}
+                    className="flex items-start gap-2.5 text-sm text-neutral-700"
+                  >
                     <FaCheckCircle
                       size={13}
                       className="mt-0.5 shrink-0 text-neutral-400"
@@ -88,7 +104,9 @@ function ServiceCard({ service, index }: { service: ServiceItem; index: number }
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white mt-0.5">
                       {i + 1}
                     </span>
-                    <span className="text-sm text-neutral-700 leading-snug">{step}</span>
+                    <span className="text-sm text-neutral-700 leading-snug">
+                      {step}
+                    </span>
                   </li>
                 ))}
               </ol>
@@ -103,7 +121,7 @@ function ServiceCard({ service, index }: { service: ServiceItem; index: number }
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
-  const category = mockServicesData.categories.find(c => c.slug === slug);
+  const category = mockServicesData.categories.find((c) => c.slug === slug);
 
   if (!category) return null;
 
@@ -111,15 +129,15 @@ export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
 
   return (
     <div className="min-h-screen bg-neutral-100">
-
       {/* ── Hero ── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
@@ -157,7 +175,9 @@ export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
           {/* Service count pill */}
           <div className="mt-5">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-              {category.services.length} {category.services.length === 1 ? 'Service' : 'Services'} Available
+              {category.services.length}{" "}
+              {category.services.length === 1 ? "Service" : "Services"}{" "}
+              Available
             </span>
           </div>
         </motion.div>
@@ -167,7 +187,6 @@ export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
       <section className="py-10 sm:py-14">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex gap-8 items-start">
-
             {/* ── Sticky Sidebar (desktop) ── */}
             <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-28">
               <div className="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
@@ -186,7 +205,9 @@ export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[10px] font-bold text-neutral-500 group-hover:bg-neutral-900 group-hover:text-white transition-colors">
                         {index + 1}
                       </span>
-                      <span className="font-medium leading-snug">{service.title}</span>
+                      <span className="font-medium leading-snug">
+                        {service.title}
+                      </span>
                     </a>
                   ))}
                 </nav>
@@ -210,15 +231,13 @@ export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
                 <ServiceCard key={service.id} service={service} index={index} />
               ))}
             </div>
-
           </div>
         </div>
       </section>
-
     </div>
   );
 }
 
-ServiceCategoryPage.displayName = 'ServiceCategoryPage';
+ServiceCategoryPage.displayName = "ServiceCategoryPage";
 
 export default ServiceCategoryPage;

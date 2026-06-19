@@ -1,2 +1,2 @@
 // Forms coming soon
-export {}
+export {};

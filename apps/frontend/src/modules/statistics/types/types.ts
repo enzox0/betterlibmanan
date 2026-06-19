@@ -38,7 +38,7 @@ export interface PovertyStat {
   rate: number;
   confidenceInterval: string;
   change: number;
-  status: 'improved' | 'worsened' | 'stable';
+  status: "improved" | "worsened" | "stable";
 }
 
 export interface CompetitivenessIndex {

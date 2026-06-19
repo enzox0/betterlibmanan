@@ -1,4 +1,2 @@
-
-export { GovernmentPage } from './pages/GovernmentPage';
-export { default } from './pages/GovernmentPage';
-
+export { GovernmentPage } from "./pages/GovernmentPage";
+export { default } from "./pages/GovernmentPage";

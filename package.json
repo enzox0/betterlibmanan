@@ -11,6 +11,9 @@
   },
   "packageManager": "pnpm@9.15.9",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
+    "hooks:install": "git config core.hooksPath .githooks && echo \"Git hooks installed from .githooks/\"",
+    "hooks:uninstall": "git config --unset core.hooksPath && echo \"Git hooks uninstalled (reverted to .git/hooks/)\"",
     "build": "turbo run build",
     "verify": "node scripts/verify-production-build.js",
     "build:verify": "pnpm run build && pnpm run verify",
@@ -24,6 +27,7 @@
     "dev:worker": "turbo run dev --filter=@betterlibmanan/worker",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "clean": "turbo run clean && rm -rf node_modules && rm -rf build",
     "db:migrate": "turbo run db:migrate --filter=@betterlibmanan/backend",

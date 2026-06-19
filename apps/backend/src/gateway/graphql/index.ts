@@ -1,2 +1,2 @@
 // GraphQL coming soon
-export {}
+export {};

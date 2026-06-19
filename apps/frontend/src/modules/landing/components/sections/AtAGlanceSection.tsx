@@ -1,33 +1,37 @@
-import { FaUsers, FaBuilding, FaAward, FaMapMarkedAlt } from 'react-icons/fa';
-import { motion } from 'framer-motion';
-import { Skeleton } from '@/shared/ui';
+import { FaUsers, FaBuilding, FaAward, FaMapMarkedAlt } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { Skeleton } from "@/shared/ui";
 
-export function AtAGlanceSection({ isLoading = false }: { isLoading?: boolean }) {
+export function AtAGlanceSection({
+  isLoading = false,
+}: {
+  isLoading?: boolean;
+}) {
   const statistics = [
-    { 
-      label: 'Population', 
-      value: '110,000+', 
-      sub: '2024 Census',
-      icon: FaUsers
+    {
+      label: "Population",
+      value: "110,000+",
+      sub: "2024 Census",
+      icon: FaUsers,
     },
-    { 
-      label: 'Barangays', 
-      value: '75', 
-      sub: 'Administrative Units',
-      icon: FaBuilding
+    {
+      label: "Barangays",
+      value: "75",
+      sub: "Administrative Units",
+      icon: FaBuilding,
     },
-    { 
-      label: 'Income Class', 
-      value: '1st Class', 
-      sub: 'Municipality',
-      icon: FaAward
+    {
+      label: "Income Class",
+      value: "1st Class",
+      sub: "Municipality",
+      icon: FaAward,
     },
-    { 
-      label: 'Land Area', 
-      value: '348.54 km²', 
-      sub: 'Total Municipal Area',
-      icon: FaMapMarkedAlt
-    }
+    {
+      label: "Land Area",
+      value: "348.54 km²",
+      sub: "Total Municipal Area",
+      icon: FaMapMarkedAlt,
+    },
   ];
 
   return (
@@ -35,7 +39,7 @@ export function AtAGlanceSection({ isLoading = false }: { isLoading?: boolean })
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -48,7 +52,9 @@ export function AtAGlanceSection({ isLoading = false }: { isLoading?: boolean })
                 </>
               ) : (
                 <>
-                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">Libmanan at a Glance</h2>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">
+                    Libmanan at a Glance
+                  </h2>
                   <p className="mt-2 text-sm text-neutral-500">
                     Key facts and figures about our municipality
                   </p>
@@ -94,9 +100,15 @@ export function AtAGlanceSection({ isLoading = false }: { isLoading?: boolean })
                       </div>
 
                       <div>
-                        <div className="text-2xl font-bold text-neutral-900 lg:text-3xl">{stat.value}</div>
-                        <div className="mt-1 text-base font-semibold text-neutral-900">{stat.label}</div>
-                        <div className="mt-1 text-xs sm:text-sm text-neutral-500">{stat.sub}</div>
+                        <div className="text-2xl font-bold text-neutral-900 lg:text-3xl">
+                          {stat.value}
+                        </div>
+                        <div className="mt-1 text-base font-semibold text-neutral-900">
+                          {stat.label}
+                        </div>
+                        <div className="mt-1 text-xs sm:text-sm text-neutral-500">
+                          {stat.sub}
+                        </div>
                       </div>
                     </div>
                   );
@@ -108,6 +120,6 @@ export function AtAGlanceSection({ isLoading = false }: { isLoading?: boolean })
   );
 }
 
-AtAGlanceSection.displayName = 'AtAGlanceSection';
+AtAGlanceSection.displayName = "AtAGlanceSection";
 
 export default AtAGlanceSection;

@@ -1,2 +1,2 @@
 // HTTP gateway coming soon
-export {}
+export {};

@@ -1,7 +1,7 @@
-import React, { Suspense, useEffect, useRef, useState } from 'react';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import loadingLottie from '@/assets/lottiefiles/loading.lottie?url';
-import { hasSplashBeenShown } from '@/app/components/SplashScreen';
+import React, { Suspense, useEffect, useRef, useState } from "react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import loadingLottie from "@/assets/lottiefiles/loading.lottie?url";
+import { hasSplashBeenShown } from "@/app/components/SplashScreen";
 
 function LoadingFallback() {
   return (
@@ -54,7 +54,7 @@ export function LazyLoader({ children, fallback }: LazyLoaderProps) {
 }
 
 export function lazyLoad<T extends React.ComponentType<any>>(
-  factory: () => Promise<{ default: T }>
+  factory: () => Promise<{ default: T }>,
 ): React.LazyExoticComponent<T> {
   return React.lazy(factory);
 }

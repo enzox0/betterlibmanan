@@ -1,6 +1,6 @@
-import { useLocation } from 'react-router-dom';
-import { PageMetadata } from './PageMetadata';
-import { getPageMetadata } from '@/app/config/pageMetadata';
+import { useLocation } from "react-router-dom";
+import { PageMetadata } from "./PageMetadata";
+import { getPageMetadata } from "@/app/config/pageMetadata";
 
 /**
  * Automatically manages page metadata based on the current route

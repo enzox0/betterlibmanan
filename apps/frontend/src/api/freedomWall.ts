@@ -5,7 +5,7 @@
  * Uses the native Fetch API — no extra deps required.
  */
 
-const BASE = '/api/freedom-wall';
+const BASE = "/api/freedom-wall";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +24,7 @@ export interface NoteDTO {
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
     ...options,
   });
 
@@ -53,7 +53,7 @@ export function createNote(payload: {
   rotation: number;
 }): Promise<NoteDTO> {
   return request<NoteDTO>(BASE, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(payload),
   });
 }
@@ -62,17 +62,17 @@ export function createNote(payload: {
 export function updateNotePosition(
   id: string,
   x: number,
-  y: number
+  y: number,
 ): Promise<NoteDTO> {
   return request<NoteDTO>(`${BASE}/${id}/position`, {
-    method: 'PATCH',
+    method: "PATCH",
     body: JSON.stringify({ x, y }),
   });
 }
 
 /** Delete a note by id. */
 export async function deleteNote(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body?.message ?? `Delete failed: ${res.status}`);

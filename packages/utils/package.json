@@ -8,12 +8,15 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src/"
   },
   "dependencies": {
     "@betterlibmanan/types": "workspace:*"
   },
   "devDependencies": {
+    "@betterlibmanan/eslint-config": "workspace:*",
+    "eslint": "^8.57.1",
     "typescript": "^5.3.0"
   }
 }

@@ -1,4 +1,4 @@
-import { CommunitySection } from '../components/sections/CommunitySection';
+import { CommunitySection } from "../components/sections/CommunitySection";
 
 export function CommunityPage() {
   return (
@@ -8,6 +8,6 @@ export function CommunityPage() {
   );
 }
 
-CommunityPage.displayName = 'CommunityPage';
+CommunityPage.displayName = "CommunityPage";
 
 export default CommunityPage;

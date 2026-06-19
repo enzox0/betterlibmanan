@@ -1,2 +1,2 @@
 // Auth provider coming soon
-export {}
+export {};

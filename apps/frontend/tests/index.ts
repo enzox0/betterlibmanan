@@ -1,2 +1,2 @@
 // Tests coming soon
-export {}
+export {};

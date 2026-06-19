@@ -1,30 +1,30 @@
-import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
-import { login, refresh, logout, logoutAll } from './auth.service';
-import { logger } from '@/shared/logger';
+import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
+import { login, refresh, logout, logoutAll } from "./auth.service";
+import { logger } from "@/shared/logger";
 
 // ─── Request schemas ──────────────────────────────────────────────────────────
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required').max(32),
-  password: z.string().min(1, 'Password is required').max(128),
+  username: z.string().min(1, "Username is required").max(32),
+  password: z.string().min(1, "Password is required").max(128),
 });
 
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().min(1, "Refresh token is required"),
 });
 
 const logoutSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().min(1, "Refresh token is required"),
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getClientIp(req: Request): string {
   return (
-    (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
     req.socket?.remoteAddress ||
-    'unknown'
+    "unknown"
   );
 }
 
@@ -34,7 +34,11 @@ function getClientIp(req: Request): string {
  * POST /api/auth/login
  * Body: { username, password }
  */
-export async function handleLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function handleLogin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -47,7 +51,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
     const result = await login({
       username,
       password,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
       ipAddress: getClientIp(req),
     });
 
@@ -55,7 +59,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
 
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
@@ -64,7 +68,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
     });
   } catch (err: any) {
     if (err.statusCode === 401) {
-      res.status(401).json({ success: false, message: 'Invalid credentials' });
+      res.status(401).json({ success: false, message: "Invalid credentials" });
       return;
     }
     next(err);
@@ -75,11 +79,17 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
  * POST /api/auth/refresh
  * Body: { refreshToken }
  */
-export async function handleRefresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function handleRefresh(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const parsed = refreshSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ success: false, message: 'refreshToken is required' });
+      res
+        .status(400)
+        .json({ success: false, message: "refreshToken is required" });
       return;
     }
 
@@ -87,7 +97,7 @@ export async function handleRefresh(req: Request, res: Response, next: NextFunct
 
     res.status(200).json({
       success: true,
-      message: 'Token refreshed',
+      message: "Token refreshed",
       data: {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
@@ -96,7 +106,9 @@ export async function handleRefresh(req: Request, res: Response, next: NextFunct
     });
   } catch (err: any) {
     if (err.statusCode === 401) {
-      res.status(401).json({ success: false, message: err.message, code: 'REFRESH_FAILED' });
+      res
+        .status(401)
+        .json({ success: false, message: err.message, code: "REFRESH_FAILED" });
       return;
     }
     next(err);
@@ -108,14 +120,18 @@ export async function handleRefresh(req: Request, res: Response, next: NextFunct
  * Body: { refreshToken }
  * Requires: Bearer access token in Authorization header
  */
-export async function handleLogout(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function handleLogout(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const parsed = logoutSchema.safeParse(req.body);
     if (parsed.success) {
       await logout(parsed.data.refreshToken);
     }
     // Always respond 200 — idempotent logout
-    res.status(200).json({ success: true, message: 'Logged out successfully' });
+    res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (err) {
     next(err);
   }
@@ -126,15 +142,19 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
  * Revokes all refresh tokens for the authenticated admin (all devices).
  * Requires: Bearer access token
  */
-export async function handleLogoutAll(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function handleLogoutAll(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     if (!req.admin) {
-      res.status(401).json({ success: false, message: 'Not authenticated' });
+      res.status(401).json({ success: false, message: "Not authenticated" });
       return;
     }
     await logoutAll(req.admin.sub);
     logger.info(`[AUTH] All sessions revoked for admin: ${req.admin.username}`);
-    res.status(200).json({ success: true, message: 'All sessions revoked' });
+    res.status(200).json({ success: true, message: "All sessions revoked" });
   } catch (err) {
     next(err);
   }
@@ -147,7 +167,7 @@ export async function handleLogoutAll(req: Request, res: Response, next: NextFun
  */
 export function handleMe(req: Request, res: Response): void {
   if (!req.admin) {
-    res.status(401).json({ success: false, message: 'Not authenticated' });
+    res.status(401).json({ success: false, message: "Not authenticated" });
     return;
   }
   res.status(200).json({

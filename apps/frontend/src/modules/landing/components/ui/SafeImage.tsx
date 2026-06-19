@@ -20,7 +20,10 @@ export const getProxiedUrl = (url: string) => {
   return `${apiUrl}/properties/image-proxy?src=${encodeURIComponent(url)}`;
 };
 
-interface SafeImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {
+interface SafeImageProps extends Omit<
+  React.ImgHTMLAttributes<HTMLImageElement>,
+  "src"
+> {
   src?: string | null;
   fallbackSrc?: string;
   fallbackClassName?: string;
@@ -53,7 +56,9 @@ export default function SafeImage({
 
   if (showFallback) {
     return (
-      <div className={`flex items-center justify-center bg-muted-bg/80 overflow-hidden ${containerClassName || className}`}>
+      <div
+        className={`flex items-center justify-center bg-muted-bg/80 overflow-hidden ${containerClassName || className}`}
+      >
         <img
           src={fallbackSrc}
           alt="Fallback"
@@ -66,5 +71,13 @@ export default function SafeImage({
     );
   }
 
-  return <img src={getProxiedUrl(src!)} alt={alt} className={className} onError={() => setHasError(true)} {...props} />;
+  return (
+    <img
+      src={getProxiedUrl(src!)}
+      alt={alt}
+      className={className}
+      onError={() => setHasError(true)}
+      {...props}
+    />
+  );
 }

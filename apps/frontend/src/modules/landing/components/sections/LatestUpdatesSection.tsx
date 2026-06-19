@@ -1,24 +1,30 @@
-import { FaCalendarAlt } from 'react-icons/fa';
-import { motion } from 'framer-motion';
-import { Skeleton, SkeletonCard } from '@/shared/ui';
+import { FaCalendarAlt } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { Skeleton, SkeletonCard } from "@/shared/ui";
 
-export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolean }) {
+export function LatestUpdatesSection({
+  isLoading = false,
+}: {
+  isLoading?: boolean;
+}) {
   const placeholderUpdates = [
     {
-      title: 'Municipal Council Meeting',
-      excerpt: 'Join us for the upcoming municipal council meeting to discuss important matters.',
-      date: 'June 15, 2024'
+      title: "Municipal Council Meeting",
+      excerpt:
+        "Join us for the upcoming municipal council meeting to discuss important matters.",
+      date: "June 15, 2024",
     },
     {
-      title: 'New Health Program Launch',
-      excerpt: 'Introducing a new community health initiative for residents of Libmanan.',
-      date: 'June 10, 2024'
+      title: "New Health Program Launch",
+      excerpt:
+        "Introducing a new community health initiative for residents of Libmanan.",
+      date: "June 10, 2024",
     },
     {
-      title: 'Road Infrastructure Project',
-      excerpt: 'Major road improvement projects underway in key barangays.',
-      date: 'June 5, 2024'
-    }
+      title: "Road Infrastructure Project",
+      excerpt: "Major road improvement projects underway in key barangays.",
+      date: "June 5, 2024",
+    },
   ];
 
   return (
@@ -26,7 +32,7 @@ export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolea
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,8 +44,12 @@ export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolea
               </>
             ) : (
               <>
-                <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900">Latest Updates</h2>
-                <p className="mt-2 text-sm text-neutral-500">Stay informed about what's happening in our municipality</p>
+                <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900">
+                  Latest Updates
+                </h2>
+                <p className="mt-2 text-sm text-neutral-500">
+                  Stay informed about what's happening in our municipality
+                </p>
               </>
             )}
           </div>
@@ -67,8 +77,12 @@ export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolea
                         <FaCalendarAlt />
                         <span>{update.date}</span>
                       </div>
-                      <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">{update.title}</h3>
-                      <p className="text-sm text-neutral-600 line-clamp-2 sm:line-clamp-none">{update.excerpt}</p>
+                      <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">
+                        {update.title}
+                      </h3>
+                      <p className="text-sm text-neutral-600 line-clamp-2 sm:line-clamp-none">
+                        {update.excerpt}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -79,6 +93,6 @@ export function LatestUpdatesSection({ isLoading = false }: { isLoading?: boolea
   );
 }
 
-LatestUpdatesSection.displayName = 'LatestUpdatesSection';
+LatestUpdatesSection.displayName = "LatestUpdatesSection";
 
 export default LatestUpdatesSection;

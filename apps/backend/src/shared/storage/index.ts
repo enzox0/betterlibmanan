@@ -1,2 +1,2 @@
 // Storage coming soon
-export {}
+export {};

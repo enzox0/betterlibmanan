@@ -1,2 +1,2 @@
-export { TransparencyPage } from './pages/TransparencyPage';
-export { default } from './pages/TransparencyPage';
+export { TransparencyPage } from "./pages/TransparencyPage";
+export { default } from "./pages/TransparencyPage";

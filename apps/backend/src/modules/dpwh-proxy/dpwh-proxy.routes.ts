@@ -1,5 +1,10 @@
-import { Router } from 'express';
-import { getProjects, getProjectById, getProxyHealth, getProxyDiagnostic } from './dpwh-proxy.controller';
+import { Router } from "express";
+import {
+  getProjects,
+  getProjectById,
+  getProxyHealth,
+  getProxyDiagnostic,
+} from "./dpwh-proxy.controller";
 
 /**
  * Express router for the DPWH transparency proxy.
@@ -13,7 +18,7 @@ import { getProjects, getProjectById, getProxyHealth, getProxyDiagnostic } from 
  */
 export const dpwhProxyRouter: Router = Router();
 
-dpwhProxyRouter.get('/health', getProxyHealth);
-dpwhProxyRouter.get('/diagnose', getProxyDiagnostic);
-dpwhProxyRouter.get('/projects', getProjects);
-dpwhProxyRouter.get('/projects/:contractId', getProjectById);
+dpwhProxyRouter.get("/health", getProxyHealth);
+dpwhProxyRouter.get("/diagnose", getProxyDiagnostic);
+dpwhProxyRouter.get("/projects", getProjects);
+dpwhProxyRouter.get("/projects/:contractId", getProjectById);

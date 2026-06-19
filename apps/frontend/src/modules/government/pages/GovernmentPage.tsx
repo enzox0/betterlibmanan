@@ -1,18 +1,27 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import {
-  FaEnvelope, FaPhone, FaClock, FaExternalLinkAlt,
-  FaBuilding, FaUsers, FaSearch, FaTimes, FaArrowRight,
-  FaLandmark, FaGavel, FaMapMarkerAlt,
-} from 'react-icons/fa';
-import { mockGovernmentData } from '../data/mockData';
-import { Link } from 'react-router-dom';
+  FaEnvelope,
+  FaPhone,
+  FaClock,
+  FaExternalLinkAlt,
+  FaBuilding,
+  FaUsers,
+  FaSearch,
+  FaTimes,
+  FaArrowRight,
+  FaLandmark,
+  FaGavel,
+  FaMapMarkerAlt,
+} from "react-icons/fa";
+import { mockGovernmentData } from "../data/mockData";
+import { Link } from "react-router-dom";
 
 const SECTIONS = [
-  { id: 'executive',   label: 'Executive',   icon: FaLandmark },
-  { id: 'legislative', label: 'Legislative', icon: FaGavel },
-  { id: 'offices',     label: 'Offices',     icon: FaBuilding },
-  { id: 'barangays',   label: 'Barangays',   icon: FaMapMarkerAlt },
+  { id: "executive", label: "Executive", icon: FaLandmark },
+  { id: "legislative", label: "Legislative", icon: FaGavel },
+  { id: "offices", label: "Offices", icon: FaBuilding },
+  { id: "barangays", label: "Barangays", icon: FaMapMarkerAlt },
 ];
 
 function SectionHeader({
@@ -38,30 +47,33 @@ function SectionHeader({
 
 export function GovernmentPage() {
   const data = mockGovernmentData;
-  const [barangaySearch, setBarangaySearch] = useState('');
+  const [barangaySearch, setBarangaySearch] = useState("");
 
   const filteredBarangays = barangaySearch.trim()
-    ? data.barangays.filter(b =>
-        b.name.toLowerCase().includes(barangaySearch.toLowerCase()) ||
-        b.captain.toLowerCase().includes(barangaySearch.toLowerCase()),
+    ? data.barangays.filter(
+        (b) =>
+          b.name.toLowerCase().includes(barangaySearch.toLowerCase()) ||
+          b.captain.toLowerCase().includes(barangaySearch.toLowerCase()),
       )
     : data.barangays;
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document
+      .getElementById(id)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
     <div className="min-h-screen bg-neutral-100">
-
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
         <motion.div
@@ -72,16 +84,18 @@ export function GovernmentPage() {
         >
           <div className="text-center">
             <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
-              Government Structure<br className="hidden sm:block" /> & Officials
+              Government Structure
+              <br className="hidden sm:block" /> & Officials
             </h1>
             <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
-              Meet the leadership, offices, and barangay units serving Libmanan, Camarines Sur.
+              Meet the leadership, offices, and barangay units serving Libmanan,
+              Camarines Sur.
             </p>
           </div>
 
           {/* Quick-jump chips */}
           <div className="mt-8 flex flex-wrap justify-center gap-2">
-            {SECTIONS.map(s => {
+            {SECTIONS.map((s) => {
               const Icon = s.icon;
               return (
                 <button
@@ -99,14 +113,16 @@ export function GovernmentPage() {
           {/* Stats strip */}
           <div className="mt-8 flex justify-center gap-8 sm:gap-12">
             {[
-              { label: 'Exec. Officials', value: data.executive.length },
-              { label: 'SB Members',      value: data.legislative.length },
-              { label: 'Offices',         value: data.offices.length },
-              { label: 'Barangays',       value: data.barangays.length },
-            ].map(stat => (
+              { label: "Exec. Officials", value: data.executive.length },
+              { label: "SB Members", value: data.legislative.length },
+              { label: "Offices", value: data.offices.length },
+              { label: "Barangays", value: data.barangays.length },
+            ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-xl font-bold text-white">{stat.value}</p>
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
@@ -141,7 +157,9 @@ export function GovernmentPage() {
                     {official.title}
                   </span>
 
-                  <h3 className="mt-3 text-xl font-bold text-gray-900">{official.name}</h3>
+                  <h3 className="mt-3 text-xl font-bold text-gray-900">
+                    {official.name}
+                  </h3>
 
                   <div className="mt-4 space-y-2.5 text-sm text-gray-600">
                     <div className="flex items-center gap-2.5">
@@ -159,7 +177,10 @@ export function GovernmentPage() {
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
                         <FaPhone size={12} className="text-gray-400" />
                       </div>
-                      <a href={`tel:${official.phone}`} className="transition-colors hover:text-blue-600">
+                      <a
+                        href={`tel:${official.phone}`}
+                        className="transition-colors hover:text-blue-600"
+                      >
                         {official.phone}
                       </a>
                     </div>
@@ -178,7 +199,10 @@ export function GovernmentPage() {
       </section>
 
       {/* ── Legislative Branch ────────────────────────────────────────── */}
-      <section id="legislative" className="py-10 sm:py-14 bg-white scroll-mt-24">
+      <section
+        id="legislative"
+        className="py-10 sm:py-14 bg-white scroll-mt-24"
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeader
             title="Legislative Branch"
@@ -197,16 +221,18 @@ export function GovernmentPage() {
               >
                 {/* Numbered avatar */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-xs font-bold text-neutral-600">
-                  {String(index + 1).padStart(2, '0')}
+                  {String(index + 1).padStart(2, "0")}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 mb-0.5">
                     {official.position}
                   </p>
-                  <h3 className="text-sm font-bold text-gray-900 truncate">{official.name}</h3>
+                  <h3 className="text-sm font-bold text-gray-900 truncate">
+                    {official.name}
+                  </h3>
                   {official.committees.length > 0 && (
                     <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
-                      {official.committees.join(' · ')}
+                      {official.committees.join(" · ")}
                     </p>
                   )}
                 </div>
@@ -241,8 +267,12 @@ export function GovernmentPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-gray-900 leading-snug">{office.name}</h3>
-                    <p className="mt-1 text-xs text-gray-500 leading-relaxed">{office.description}</p>
+                    <h3 className="text-sm font-bold text-gray-900 leading-snug">
+                      {office.name}
+                    </h3>
+                    <p className="mt-1 text-xs text-gray-500 leading-relaxed">
+                      {office.description}
+                    </p>
                   </div>
                 </div>
 
@@ -251,15 +281,24 @@ export function GovernmentPage() {
                   {office.phone && (
                     <div className="flex items-center gap-1.5">
                       <FaPhone className="shrink-0 text-gray-400" size={10} />
-                      <a href={`tel:${office.phone}`} className="hover:text-blue-600 transition-colors">
+                      <a
+                        href={`tel:${office.phone}`}
+                        className="hover:text-blue-600 transition-colors"
+                      >
                         {office.phone}
                       </a>
                     </div>
                   )}
                   {office.email && (
                     <div className="flex items-center gap-1.5">
-                      <FaEnvelope className="shrink-0 text-gray-400" size={10} />
-                      <a href={`mailto:${office.email}`} className="truncate hover:text-blue-600 transition-colors">
+                      <FaEnvelope
+                        className="shrink-0 text-gray-400"
+                        size={10}
+                      />
+                      <a
+                        href={`mailto:${office.email}`}
+                        className="truncate hover:text-blue-600 transition-colors"
+                      >
                         {office.email}
                       </a>
                     </div>
@@ -274,7 +313,10 @@ export function GovernmentPage() {
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                     >
                       View Services
-                      <FaArrowRight size={9} className="transition-transform group-hover:translate-x-0.5" />
+                      <FaArrowRight
+                        size={9}
+                        className="transition-transform group-hover:translate-x-0.5"
+                      />
                     </Link>
                   </div>
                 )}
@@ -296,7 +338,9 @@ export function GovernmentPage() {
             className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
           >
             <div>
-              <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Barangay Units</h2>
+              <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                Barangay Units
+              </h2>
               <p className="mt-1 text-sm text-gray-500">
                 {data.barangays.length} barangays of Libmanan
               </p>
@@ -304,12 +348,15 @@ export function GovernmentPage() {
 
             {/* Search */}
             <div className="relative w-full sm:w-64">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={11} />
+              <FaSearch
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={11}
+              />
               <input
                 type="text"
                 placeholder="Search barangay or captain…"
                 value={barangaySearch}
-                onChange={e => setBarangaySearch(e.target.value)}
+                onChange={(e) => setBarangaySearch(e.target.value)}
                 className="w-full rounded-lg border border-neutral-200 bg-neutral-50 py-2 pl-8 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20 transition-all"
               />
               <AnimatePresence>
@@ -319,7 +366,7 @@ export function GovernmentPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => setBarangaySearch('')}
+                    onClick={() => setBarangaySearch("")}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <FaTimes size={10} />
@@ -349,11 +396,18 @@ export function GovernmentPage() {
                   >
                     <div className="flex items-start gap-2 mb-2">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100">
-                        <FaMapMarkerAlt className="text-neutral-500" size={11} />
+                        <FaMapMarkerAlt
+                          className="text-neutral-500"
+                          size={11}
+                        />
                       </div>
-                      <h3 className="text-sm font-bold text-gray-900 leading-snug">{barangay.name}</h3>
+                      <h3 className="text-sm font-bold text-gray-900 leading-snug">
+                        {barangay.name}
+                      </h3>
                     </div>
-                    <p className="text-xs text-gray-600 mb-1.5">{barangay.captain}</p>
+                    <p className="text-xs text-gray-600 mb-1.5">
+                      {barangay.captain}
+                    </p>
                     <a
                       href={`tel:${barangay.phone}`}
                       className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-600 transition-colors"
@@ -375,10 +429,14 @@ export function GovernmentPage() {
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
                   <FaSearch size={12} className="text-neutral-400" />
                 </div>
-                <p className="text-sm font-semibold text-neutral-700 mb-1">No barangays matched</p>
-                <p className="text-xs text-neutral-400">Try a different name or captain.</p>
+                <p className="text-sm font-semibold text-neutral-700 mb-1">
+                  No barangays matched
+                </p>
+                <p className="text-xs text-neutral-400">
+                  Try a different name or captain.
+                </p>
                 <button
-                  onClick={() => setBarangaySearch('')}
+                  onClick={() => setBarangaySearch("")}
                   className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   Show all barangays
@@ -388,11 +446,10 @@ export function GovernmentPage() {
           </AnimatePresence>
         </div>
       </section>
-
     </div>
   );
 }
 
-GovernmentPage.displayName = 'GovernmentPage';
+GovernmentPage.displayName = "GovernmentPage";
 
 export default GovernmentPage;

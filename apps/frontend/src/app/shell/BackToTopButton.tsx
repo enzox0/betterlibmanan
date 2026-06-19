@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { FaArrowUp } from 'react-icons/fa';
+import { useState, useEffect } from "react";
+import { FaArrowUp } from "react-icons/fa";
 
 export function BackToTopButton() {
   const [isVisible, setIsVisible] = useState(false);
@@ -15,19 +15,21 @@ export function BackToTopButton() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth',
+      behavior: "smooth",
     });
   };
 
   useEffect(() => {
-    window.addEventListener('scroll', toggleVisibility);
-    return () => window.removeEventListener('scroll', toggleVisibility);
+    window.addEventListener("scroll", toggleVisibility);
+    return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
   return (
     <div
       className={`fixed bottom-20 right-4 sm:bottom-8 sm:right-8 z-50 transition-all duration-300 transform ${
-        isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-0 pointer-events-none'
+        isVisible
+          ? "opacity-100 scale-100"
+          : "opacity-0 scale-0 pointer-events-none"
       }`}
     >
       <button

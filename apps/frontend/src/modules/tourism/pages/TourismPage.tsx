@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import {
   FaMapMarkerAlt,
   FaLeaf,
@@ -13,15 +13,20 @@ import {
   FaChevronRight,
   FaStar,
   FaCompass,
-} from 'react-icons/fa';
-import { touristSpots, travelTips, foodSpots, categories } from '../data/tourismData';
+} from "react-icons/fa";
+import {
+  touristSpots,
+  travelTips,
+  foodSpots,
+  categories,
+} from "../data/tourismData";
 
 export function TourismPage() {
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeCategory, setActiveCategory] = useState<string>("all");
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const filteredSpots =
-    activeCategory === 'all'
+    activeCategory === "all"
       ? touristSpots
       : touristSpots.filter((s) => s.category === activeCategory);
 
@@ -37,8 +42,8 @@ export function TourismPage() {
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
             backgroundImage:
-              'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
@@ -49,19 +54,20 @@ export function TourismPage() {
           className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-14 pb-16 sm:pt-20 sm:pb-24"
         >
           <h1 className="text-center text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
-            Explore the Natural &amp;<br className="hidden sm:block" /> Cultural Wonders
+            Explore the Natural &amp;
+            <br className="hidden sm:block" /> Cultural Wonders
           </h1>
           <p className="mt-4 text-center text-sm text-gray-400 sm:text-base max-w-xl mx-auto leading-relaxed">
-            From lush river landscapes to centuries-old heritage sites, Libmanan,
-            Camarines Sur offers experiences waiting to be discovered.
+            From lush river landscapes to centuries-old heritage sites,
+            Libmanan, Camarines Sur offers experiences waiting to be discovered.
           </p>
 
           {/* Quick stats */}
           <div className="mt-10 flex flex-wrap justify-center gap-8 sm:gap-14">
             {[
-              { label: 'Tourist Spots', value: `${touristSpots.length}+` },
-              { label: 'Local Delicacies', value: `${foodSpots.length}+` },
-              { label: 'Best Months', value: 'Nov – Apr' },
+              { label: "Tourist Spots", value: `${touristSpots.length}+` },
+              { label: "Local Delicacies", value: `${foodSpots.length}+` },
+              { label: "Best Months", value: "Nov – Apr" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-2xl font-bold text-white">{stat.value}</p>
@@ -86,11 +92,11 @@ export function TourismPage() {
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   className={[
-                    'flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                    "flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                     isActive
-                      ? 'bg-neutral-900 text-white'
-                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200',
-                  ].join(' ')}
+                      ? "bg-neutral-900 text-white"
+                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+                  ].join(" ")}
                 >
                   <Icon className="text-xs" />
                   {cat.label}
@@ -106,12 +112,13 @@ export function TourismPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h2 className="text-xl font-bold text-neutral-900 sm:text-2xl">
-              {activeCategory === 'all'
-                ? 'All Tourist Spots'
+              {activeCategory === "all"
+                ? "All Tourist Spots"
                 : categories.find((c) => c.id === activeCategory)?.label}
             </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              {filteredSpots.length} destination{filteredSpots.length !== 1 ? 's' : ''} to explore
+              {filteredSpots.length} destination
+              {filteredSpots.length !== 1 ? "s" : ""} to explore
             </p>
           </div>
 
@@ -135,7 +142,9 @@ export function TourismPage() {
                     className="group rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md hover:border-neutral-300"
                   >
                     {/* Color band / image placeholder */}
-                    <div className={`h-44 flex items-end p-4 relative overflow-hidden ${spot.bgColor}`}>
+                    <div
+                      className={`h-44 flex items-end p-4 relative overflow-hidden ${spot.bgColor}`}
+                    >
                       {/* Category badge */}
                       <span className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-wider">
                         <CategoryIcon className="text-[9px]" />
@@ -164,9 +173,13 @@ export function TourismPage() {
                     <div className="p-5">
                       <div className="flex items-start gap-2 mb-3">
                         <FaMapMarkerAlt className="text-neutral-400 mt-0.5 shrink-0 text-xs" />
-                        <span className="text-xs text-neutral-500">{spot.location}</span>
+                        <span className="text-xs text-neutral-500">
+                          {spot.location}
+                        </span>
                       </div>
-                      <p className="text-sm text-neutral-600 leading-relaxed">{spot.description}</p>
+                      <p className="text-sm text-neutral-600 leading-relaxed">
+                        {spot.description}
+                      </p>
 
                       {/* Tags */}
                       {spot.tags && spot.tags.length > 0 && (
@@ -186,7 +199,9 @@ export function TourismPage() {
                       {spot.entryFee && (
                         <div className="mt-4 pt-3 border-t border-neutral-100">
                           <span className="text-xs text-neutral-500">
-                            <span className="font-medium text-neutral-700">Entry:</span>{' '}
+                            <span className="font-medium text-neutral-700">
+                              Entry:
+                            </span>{" "}
                             {spot.entryFee}
                           </span>
                         </div>
@@ -213,7 +228,8 @@ export function TourismPage() {
               </p>
             </div>
             <span className="text-xs font-semibold text-blue-600 flex items-center gap-1">
-              <FaUtensils className="text-[10px]" /> {foodSpots.length} recommendations
+              <FaUtensils className="text-[10px]" /> {foodSpots.length}{" "}
+              recommendations
             </span>
           </div>
 
@@ -231,7 +247,9 @@ export function TourismPage() {
                   <FaUtensils className="text-sm" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-neutral-900">{food.name}</p>
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {food.name}
+                  </p>
                   <p className="mt-0.5 text-xs text-neutral-500 leading-relaxed">
                     {food.description}
                   </p>
@@ -267,7 +285,9 @@ export function TourismPage() {
                         <Icon className="text-sm" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-neutral-900">{tip.title}</p>
+                        <p className="text-sm font-semibold text-neutral-900">
+                          {tip.title}
+                        </p>
                         <p className="mt-0.5 text-xs text-neutral-500 leading-relaxed">
                           {tip.description}
                         </p>
@@ -304,7 +324,7 @@ export function TourismPage() {
                       </span>
                       <FaChevronDown
                         className={`text-xs text-neutral-400 shrink-0 transition-transform duration-200 ${
-                          expandedFaq === faq.id ? 'rotate-180' : ''
+                          expandedFaq === faq.id ? "rotate-180" : ""
                         }`}
                       />
                     </button>
@@ -312,7 +332,7 @@ export function TourismPage() {
                       {expandedFaq === faq.id && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
+                          animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.25 }}
                           className="overflow-hidden"
@@ -374,35 +394,35 @@ export function TourismPage() {
 const faqs = [
   {
     id: 1,
-    question: 'What is the best time to visit Libmanan?',
+    question: "What is the best time to visit Libmanan?",
     answer:
-      'The best time to visit is during the dry season from November to April. This period offers cooler temperatures and clear skies, ideal for outdoor activities and river trips.',
+      "The best time to visit is during the dry season from November to April. This period offers cooler temperatures and clear skies, ideal for outdoor activities and river trips.",
   },
   {
     id: 2,
-    question: 'How do I get to Libmanan?',
+    question: "How do I get to Libmanan?",
     answer:
-      'Libmanan is accessible by bus or van from Naga City, roughly a 30–45 minute drive via the Maharlika Highway. From Manila, take a bus to Naga City then connect to Libmanan.',
+      "Libmanan is accessible by bus or van from Naga City, roughly a 30–45 minute drive via the Maharlika Highway. From Manila, take a bus to Naga City then connect to Libmanan.",
   },
   {
     id: 3,
-    question: 'Are there entrance fees for tourist spots?',
+    question: "Are there entrance fees for tourist spots?",
     answer:
-      'Some natural attractions may have minimal entrance or environmental fees to support conservation. Heritage sites and public areas are generally free to visit.',
+      "Some natural attractions may have minimal entrance or environmental fees to support conservation. Heritage sites and public areas are generally free to visit.",
   },
   {
     id: 4,
-    question: 'Is Libmanan safe for tourists?',
+    question: "Is Libmanan safe for tourists?",
     answer:
-      'Yes, Libmanan is generally safe for visitors. As with any travel, take normal precautions with your belongings and follow local guidelines when exploring natural areas.',
+      "Yes, Libmanan is generally safe for visitors. As with any travel, take normal precautions with your belongings and follow local guidelines when exploring natural areas.",
   },
   {
     id: 5,
-    question: 'Can I hire a local guide?',
+    question: "Can I hire a local guide?",
     answer:
-      'Local guides can be arranged through the Municipal Tourism Office or by coordinating with the barangay offices near major attractions. It is highly recommended for river and nature tours.',
+      "Local guides can be arranged through the Municipal Tourism Office or by coordinating with the barangay offices near major attractions. It is highly recommended for river and nature tours.",
   },
 ];
 
-TourismPage.displayName = 'TourismPage';
+TourismPage.displayName = "TourismPage";
 export default TourismPage;

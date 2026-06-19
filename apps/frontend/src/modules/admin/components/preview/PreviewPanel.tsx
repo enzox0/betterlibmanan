@@ -1,8 +1,8 @@
-import React from 'react';
-import { HeroSection } from '@/modules/landing/components/sections/HeroSection';
-import { LeadershipSection } from '@/modules/landing/components/sections/LeadershipSection';
-import { LatestUpdatesSection } from '@/modules/landing/components/sections/LatestUpdatesSection';
-import { PopularServicesSection } from '@/modules/landing/components/sections/PopularServicesSection';
+import React from "react";
+import { HeroSection } from "@/modules/landing/components/sections/HeroSection";
+import { LeadershipSection } from "@/modules/landing/components/sections/LeadershipSection";
+import { LatestUpdatesSection } from "@/modules/landing/components/sections/LatestUpdatesSection";
+import { PopularServicesSection } from "@/modules/landing/components/sections/PopularServicesSection";
 
 interface PreviewPanelProps {
   sectionKey: string;
@@ -21,25 +21,25 @@ export function PreviewPanel({ sectionKey, formValues }: PreviewPanelProps) {
 
 function SectionPreview({ sectionKey }: { sectionKey: string }) {
   switch (sectionKey) {
-    case 'hero':
+    case "hero":
       return (
         <div className="rounded-xl overflow-hidden border border-neutral-200 pointer-events-none scale-[0.85] origin-top">
           <HeroSection />
         </div>
       );
-    case 'leadership':
+    case "leadership":
       return (
         <div className="rounded-xl overflow-hidden border border-neutral-200 pointer-events-none scale-[0.85] origin-top">
           <LeadershipSection />
         </div>
       );
-    case 'latest-updates':
+    case "latest-updates":
       return (
         <div className="rounded-xl overflow-hidden border border-neutral-200 pointer-events-none scale-[0.85] origin-top">
           <LatestUpdatesSection />
         </div>
       );
-    case 'popular-services':
+    case "popular-services":
       return (
         <div className="rounded-xl overflow-hidden border border-neutral-200 pointer-events-none scale-[0.85] origin-top">
           <PopularServicesSection />
@@ -63,9 +63,12 @@ function FormValuesBox({ sectionKey, formValues }: FormValuesBoxProps) {
     <div className="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-neutral-50 border-b border-neutral-200">
-        <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-blue-500" aria-hidden="true" />
+        <span
+          className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-blue-500"
+          aria-hidden="true"
+        />
         <h3 className="text-sm font-semibold text-neutral-700 capitalize">
-          {sectionKey.replace(/-/g, ' ')} — current values
+          {sectionKey.replace(/-/g, " ")} — current values
         </h3>
       </div>
 
@@ -79,7 +82,7 @@ function FormValuesBox({ sectionKey, formValues }: FormValuesBoxProps) {
           {entries.map(([key, value]) => (
             <div key={key} className="flex gap-3 px-4 py-3">
               <dt className="min-w-[8rem] text-xs font-medium text-neutral-500 uppercase tracking-wide pt-0.5">
-                {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+                {key.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
               </dt>
               <dd className="flex-1 text-sm text-neutral-800 break-words">
                 {value || <span className="italic text-neutral-400">—</span>}
@@ -92,6 +95,6 @@ function FormValuesBox({ sectionKey, formValues }: FormValuesBoxProps) {
   );
 }
 
-PreviewPanel.displayName = 'PreviewPanel';
+PreviewPanel.displayName = "PreviewPanel";
 
 export default PreviewPanel;

@@ -33,7 +33,11 @@ ERRORS=0
 # -----------------------------------------------------------------------------
 echo "\n🔐 [1/5] Scanning for secrets and credentials..."
 
-SECRET_PATTERNS='(password|passwd|secret|api[_-]?key|apikey|auth[_-]?token|access[_-]?token|private[_-]?key|aws[_-]?secret|client[_-]?secret)\s*[:=]\s*["\x27][^"\x27]{8,}'
+# Match credential-like assignments where the quoted value is 8+ chars and
+# contains NO whitespace — real secrets don't have spaces, but UI strings
+# like `next.password = "Password is required."` do. This avoids most false
+# positives in form validation / React component code.
+SECRET_PATTERNS='(password|passwd|secret|api[_-]?key|apikey|auth[_-]?token|access[_-]?token|private[_-]?key|aws[_-]?secret|client[_-]?secret)\s*[:=]\s*["\x27][A-Za-z0-9_+/.=-]{8,}["\x27]'
 PRIVATE_KEY_PATTERN='-----BEGIN (RSA|EC|DSA|OPENSSH|PGP) PRIVATE KEY-----'
 # Common high-entropy patterns (base64-like strings 40+ chars)
 HIGH_ENTROPY_PATTERN='[A-Za-z0-9+/]{40,}={0,2}'
@@ -192,8 +196,14 @@ done
 if [ "$HAS_TS_FILES" -eq 1 ]; then
   if command -v pnpm >/dev/null 2>&1; then
     cd "$ROOT_DIR"
-    # Use --noEmit for a fast type-only check across the monorepo
-    if pnpm exec tsc --noEmit --project tsconfig.base.json 2>&1 | grep -E "error TS"; then
+    # Run typecheck via turbo so each package/app uses its own tsconfig.
+    # That's the only way path aliases like `@/*` (defined per-app, not in
+    # the base config) resolve correctly. Turbo caches successful runs so
+    # unchanged packages are instant.
+    TYPECHECK_OUTPUT=$(pnpm exec turbo run typecheck 2>&1)
+    TYPECHECK_EXIT=$?
+    if [ "$TYPECHECK_EXIT" -ne 0 ]; then
+      echo "$TYPECHECK_OUTPUT" | grep -E "error TS|ERROR" || echo "$TYPECHECK_OUTPUT"
       echo "${RED}❌ TypeScript errors found. Fix them before committing.${NC}"
       ERRORS=$((ERRORS + 1))
     else

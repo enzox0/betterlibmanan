@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 /**
  * Cache document for DPWH transparency API responses.
@@ -36,9 +36,9 @@ const dpwhCacheSchema = new Schema<IDpwhCache>(
     fetchedAt: { type: Date, required: true, default: Date.now, index: true },
     expiresAt: { type: Date, required: true },
     upstreamStatus: { type: Number, required: true, default: 200 },
-    fetchDurationMs: { type: Number }
+    fetchDurationMs: { type: Number },
   },
-  { timestamps: true, collection: 'dpwh_cache' }
+  { timestamps: true, collection: "dpwh_cache" },
 );
 
-export const DpwhCacheModel = model<IDpwhCache>('DpwhCache', dpwhCacheSchema);
+export const DpwhCacheModel = model<IDpwhCache>("DpwhCache", dpwhCacheSchema);

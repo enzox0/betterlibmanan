@@ -1,9 +1,9 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { createContext, useCallback, useContext, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ToastVariant = 'success' | 'error' | 'info';
+type ToastVariant = "success" | "error" | "info";
 
 interface ToastMessage {
   id: string;
@@ -22,15 +22,15 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 // ─── Styles per variant ───────────────────────────────────────────────────────
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
-  success: 'bg-emerald-600 text-white',
-  error:   'bg-red-600 text-white',
-  info:    'bg-neutral-800 text-white',
+  success: "bg-emerald-600 text-white",
+  error: "bg-red-600 text-white",
+  info: "bg-neutral-800 text-white",
 };
 
 const VARIANT_ICONS: Record<ToastVariant, string> = {
-  success: '✓',
-  error:   '✕',
-  info:    'ℹ',
+  success: "✓",
+  error: "✕",
+  info: "ℹ",
 };
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
@@ -38,13 +38,16 @@ const VARIANT_ICONS: Record<ToastVariant, string> = {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const toast = useCallback((message: string, variant: ToastVariant = 'info') => {
-    const id = Math.random().toString(36).slice(2);
-    setToasts((prev) => [...prev, { id, message, variant }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3500);
-  }, []);
+  const toast = useCallback(
+    (message: string, variant: ToastVariant = "info") => {
+      const id = Math.random().toString(36).slice(2);
+      setToasts((prev) => [...prev, { id, message, variant }]);
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 3500);
+    },
+    [],
+  );
 
   const dismiss = (id: string) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -70,7 +73,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 ${VARIANT_STYLES[t.variant]}
               `}
             >
-              <span className="text-base leading-none">{VARIANT_ICONS[t.variant]}</span>
+              <span className="text-base leading-none">
+                {VARIANT_ICONS[t.variant]}
+              </span>
               <span className="leading-snug">{t.message}</span>
               <button
                 onClick={() => dismiss(t.id)}
@@ -92,7 +97,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    throw new Error('useToast must be used within a <ToastProvider>');
+    throw new Error("useToast must be used within a <ToastProvider>");
   }
   return ctx;
 }

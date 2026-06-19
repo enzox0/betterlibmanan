@@ -8,6 +8,7 @@
     "dev": "tsx watch src/main.ts",
     "build": "tsc && tsc-alias -p tsconfig.json --resolve-full-paths",
     "start": "node ../../build/worker/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"Tests coming soon\""
   },
   "dependencies": {

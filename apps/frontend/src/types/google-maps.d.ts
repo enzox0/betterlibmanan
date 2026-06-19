@@ -6,7 +6,7 @@ declare global {
       maps: {
         Map: new (
           mapDiv: HTMLElement,
-          opts?: google.maps.MapOptions
+          opts?: google.maps.MapOptions,
         ) => google.maps.Map;
         Data: new (opts?: { map?: google.maps.Map }) => google.maps.Data;
       };
@@ -54,8 +54,13 @@ declare global {
 
     interface Data {
       addGeoJson(geoJson: any): void;
-      setStyle(style: DataStyleOptions | ((feature: DataFeature) => DataStyleOptions)): void;
-      addListener(eventName: string, handler: (event: DataMouseEvent) => void): void;
+      setStyle(
+        style: DataStyleOptions | ((feature: DataFeature) => DataStyleOptions),
+      ): void;
+      addListener(
+        eventName: string,
+        handler: (event: DataMouseEvent) => void,
+      ): void;
     }
   }
 }

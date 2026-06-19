@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function EnvironmentPage() {
   return <ServiceCategoryPage slug="environment" />;
 }
 
-EnvironmentPage.displayName = 'EnvironmentPage';
+EnvironmentPage.displayName = "EnvironmentPage";
 export default EnvironmentPage;

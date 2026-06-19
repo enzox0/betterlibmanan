@@ -1,5 +1,5 @@
-import { BaseEntity } from './common';
-import { Service } from './services';
+import { BaseEntity } from "./common";
+import { Service } from "./services";
 
 export interface Department extends BaseEntity {
   name: string;

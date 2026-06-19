@@ -1,2 +1,2 @@
 // ORM connection coming soon
-export {}
+export {};

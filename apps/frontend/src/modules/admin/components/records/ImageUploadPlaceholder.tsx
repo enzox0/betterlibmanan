@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
-const ACCEPTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif'];
+const ACCEPTED_MIME_TYPES = ["image/png", "image/jpeg", "image/gif"];
 const MAX_FILE_SIZE_BYTES = 5_242_880; // 5MB
-const VALIDATION_ERROR = 'File must be PNG, JPG, or GIF and no larger than 5MB';
+const VALIDATION_ERROR = "File must be PNG, JPG, or GIF and no larger than 5MB";
 
 interface ImageUploadState {
   file: File | null;
@@ -12,7 +12,9 @@ interface ImageUploadState {
 }
 
 function isValidFile(file: File): boolean {
-  return ACCEPTED_MIME_TYPES.includes(file.type) && file.size <= MAX_FILE_SIZE_BYTES;
+  return (
+    ACCEPTED_MIME_TYPES.includes(file.type) && file.size <= MAX_FILE_SIZE_BYTES
+  );
 }
 
 export function ImageUploadPlaceholder() {
@@ -29,7 +31,11 @@ export function ImageUploadPlaceholder() {
       const url = URL.createObjectURL(file);
       setState({ file, previewUrl: url, error: null });
     } else {
-      setState((prev) => ({ ...prev, previewUrl: null, error: VALIDATION_ERROR }));
+      setState((prev) => ({
+        ...prev,
+        previewUrl: null,
+        error: VALIDATION_ERROR,
+      }));
     }
   }
 
@@ -60,7 +66,7 @@ export function ImageUploadPlaceholder() {
     setState({ file: null, previewUrl: null, error: null });
     // Reset the file input so the same file can be re-selected
     if (inputRef.current) {
-      inputRef.current.value = '';
+      inputRef.current.value = "";
     }
   }
 
@@ -69,7 +75,7 @@ export function ImageUploadPlaceholder() {
   }
 
   function handleDropZoneKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       inputRef.current?.click();
     }
@@ -153,7 +159,9 @@ export function ImageUploadPlaceholder() {
               <p className="text-sm font-medium text-gray-700">
                 Click to upload or drag and drop
               </p>
-              <p className="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+              <p className="mt-1 text-xs text-gray-500">
+                PNG, JPG, GIF up to 5MB
+              </p>
             </div>
           </motion.div>
         )}

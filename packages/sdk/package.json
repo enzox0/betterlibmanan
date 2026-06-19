@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "lint": "echo \"Lint coming soon\""
   },
   "dependencies": {

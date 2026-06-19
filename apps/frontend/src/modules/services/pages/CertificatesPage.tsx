@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function CertificatesPage() {
   return <ServiceCategoryPage slug="certificates" />;
 }
 
-CertificatesPage.displayName = 'CertificatesPage';
+CertificatesPage.displayName = "CertificatesPage";
 export default CertificatesPage;

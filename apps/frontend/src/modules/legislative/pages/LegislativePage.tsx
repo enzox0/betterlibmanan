@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   FaArrowRight,
   FaScroll,
@@ -8,8 +8,8 @@ import {
   FaLock,
   FaExternalLinkAlt,
   FaCheckCircle,
-} from 'react-icons/fa';
-import { mockLegislativeData } from '../data/mockData';
+} from "react-icons/fa";
+import { mockLegislativeData } from "../data/mockData";
 
 const ABOUT_ICONS = [FaScroll, FaBalanceScale, FaUsers, FaLock];
 
@@ -19,13 +19,13 @@ function ProcessStepper({
   accent,
 }: {
   steps: { step: number; title: string; description: string }[];
-  accent: 'blue' | 'neutral';
+  accent: "blue" | "neutral";
 }) {
   const dotBase =
-    accent === 'blue'
-      ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-      : 'bg-neutral-900 text-white ring-4 ring-neutral-100';
-  const lineColor = accent === 'blue' ? 'bg-blue-100' : 'bg-neutral-200';
+    accent === "blue"
+      ? "bg-blue-600 text-white ring-4 ring-blue-100"
+      : "bg-neutral-900 text-white ring-4 ring-neutral-100";
+  const lineColor = accent === "blue" ? "bg-blue-100" : "bg-neutral-200";
 
   return (
     <ol className="space-y-0">
@@ -34,7 +34,7 @@ function ProcessStepper({
         return (
           <motion.li
             key={step.step}
-            initial={{ opacity: 0, x: accent === 'blue' ? -16 : 16 }}
+            initial={{ opacity: 0, x: accent === "blue" ? -16 : 16 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35, delay: index * 0.05 }}
@@ -45,15 +45,21 @@ function ProcessStepper({
               <div
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${dotBase}`}
               >
-                {String(step.step).padStart(2, '0')}
+                {String(step.step).padStart(2, "0")}
               </div>
-              {!isLast && <div className={`w-0.5 flex-1 min-h-[2.5rem] ${lineColor}`} />}
+              {!isLast && (
+                <div className={`w-0.5 flex-1 min-h-[2.5rem] ${lineColor}`} />
+              )}
             </div>
 
             {/* Content */}
-            <div className={`pb-6 ${isLast ? '' : ''}`}>
-              <h4 className="text-sm font-semibold text-gray-900 leading-snug">{step.title}</h4>
-              <p className="mt-0.5 text-xs text-gray-500 leading-relaxed">{step.description}</p>
+            <div className={`pb-6 ${isLast ? "" : ""}`}>
+              <h4 className="text-sm font-semibold text-gray-900 leading-snug">
+                {step.title}
+              </h4>
+              <p className="mt-0.5 text-xs text-gray-500 leading-relaxed">
+                {step.description}
+              </p>
             </div>
           </motion.li>
         );
@@ -69,7 +75,6 @@ export function LegislativePage() {
 
   return (
     <div className="min-h-screen bg-neutral-100">
-
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
@@ -77,8 +82,8 @@ export function LegislativePage() {
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
             backgroundImage:
-              'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
@@ -96,21 +101,30 @@ export function LegislativePage() {
               Legislative Documents
             </h1>
             <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
-              Ordinances and resolutions of the Sangguniang Bayan ng Libmanan, Camarines Sur.
+              Ordinances and resolutions of the Sangguniang Bayan ng Libmanan,
+              Camarines Sur.
             </p>
           </div>
 
           {/* Stats strip */}
           <div className="mt-8 flex flex-wrap justify-center gap-8 sm:gap-12">
             {[
-              { label: 'Ordinances',  value: ord.documents.length + '+' },
-              { label: 'Resolutions', value: res.documents.length + '+' },
-              { label: 'Process Steps (Ord.)', value: data.ordinanceSteps.length },
-              { label: 'Process Steps (Res.)', value: data.resolutionSteps.length },
-            ].map(stat => (
+              { label: "Ordinances", value: ord.documents.length + "+" },
+              { label: "Resolutions", value: res.documents.length + "+" },
+              {
+                label: "Process Steps (Ord.)",
+                value: data.ordinanceSteps.length,
+              },
+              {
+                label: "Process Steps (Res.)",
+                value: data.resolutionSteps.length,
+              },
+            ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-xl font-bold text-white">{stat.value}</p>
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
@@ -127,14 +141,15 @@ export function LegislativePage() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Browse Documents</h2>
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              Browse Documents
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               Access the full library of enacted ordinances and resolutions
             </p>
           </motion.div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-
             {/* Ordinances */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -154,14 +169,16 @@ export function LegislativePage() {
                   </span>
                 </div>
 
-                <h2 className="text-lg font-bold text-gray-900 mb-1">Ordinance Framework</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-1">
+                  Ordinance Framework
+                </h2>
                 <p className="text-sm text-gray-500 leading-relaxed mb-5">
                   {data.ordinanceDescription}
                 </p>
 
                 {/* Category pills */}
                 <div className="flex flex-wrap gap-1.5 mb-5">
-                  {ord.categories.map(cat => (
+                  {ord.categories.map((cat) => (
                     <span
                       key={cat}
                       className="rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-0.5 text-[11px] font-medium text-neutral-600"
@@ -177,7 +194,10 @@ export function LegislativePage() {
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                   >
                     Browse Ordinances
-                    <FaArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
+                    <FaArrowRight
+                      size={11}
+                      className="transition-transform group-hover:translate-x-0.5"
+                    />
                   </Link>
                   <span className="text-neutral-200">|</span>
                   <a
@@ -212,14 +232,16 @@ export function LegislativePage() {
                   </span>
                 </div>
 
-                <h2 className="text-lg font-bold text-gray-900 mb-1">Resolution Framework</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-1">
+                  Resolution Framework
+                </h2>
                 <p className="text-sm text-gray-500 leading-relaxed mb-5">
                   {data.resolutionDescription}
                 </p>
 
                 {/* Type pills */}
                 <div className="flex flex-wrap gap-1.5 mb-5">
-                  {res.types.map(type => (
+                  {res.types.map((type) => (
                     <span
                       key={type}
                       className="rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-0.5 text-[11px] font-medium text-neutral-600"
@@ -235,7 +257,10 @@ export function LegislativePage() {
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-800 hover:text-gray-900 transition-colors"
                   >
                     Browse Resolutions
-                    <FaArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
+                    <FaArrowRight
+                      size={11}
+                      className="transition-transform group-hover:translate-x-0.5"
+                    />
                   </Link>
                   <span className="text-neutral-200">|</span>
                   <a
@@ -250,7 +275,6 @@ export function LegislativePage() {
                 </div>
               </div>
             </motion.div>
-
           </div>
         </div>
       </section>
@@ -265,18 +289,23 @@ export function LegislativePage() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Recent Documents</h2>
-            <p className="mt-1 text-sm text-gray-500">Latest enacted ordinances and passed resolutions</p>
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              Recent Documents
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Latest enacted ordinances and passed resolutions
+            </p>
           </motion.div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-
             {/* Recent Ordinances */}
             <div>
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-blue-600" />
-                  <h3 className="text-sm font-bold text-gray-900">Ordinances</h3>
+                  <h3 className="text-sm font-bold text-gray-900">
+                    Ordinances
+                  </h3>
                 </div>
                 <Link
                   to={data.ordinanceLink}
@@ -295,11 +324,18 @@ export function LegislativePage() {
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     className="group flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4 transition-all duration-200 hover:border-neutral-300 hover:shadow-sm"
                   >
-                    <FaCheckCircle className="mt-0.5 shrink-0 text-blue-500" size={14} />
+                    <FaCheckCircle
+                      className="mt-0.5 shrink-0 text-blue-500"
+                      size={14}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[11px] font-semibold text-blue-600">#{doc.number}</span>
-                        <span className="text-[11px] text-gray-400">{doc.sessionDate}</span>
+                        <span className="text-[11px] font-semibold text-blue-600">
+                          #{doc.number}
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          {doc.sessionDate}
+                        </span>
                       </div>
                       <p className="text-xs text-gray-700 leading-relaxed line-clamp-2">
                         {doc.title}
@@ -315,7 +351,9 @@ export function LegislativePage() {
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-neutral-700" />
-                  <h3 className="text-sm font-bold text-gray-900">Resolutions</h3>
+                  <h3 className="text-sm font-bold text-gray-900">
+                    Resolutions
+                  </h3>
                 </div>
                 <Link
                   to={data.resolutionLink}
@@ -334,11 +372,18 @@ export function LegislativePage() {
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     className="group flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4 transition-all duration-200 hover:border-neutral-300 hover:shadow-sm"
                   >
-                    <FaCheckCircle className="mt-0.5 shrink-0 text-neutral-400" size={14} />
+                    <FaCheckCircle
+                      className="mt-0.5 shrink-0 text-neutral-400"
+                      size={14}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[11px] font-semibold text-neutral-600">#{doc.number}</span>
-                        <span className="text-[11px] text-gray-400">{doc.sessionDate}</span>
+                        <span className="text-[11px] font-semibold text-neutral-600">
+                          #{doc.number}
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          {doc.sessionDate}
+                        </span>
                       </div>
                       <p className="text-xs text-gray-700 leading-relaxed line-clamp-2">
                         {doc.title}
@@ -348,7 +393,6 @@ export function LegislativePage() {
                 ))}
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -363,19 +407,22 @@ export function LegislativePage() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Legislative Process</h2>
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              Legislative Process
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               Step-by-step flow for enacting ordinances and passing resolutions
             </p>
           </motion.div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-
             {/* Ordinances stepper */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900">Ordinances</h3>
+                  <h3 className="text-sm font-bold text-gray-900">
+                    Ordinances
+                  </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {data.ordinanceSteps.length}-step enactment process
                   </p>
@@ -391,7 +438,9 @@ export function LegislativePage() {
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900">Resolutions</h3>
+                  <h3 className="text-sm font-bold text-gray-900">
+                    Resolutions
+                  </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {data.resolutionSteps.length}-step approval process
                   </p>
@@ -402,7 +451,6 @@ export function LegislativePage() {
               </div>
               <ProcessStepper steps={data.resolutionSteps} accent="neutral" />
             </div>
-
           </div>
         </div>
       </section>
@@ -417,8 +465,12 @@ export function LegislativePage() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{data.about.title}</h2>
-            <p className="mt-1 text-sm text-gray-500">{data.about.description}</p>
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              {data.about.title}
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {data.about.description}
+            </p>
           </motion.div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -436,19 +488,22 @@ export function LegislativePage() {
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600 transition-colors group-hover:border-neutral-900 group-hover:bg-neutral-900 group-hover:text-white">
                     <Icon size={15} />
                   </div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-1.5">{point.title}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">{point.description}</p>
+                  <h3 className="text-sm font-bold text-gray-900 mb-1.5">
+                    {point.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    {point.description}
+                  </p>
                 </motion.div>
               );
             })}
           </div>
         </div>
       </section>
-
     </div>
   );
 }
 
-LegislativePage.displayName = 'LegislativePage';
+LegislativePage.displayName = "LegislativePage";
 
 export default LegislativePage;

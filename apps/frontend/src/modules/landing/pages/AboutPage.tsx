@@ -1,9 +1,9 @@
-import { AboutSection } from '../components/sections/AboutSection';
+import { AboutSection } from "../components/sections/AboutSection";
 
 export function AboutPage() {
   return <AboutSection />;
 }
 
-AboutPage.displayName = 'AboutPage';
+AboutPage.displayName = "AboutPage";
 
 export default AboutPage;

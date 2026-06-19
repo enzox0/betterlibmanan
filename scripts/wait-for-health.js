@@ -1,4 +1,4 @@
-const http = require('http');
+const http = require("http");
 
 const waitForHealth = (url, maxRetries = 30, retryDelayMs = 1000) => {
   return new Promise((resolve, reject) => {
@@ -10,13 +10,17 @@ const waitForHealth = (url, maxRetries = 30, retryDelayMs = 1000) => {
           console.log(`Health check passed for ${url}`);
           resolve();
         } else {
-          console.log(`Health check failed for ${url} (status: ${res.statusCode}), retrying...`);
+          console.log(
+            `Health check failed for ${url} (status: ${res.statusCode}), retrying...`,
+          );
           retry();
         }
       });
 
-      req.on('error', (err) => {
-        console.log(`Health check failed for ${url} (error: ${err.message}), retrying...`);
+      req.on("error", (err) => {
+        console.log(
+          `Health check failed for ${url} (error: ${err.message}), retrying...`,
+        );
         retry();
       });
 
@@ -45,7 +49,7 @@ module.exports = waitForHealth;
 if (require.main === module) {
   const url = process.argv[2];
   if (!url) {
-    console.error('Usage: node wait-for-health.js <health-check-url>');
+    console.error("Usage: node wait-for-health.js <health-check-url>");
     process.exit(1);
   }
 

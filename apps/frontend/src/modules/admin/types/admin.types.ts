@@ -1,7 +1,13 @@
-import type React from 'react';
+import type React from "react";
 
-export type FieldType = 'text' | 'textarea' | 'image' | 'url' | 'date' | 'select';
-export type ContentStatus = 'published' | 'draft';
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "image"
+  | "url"
+  | "date"
+  | "select";
+export type ContentStatus = "published" | "draft";
 
 export interface FieldDefinition {
   key: string;
@@ -12,18 +18,18 @@ export interface FieldDefinition {
 }
 
 export interface ContentRecord {
-  id: string;                        // UUID generated client-side
+  id: string; // UUID generated client-side
   sectionKey: string;
-  title: string;                     // always present, used for table "Title/Name" column
+  title: string; // always present, used for table "Title/Name" column
   status: ContentStatus;
-  fields: Record<string, string>;    // keyed by FieldDefinition.key
-  createdAt: string;                 // ISO 8601
-  updatedAt: string;                 // ISO 8601
+  fields: Record<string, string>; // keyed by FieldDefinition.key
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
 }
 
 export interface SectionSchema {
-  key: string;           // e.g. 'hero', 'leadership'
-  displayName: string;   // e.g. 'Hero', 'Leadership'
+  key: string; // e.g. 'hero', 'leadership'
+  displayName: string; // e.g. 'Hero', 'Leadership'
   fields: FieldDefinition[];
   supportsPreview: boolean;
 }
@@ -46,8 +52,15 @@ export interface AdminAuthState {
 export interface AdminContentState {
   sections: SectionSchema[];
   records: Record<string, ContentRecord[]>; // keyed by sectionKey
-  addRecord: (sectionKey: string, record: Omit<ContentRecord, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateRecord: (sectionKey: string, id: string, updates: Partial<ContentRecord>) => void;
+  addRecord: (
+    sectionKey: string,
+    record: Omit<ContentRecord, "id" | "createdAt" | "updatedAt">,
+  ) => void;
+  updateRecord: (
+    sectionKey: string,
+    id: string,
+    updates: Partial<ContentRecord>,
+  ) => void;
   deleteRecord: (sectionKey: string, id: string) => void;
   getRecords: (sectionKey: string) => ContentRecord[];
 }
@@ -55,12 +68,12 @@ export interface AdminContentState {
 export interface StatsCardProps {
   label: string;
   value: string | number;
-  trend: 'up' | 'down' | 'neutral';
-  accentColor: 'blue' | 'green' | 'yellow' | 'red';
+  trend: "up" | "down" | "neutral";
+  accentColor: "blue" | "green" | "yellow" | "red";
 }
 
 export interface ContentFormProps {
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   sectionKey: string;
   initialData?: ContentRecord;
   onClose: () => void;

@@ -1,31 +1,35 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaPhone, FaSearch, FaTimes,
-  FaShieldAlt, FaHospital, FaExclamationTriangle,
-} from 'react-icons/fa';
-import { mockContactData } from '../data/mockData';
+  FaPhone,
+  FaSearch,
+  FaTimes,
+  FaShieldAlt,
+  FaHospital,
+  FaExclamationTriangle,
+} from "react-icons/fa";
+import { mockContactData } from "../data/mockData";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 /** Colour coding for emergency category icons */
 const EMERGENCY_ACCENT: Record<string, string> = {
-  FaShieldAlt:          'bg-blue-600  text-white',
-  FaExclamationTriangle:'bg-amber-500 text-white',
-  FaFire:               'bg-red-600   text-white',
-  FaHospital:           'bg-emerald-600 text-white',
-  FaBuilding:           'bg-neutral-700 text-white',
-  FaBroadcastTower:     'bg-violet-600 text-white',
+  FaShieldAlt: "bg-blue-600  text-white",
+  FaExclamationTriangle: "bg-amber-500 text-white",
+  FaFire: "bg-red-600   text-white",
+  FaHospital: "bg-emerald-600 text-white",
+  FaBuilding: "bg-neutral-700 text-white",
+  FaBroadcastTower: "bg-violet-600 text-white",
 };
 
 function accentFor(icon: React.ComponentType): string {
-  return EMERGENCY_ACCENT[icon.name] ?? 'bg-neutral-900 text-white';
+  return EMERGENCY_ACCENT[icon.name] ?? "bg-neutral-900 text-white";
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
 
 export function ContactPage() {
-  const [officeSearch, setOfficeSearch] = useState('');
+  const [officeSearch, setOfficeSearch] = useState("");
 
   const {
     contactInfo,
@@ -36,14 +40,13 @@ export function ContactPage() {
   } = mockContactData;
 
   const filteredOffices = officeSearch.trim()
-    ? municipalOffices.filter(o =>
+    ? municipalOffices.filter((o) =>
         o.name.toLowerCase().includes(officeSearch.toLowerCase()),
       )
     : municipalOffices;
 
   return (
     <div className="min-h-screen bg-neutral-100">
-
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
@@ -51,8 +54,8 @@ export function ContactPage() {
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
             backgroundImage:
-              'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
@@ -67,14 +70,14 @@ export function ContactPage() {
               Get in Touch
             </h1>
             <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
-              The Municipal Government of Libmanan is here to serve you — for services,
-              inquiries, and urgent assistance.
+              The Municipal Government of Libmanan is here to serve you — for
+              services, inquiries, and urgent assistance.
             </p>
           </div>
 
           {/* Contact info strip */}
           <div className="mt-8 flex flex-wrap justify-center gap-2">
-            {contactInfo.map(info => {
+            {contactInfo.map((info) => {
               const Icon = info.icon;
               return (
                 <a
@@ -92,14 +95,20 @@ export function ContactPage() {
           {/* Stats strip */}
           <div className="mt-8 flex flex-wrap justify-center gap-8 sm:gap-12">
             {[
-              { label: 'Contact Channels',  value: contactInfo.length },
-              { label: 'Emergency Hotlines', value: emergencyContacts.length + medicalEmergencyContacts.length },
-              { label: 'Offices',            value: municipalOffices.length },
-              { label: 'Social Channels',    value: socialLinks.length },
-            ].map(stat => (
+              { label: "Contact Channels", value: contactInfo.length },
+              {
+                label: "Emergency Hotlines",
+                value:
+                  emergencyContacts.length + medicalEmergencyContacts.length,
+              },
+              { label: "Offices", value: municipalOffices.length },
+              { label: "Social Channels", value: socialLinks.length },
+            ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-xl font-bold text-white">{stat.value}</p>
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
@@ -116,8 +125,12 @@ export function ContactPage() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Contact Information</h2>
-            <p className="mt-1 text-sm text-gray-500">Primary channels to reach the Municipal Government</p>
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              Contact Information
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Primary channels to reach the Municipal Government
+            </p>
           </motion.div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -143,7 +156,9 @@ export function ContactPage() {
                   <p className="text-sm font-bold text-gray-900 break-words leading-snug">
                     {info.value}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">{info.description}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {info.description}
+                  </p>
                 </motion.a>
               );
             })}
@@ -161,19 +176,22 @@ export function ContactPage() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Emergency Hotlines</h2>
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              Emergency Hotlines
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               For emergencies and urgent situations — available anytime
             </p>
           </motion.div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-
             {/* General Emergency */}
             <div>
               <div className="mb-4 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-neutral-900" />
-                <h3 className="text-sm font-bold text-gray-900">General Emergency</h3>
+                <h3 className="text-sm font-bold text-gray-900">
+                  General Emergency
+                </h3>
                 <span className="ml-auto rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-600">
                   {emergencyContacts.length} lines
                 </span>
@@ -185,23 +203,33 @@ export function ContactPage() {
                   return (
                     <motion.a
                       key={contact.name}
-                      href={`tel:${contact.number.replace(/\s/g, '')}`}
+                      href={`tel:${contact.number.replace(/\s/g, "")}`}
                       initial={{ opacity: 0, x: -12 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.35, delay: index * 0.05 }}
                       className="group flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3.5 transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
                     >
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${accent}`}>
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${accent}`}
+                      >
                         <Icon size={15} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900">{contact.name}</p>
-                        <p className="text-[11px] text-gray-500">{contact.description}</p>
+                        <p className="text-xs font-bold text-gray-900">
+                          {contact.name}
+                        </p>
+                        <p className="text-[11px] text-gray-500">
+                          {contact.description}
+                        </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-sm font-bold text-gray-900 tabular-nums">{contact.number}</p>
-                        <p className="text-[10px] text-blue-600 font-medium group-hover:underline">Call now</p>
+                        <p className="text-sm font-bold text-gray-900 tabular-nums">
+                          {contact.number}
+                        </p>
+                        <p className="text-[10px] text-blue-600 font-medium group-hover:underline">
+                          Call now
+                        </p>
                       </div>
                     </motion.a>
                   );
@@ -213,7 +241,9 @@ export function ContactPage() {
             <div>
               <div className="mb-4 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                <h3 className="text-sm font-bold text-gray-900">Medical Emergency</h3>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Medical Emergency
+                </h3>
                 <span className="ml-auto rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                   {medicalEmergencyContacts.length} lines
                 </span>
@@ -224,7 +254,7 @@ export function ContactPage() {
                   return (
                     <motion.a
                       key={contact.name}
-                      href={`tel:${contact.number.replace(/\s/g, '')}`}
+                      href={`tel:${contact.number.replace(/\s/g, "")}`}
                       initial={{ opacity: 0, x: 12 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
@@ -235,12 +265,20 @@ export function ContactPage() {
                         <Icon size={15} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900">{contact.name}</p>
-                        <p className="text-[11px] text-gray-500">{contact.description}</p>
+                        <p className="text-xs font-bold text-gray-900">
+                          {contact.name}
+                        </p>
+                        <p className="text-[11px] text-gray-500">
+                          {contact.description}
+                        </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-sm font-bold text-emerald-600 tabular-nums">{contact.number}</p>
-                        <p className="text-[10px] text-emerald-600 font-medium group-hover:underline">Call now</p>
+                        <p className="text-sm font-bold text-emerald-600 tabular-nums">
+                          {contact.number}
+                        </p>
+                        <p className="text-[10px] text-emerald-600 font-medium group-hover:underline">
+                          Call now
+                        </p>
                       </div>
                     </motion.a>
                   );
@@ -249,12 +287,14 @@ export function ContactPage() {
 
               {/* Social links — sits below medical in the right column */}
               <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-gray-900 mb-1">Follow on Social Media</h3>
+                <h3 className="text-sm font-bold text-gray-900 mb-1">
+                  Follow on Social Media
+                </h3>
                 <p className="text-xs text-gray-500 mb-4">
                   Stay updated with announcements and community news
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {socialLinks.map(link => {
+                  {socialLinks.map((link) => {
                     const Icon = link.icon;
                     return (
                       <a
@@ -272,7 +312,6 @@ export function ContactPage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -293,7 +332,8 @@ export function ContactPage() {
                 Office Directory
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Direct contact numbers for all {municipalOffices.length} municipal offices
+                Direct contact numbers for all {municipalOffices.length}{" "}
+                municipal offices
               </p>
             </div>
 
@@ -307,7 +347,7 @@ export function ContactPage() {
                 type="text"
                 placeholder="Search office…"
                 value={officeSearch}
-                onChange={e => setOfficeSearch(e.target.value)}
+                onChange={(e) => setOfficeSearch(e.target.value)}
                 className="w-full rounded-lg border border-neutral-200 bg-neutral-50 py-2 pl-8 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20 transition-all"
               />
               <AnimatePresence>
@@ -317,7 +357,7 @@ export function ContactPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => setOfficeSearch('')}
+                    onClick={() => setOfficeSearch("")}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <FaTimes size={10} />
@@ -340,7 +380,7 @@ export function ContactPage() {
                 {filteredOffices.map((office, index) => (
                   <motion.a
                     key={office.name}
-                    href={`tel:${office.number.replace(/\s/g, '')}`}
+                    href={`tel:${office.number.replace(/\s/g, "")}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, delay: index * 0.02 }}
@@ -371,10 +411,14 @@ export function ContactPage() {
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
                   <FaSearch size={12} className="text-neutral-400" />
                 </div>
-                <p className="text-sm font-semibold text-neutral-700 mb-1">No offices matched</p>
-                <p className="text-xs text-neutral-400">Try a different office name.</p>
+                <p className="text-sm font-semibold text-neutral-700 mb-1">
+                  No offices matched
+                </p>
+                <p className="text-xs text-neutral-400">
+                  Try a different office name.
+                </p>
                 <button
-                  onClick={() => setOfficeSearch('')}
+                  onClick={() => setOfficeSearch("")}
                   className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   Show all offices
@@ -384,11 +428,10 @@ export function ContactPage() {
           </AnimatePresence>
         </div>
       </section>
-
     </div>
   );
 }
 
-ContactPage.displayName = 'ContactPage';
+ContactPage.displayName = "ContactPage";
 
 export default ContactPage;

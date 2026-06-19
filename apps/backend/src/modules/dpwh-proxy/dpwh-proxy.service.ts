@@ -1,4 +1,4 @@
-import { logger } from '@/shared/logger';
+import { logger } from "@/shared/logger";
 
 interface GotResponse<BodyType = unknown> {
   statusCode: number;
@@ -6,7 +6,9 @@ interface GotResponse<BodyType = unknown> {
   headers: Record<string, string | string[] | undefined>;
 }
 
-type GotScrapingFn = (options: Record<string, unknown>) => Promise<GotResponse<string>>;
+type GotScrapingFn = (
+  options: Record<string, unknown>,
+) => Promise<GotResponse<string>>;
 
 export interface DpwhProxyOptions {
   /**
@@ -36,21 +38,23 @@ export interface DpwhProxyResult<T = unknown> {
  * is empty, but a failure there is expected and gracefully handled.
  */
 const getConfig = () => ({
-  baseUrl: (process.env.DPWH_API_BASE_URL || 'https://api.transparency.dpwh.gov.ph').replace(/\/+$/, ''),
-  timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || '70000', 10),
+  baseUrl: (
+    process.env.DPWH_API_BASE_URL || "https://api.transparency.dpwh.gov.ph"
+  ).replace(/\/+$/, ""),
+  timeoutMs: parseInt(process.env.DPWH_TIMEOUT_MS || "70000", 10),
   /**
    * Optional outbound proxy (HTTP/HTTPS/SOCKS). Only useful when running
    * the refresh script from a network whose IP Cloudflare flags. Most
    * residential connections don't need this.
    */
-  proxyUrl: process.env.DPWH_PROXY_URL || '',
+  proxyUrl: process.env.DPWH_PROXY_URL || "",
   /**
    * The upstream's CORS config whitelists `http://localhost:3000`. We're
    * server-to-server so CORS doesn't apply, but DPWH still seems to inspect
    * Origin/Referer, so we forward the whitelisted values.
    */
-  origin: process.env.DPWH_ORIGIN || 'http://localhost:3000',
-  referer: process.env.DPWH_REFERER || 'http://localhost:3000/'
+  origin: process.env.DPWH_ORIGIN || "http://localhost:3000",
+  referer: process.env.DPWH_REFERER || "http://localhost:3000/",
 });
 
 /**
@@ -60,14 +64,16 @@ const getConfig = () => ({
  * `new Function`, which TS can't analyse — Node sees a real dynamic `import()`
  * and loads the ESM module successfully.
  */
-const importEsm = new Function('specifier', 'return import(specifier)') as <T>(
-  specifier: string
+const importEsm = new Function("specifier", "return import(specifier)") as <T>(
+  specifier: string,
 ) => Promise<T>;
 
 let gotScrapingPromise: Promise<{ gotScraping: GotScrapingFn }> | null = null;
 const getGotScraping = async (): Promise<GotScrapingFn> => {
   if (!gotScrapingPromise) {
-    gotScrapingPromise = importEsm<{ gotScraping: GotScrapingFn }>('got-scraping');
+    gotScrapingPromise = importEsm<{ gotScraping: GotScrapingFn }>(
+      "got-scraping",
+    );
   }
   return (await gotScrapingPromise).gotScraping;
 };
@@ -76,13 +82,16 @@ const getGotScraping = async (): Promise<GotScrapingFn> => {
  * Build a `URLSearchParams` from a loose query object, dropping undefined values
  * and supporting repeated keys (string[]).
  */
-const buildQuery = (query: Record<string, string | string[] | undefined> = {}): URLSearchParams => {
+const buildQuery = (
+  query: Record<string, string | string[] | undefined> = {},
+): URLSearchParams => {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null || value === '') continue;
+    if (value === undefined || value === null || value === "") continue;
     if (Array.isArray(value)) {
       for (const v of value) {
-        if (v !== undefined && v !== null && v !== '') params.append(key, String(v));
+        if (v !== undefined && v !== null && v !== "")
+          params.append(key, String(v));
       }
     } else {
       params.append(key, String(value));
@@ -104,23 +113,27 @@ const buildQuery = (query: Record<string, string | string[] | undefined> = {}): 
  * `got-scraping` impersonates Chrome's TLS / HTTP-2 / header fingerprint so
  * the request looks like a real browser to Cloudflare.
  */
-export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Promise<DpwhProxyResult<T>> => {
+export const dpwhProxyRequest = async <T = unknown>(
+  opts: DpwhProxyOptions,
+): Promise<DpwhProxyResult<T>> => {
   const { baseUrl, timeoutMs, proxyUrl, origin, referer } = getConfig();
 
-  if (!opts.path.startsWith('/')) {
-    throw new Error(`DPWH proxy path must start with '/', received: ${opts.path}`);
+  if (!opts.path.startsWith("/")) {
+    throw new Error(
+      `DPWH proxy path must start with '/', received: ${opts.path}`,
+    );
   }
 
   const params = buildQuery(opts.query);
   const qs = params.toString();
-  const url = `${baseUrl}${opts.path}${qs ? `?${qs}` : ''}`;
+  const url = `${baseUrl}${opts.path}${qs ? `?${qs}` : ""}`;
 
   // got-scraping's header generator fills in realistic browser headers
   // (User-Agent, sec-ch-ua-*, Accept, Accept-Language, …). We only override
   // the ones DPWH inspects via its CORS whitelist.
   const headers: Record<string, string> = {
     Origin: origin,
-    Referer: referer
+    Referer: referer,
   };
 
   const startedAt = Date.now();
@@ -129,8 +142,8 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
     const gotScraping = await getGotScraping();
     response = (await gotScraping({
       url,
-      method: 'GET',
-      responseType: 'text',
+      method: "GET",
+      responseType: "text",
       throwHttpErrors: false,
       // Single attempt, no retry: a stuck upstream (Cloudflare challenge /
       // slow datacenter-IP handshake) must not be retried, otherwise the
@@ -141,10 +154,10 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
       ...(proxyUrl ? { proxyUrl } : {}),
       headers,
       headerGeneratorOptions: {
-        browsers: [{ name: 'chrome', minVersion: 120 }],
-        devices: ['desktop'],
-        operatingSystems: ['windows']
-      }
+        browsers: [{ name: "chrome", minVersion: 120 }],
+        devices: ["desktop"],
+        operatingSystems: ["windows"],
+      },
     })) as GotResponse<string>;
   } catch (err) {
     const elapsed = Date.now() - startedAt;
@@ -154,61 +167,72 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
 
     logger.error(
       `[DPWH] request failed (${elapsed}ms): ${url} | name=${name} code=${code} ` +
-        `proxy=${proxyUrl ? 'set' : 'none'} message=${message}`
+        `proxy=${proxyUrl ? "set" : "none"} message=${message}`,
     );
 
-    if (name === 'TimeoutError' || name === 'AbortError') {
-      const error = new Error('Upstream DPWH API timed out');
+    if (name === "TimeoutError" || name === "AbortError") {
+      const error = new Error("Upstream DPWH API timed out");
       (error as any).statusCode = 504;
-      (error as any).reason = 'upstream_timeout';
-      (error as any).diagnostic = { elapsed, proxy: proxyUrl ? 'configured' : 'none' };
+      (error as any).reason = "upstream_timeout";
+      (error as any).diagnostic = {
+        elapsed,
+        proxy: proxyUrl ? "configured" : "none",
+      };
       throw error;
     }
 
-    const error = new Error('Failed to reach upstream DPWH API');
+    const error = new Error("Failed to reach upstream DPWH API");
     (error as any).statusCode = 502;
-    (error as any).reason = 'upstream_unreachable';
+    (error as any).reason = "upstream_unreachable";
     (error as any).cause = message;
     (error as any).diagnostic = {
       elapsed,
       errorName: name,
       errorCode: code,
       errorMessage: message,
-      proxy: proxyUrl ? 'configured' : 'none'
+      proxy: proxyUrl ? "configured" : "none",
     };
     throw error;
   }
 
   const elapsed = Date.now() - startedAt;
-  const contentType = (response.headers['content-type'] as string | undefined) ?? null;
-  const isJson = contentType?.includes('application/json');
-  const rawBody = response.body ?? '';
+  const contentType =
+    (response.headers["content-type"] as string | undefined) ?? null;
+  const isJson = contentType?.includes("application/json");
+  const rawBody = response.body ?? "";
 
   // Detect Cloudflare interstitial (status can be 200 or 403). The expected
   // failure mode on the VM — caller should fall back to cached data.
   const looksLikeCloudflareChallenge =
-    typeof rawBody === 'string' && rawBody.startsWith('<') && rawBody.includes('Just a moment');
+    typeof rawBody === "string" &&
+    rawBody.startsWith("<") &&
+    rawBody.includes("Just a moment");
 
   if (looksLikeCloudflareChallenge) {
     logger.warn(
       `[DPWH] Cloudflare challenge served (status=${response.statusCode}, ${elapsed}ms): ${url}. ` +
-        `This is expected on datacenter IPs — caller should use the MongoDB cache instead.`
+        `This is expected on datacenter IPs — caller should use the MongoDB cache instead.`,
     );
-    const error = new Error('Upstream DPWH API is behind a Cloudflare challenge');
+    const error = new Error(
+      "Upstream DPWH API is behind a Cloudflare challenge",
+    );
     (error as any).statusCode = 502;
-    (error as any).reason = 'cloudflare_challenge';
+    (error as any).reason = "cloudflare_challenge";
     throw error;
   }
 
   let body: unknown;
-  if (isJson && typeof rawBody === 'string' && rawBody.length > 0) {
+  if (isJson && typeof rawBody === "string" && rawBody.length > 0) {
     try {
       body = JSON.parse(rawBody);
     } catch (err) {
-      logger.error(`[DPWH] Failed to parse JSON body from upstream: ${url}`, err);
-      const error = new Error('Upstream DPWH API returned malformed JSON');
+      logger.error(
+        `[DPWH] Failed to parse JSON body from upstream: ${url}`,
+        err,
+      );
+      const error = new Error("Upstream DPWH API returned malformed JSON");
       (error as any).statusCode = 502;
-      (error as any).reason = 'malformed_json';
+      (error as any).reason = "malformed_json";
       throw error;
     }
   } else {
@@ -220,6 +244,6 @@ export const dpwhProxyRequest = async <T = unknown>(opts: DpwhProxyOptions): Pro
   return {
     status: response.statusCode,
     body: body as T,
-    contentType
+    contentType,
   };
 };

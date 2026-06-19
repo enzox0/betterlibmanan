@@ -1,18 +1,18 @@
-import type { RouteObject } from 'react-router-dom';
-import { AdminRoute } from './AdminRoute';
-import { AdminDashboardPage } from '../pages/AdminDashboardPage';
-import { HomeModulePage } from '../pages/HomeModulePage';
-import { ModulePage } from '../pages/ModulePage';
-import { AdminDashboardLayout } from '../components/layout/AdminDashboardLayout';
-import { AccountManagementPage } from '../pages/AccountManagementPage';
-import { MyAccountPage } from '../pages/MyAccountPage';
-import { ContactsPage } from '../pages/ContactsPage';
-import { AdminLoginPage } from '../components/auth/AdminLoginPage';
+import type { RouteObject } from "react-router-dom";
+import { AdminRoute } from "./AdminRoute";
+import { AdminDashboardPage } from "../pages/AdminDashboardPage";
+import { HomeModulePage } from "../pages/HomeModulePage";
+import { ModulePage } from "../pages/ModulePage";
+import { AdminDashboardLayout } from "../components/layout/AdminDashboardLayout";
+import { AccountManagementPage } from "../pages/AccountManagementPage";
+import { MyAccountPage } from "../pages/MyAccountPage";
+import { ContactsPage } from "../pages/ContactsPage";
+import { AdminLoginPage } from "../components/auth/AdminLoginPage";
 
 export const adminRoutes: RouteObject[] = [
   // Public login page — no auth guard
   {
-    path: 'login',
+    path: "login",
     element: <AdminLoginPage />,
   },
   // Protected admin routes
@@ -27,23 +27,23 @@ export const adminRoutes: RouteObject[] = [
             element: <AdminDashboardPage />,
           },
           {
-            path: 'home',
+            path: "home",
             element: <HomeModulePage />,
           },
           {
-            path: 'accounts',
+            path: "accounts",
             element: <AccountManagementPage />,
           },
           {
-            path: 'my-account',
+            path: "my-account",
             element: <MyAccountPage />,
           },
           {
-            path: 'contacts',
+            path: "contacts",
             element: <ContactsPage />,
           },
           {
-            path: ':module',
+            path: ":module",
             element: <ModulePage />,
           },
         ],

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import type { ContentRecord } from '../../types/admin.types';
-import { useContentFilter } from '../../hooks/useContentFilter';
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import type { ContentRecord } from "../../types/admin.types";
+import { useContentFilter } from "../../hooks/useContentFilter";
 
 interface SectionManagerTableProps {
   records: ContentRecord[];
@@ -9,11 +9,11 @@ interface SectionManagerTableProps {
   onDelete: (record: ContentRecord) => void;
 }
 
-type StatusFilter = 'all' | 'published' | 'draft';
+type StatusFilter = "all" | "published" | "draft";
 
-const statusBadgeClasses: Record<'published' | 'draft', string> = {
-  published: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  draft: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+const statusBadgeClasses: Record<"published" | "draft", string> = {
+  published: "bg-green-50 text-green-700 ring-1 ring-green-200",
+  draft: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
 };
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -29,20 +29,27 @@ const tableRowVariants = {
   exit: { opacity: 0, x: -20, transition: { duration: 0.2, ease: EASE } },
 };
 
-function StatusBadge({ status }: { status: ContentRecord['status'] }) {
+function StatusBadge({ status }: { status: ContentRecord["status"] }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusBadgeClasses[status]}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${status === 'published' ? 'bg-green-500' : 'bg-amber-400'}`} aria-hidden="true" />
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${status === "published" ? "bg-green-500" : "bg-amber-400"}`}
+        aria-hidden="true"
+      />
       {status}
     </span>
   );
 }
 
-export function SectionManagerTable({ records, onEdit, onDelete }: SectionManagerTableProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+export function SectionManagerTable({
+  records,
+  onEdit,
+  onDelete,
+}: SectionManagerTableProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const filteredRecords = useContentFilter(records, searchTerm, statusFilter);
 
@@ -51,8 +58,19 @@ export function SectionManagerTable({ records, onEdit, onDelete }: SectionManage
       {/* Search + Filter controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 sm:max-w-xs">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             type="search"
@@ -84,8 +102,19 @@ export function SectionManagerTable({ records, onEdit, onDelete }: SectionManage
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.25, ease: EASE }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-gray-300 mx-auto mb-3" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-10 w-10 text-gray-300 mx-auto mb-3"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <p className="text-sm text-gray-400">No records match your search.</p>
         </motion.div>
@@ -97,13 +126,22 @@ export function SectionManagerTable({ records, onEdit, onDelete }: SectionManage
           <table className="min-w-full divide-y divide-gray-100 text-sm">
             <thead>
               <tr className="bg-gray-50">
-                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider"
+                >
                   Title / Name
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider"
+                >
                   Status
                 </th>
-                <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider"
+                >
                   Actions
                 </th>
               </tr>
@@ -123,7 +161,9 @@ export function SectionManagerTable({ records, onEdit, onDelete }: SectionManage
                     exit="exit"
                     layout
                   >
-                    <td className="px-4 py-3.5 text-gray-800 font-medium">{record.title}</td>
+                    <td className="px-4 py-3.5 text-gray-800 font-medium">
+                      {record.title}
+                    </td>
                     <td className="px-4 py-3.5">
                       <StatusBadge status={record.status} />
                     </td>
@@ -173,8 +213,12 @@ export function SectionManagerTable({ records, onEdit, onDelete }: SectionManage
                 <div className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Title / Name</p>
-                      <p className="text-sm font-medium text-gray-800 truncate">{record.title}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
+                        Title / Name
+                      </p>
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {record.title}
+                      </p>
                     </div>
                     <StatusBadge status={record.status} />
                   </div>

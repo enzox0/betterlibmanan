@@ -83,11 +83,15 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
   const handleClick = (item: NavItem) => {
     if (item.sectionId) {
       if (location.pathname === item.href) {
-        document.getElementById(item.sectionId)?.scrollIntoView({ behavior: "smooth" });
+        document
+          .getElementById(item.sectionId)
+          ?.scrollIntoView({ behavior: "smooth" });
       } else {
         navigate(item.href);
         setTimeout(() => {
-          document.getElementById(item.sectionId!)?.scrollIntoView({ behavior: "smooth" });
+          document
+            .getElementById(item.sectionId!)
+            ?.scrollIntoView({ behavior: "smooth" });
         }, 400);
       }
     } else {
@@ -200,7 +204,7 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
         <motion.div
           className={cn(
             "bg-white border border-neutral-200 transition-colors overflow-hidden flex items-center justify-center rounded-lg",
-            !isMobile ? "hover:bg-neutral-900" : ""
+            !isMobile ? "hover:bg-neutral-900" : "",
           )}
           animate={{
             paddingTop: expanded ? extraPadding : "6px",
@@ -218,7 +222,7 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
                 className={cn(
                   expanded ? "text-white" : "text-neutral-700",
                   !isMobile ? "group-hover:scale-110" : "",
-                  "transition-transform"
+                  "transition-transform",
                 )}
               />
             </motion.div>
@@ -233,7 +237,7 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
                     transition={{ duration: 0.3 }}
                     className={cn(
                       expanded ? "text-white" : "text-neutral-700",
-                      "text-sm font-medium whitespace-nowrap"
+                      "text-sm font-medium whitespace-nowrap",
                     )}
                     style={{
                       writingMode: "vertical-rl",

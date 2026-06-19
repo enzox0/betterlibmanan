@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken, AccessTokenPayload } from './auth.service';
+import { Request, Response, NextFunction } from "express";
+import { verifyAccessToken, AccessTokenPayload } from "./auth.service";
 
 // Augment Express Request so downstream handlers can read `req.admin`
 declare global {
@@ -20,11 +20,18 @@ declare global {
  *   router.get('/protected', requireAuth, handler);
  *   router.use('/admin', requireAuth);
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ success: false, message: 'Authorization header missing or malformed' });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({
+      success: false,
+      message: "Authorization header missing or malformed",
+    });
     return;
   }
 
@@ -33,19 +40,23 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   try {
     const payload = verifyAccessToken(token);
 
-    if (payload.type !== 'access') {
-      res.status(401).json({ success: false, message: 'Invalid token type' });
+    if (payload.type !== "access") {
+      res.status(401).json({ success: false, message: "Invalid token type" });
       return;
     }
 
     req.admin = payload;
     next();
   } catch (err: any) {
-    if (err.name === 'TokenExpiredError') {
-      res.status(401).json({ success: false, message: 'Access token expired', code: 'TOKEN_EXPIRED' });
+    if (err.name === "TokenExpiredError") {
+      res.status(401).json({
+        success: false,
+        message: "Access token expired",
+        code: "TOKEN_EXPIRED",
+      });
       return;
     }
-    res.status(401).json({ success: false, message: 'Invalid access token' });
+    res.status(401).json({ success: false, message: "Invalid access token" });
   }
 }
 
@@ -56,14 +67,18 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
  * Usage:
  *   router.delete('/admins/:id', requireAuth, requireRole('superadmin'), handler);
  */
-export function requireRole(...roles: Array<'superadmin' | 'admin' | 'editor'>) {
+export function requireRole(
+  ...roles: Array<"superadmin" | "admin" | "editor">
+) {
   return function (req: Request, res: Response, next: NextFunction): void {
     if (!req.admin) {
-      res.status(401).json({ success: false, message: 'Not authenticated' });
+      res.status(401).json({ success: false, message: "Not authenticated" });
       return;
     }
     if (!roles.includes(req.admin.role)) {
-      res.status(403).json({ success: false, message: 'Insufficient permissions' });
+      res
+        .status(403)
+        .json({ success: false, message: "Insufficient permissions" });
       return;
     }
     next();

@@ -11,6 +11,7 @@
     "refresh-dpwh-cache": "tsx scripts/refresh-dpwh-cache.ts",
     "test": "echo \"Tests coming soon\"",
     "test:coverage": "echo \"Coverage coming soon\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "echo \"Lint coming soon\"",
     "db:migrate": "echo \"Migrations coming soon\"",
     "db:seed": "tsx --tsconfig tsconfig.scripts.json scripts/seed-admin.ts",

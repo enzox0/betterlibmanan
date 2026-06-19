@@ -1,8 +1,8 @@
-import { ServiceCategoryPage } from './ServiceCategoryPage';
+import { ServiceCategoryPage } from "./ServiceCategoryPage";
 
 export function EducationPage() {
   return <ServiceCategoryPage slug="education" />;
 }
 
-EducationPage.displayName = 'EducationPage';
+EducationPage.displayName = "EducationPage";
 export default EducationPage;

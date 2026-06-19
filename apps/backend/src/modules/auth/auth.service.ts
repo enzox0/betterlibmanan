@@ -1,25 +1,27 @@
-import jwt, { SignOptions } from 'jsonwebtoken';
-import crypto from 'crypto';
-import { AdminModel, IAdmin } from './admin.model';
-import { RefreshTokenModel } from './refresh-token.model';
-import { logger } from '@/shared/logger';
+import jwt, { SignOptions } from "jsonwebtoken";
+import crypto from "crypto";
+import { AdminModel, IAdmin } from "./admin.model";
+import { RefreshTokenModel } from "./refresh-token.model";
+import { logger } from "@/shared/logger";
 
 // ─── JWT configuration ────────────────────────────────────────────────────────
 
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'change-me-access-secret';
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'change-me-refresh-secret';
+const ACCESS_SECRET =
+  process.env.JWT_ACCESS_SECRET || "change-me-access-secret";
+const REFRESH_SECRET =
+  process.env.JWT_REFRESH_SECRET || "change-me-refresh-secret";
 
-const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || '15m';  // short-lived
+const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || "15m"; // short-lived
 const REFRESH_TOKEN_TTL_MS =
-  parseInt(process.env.JWT_REFRESH_TTL_DAYS || '7', 10) * 24 * 60 * 60 * 1000;
+  parseInt(process.env.JWT_REFRESH_TTL_DAYS || "7", 10) * 24 * 60 * 60 * 1000;
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === "production") {
   if (
-    ACCESS_SECRET === 'change-me-access-secret' ||
-    REFRESH_SECRET === 'change-me-refresh-secret'
+    ACCESS_SECRET === "change-me-access-secret" ||
+    REFRESH_SECRET === "change-me-refresh-secret"
   ) {
     throw new Error(
-      '[AUTH] JWT secrets must be set via JWT_ACCESS_SECRET and JWT_REFRESH_SECRET in production.',
+      "[AUTH] JWT secrets must be set via JWT_ACCESS_SECRET and JWT_REFRESH_SECRET in production.",
     );
   }
 }
@@ -27,16 +29,16 @@ if (process.env.NODE_ENV === 'production') {
 // ─── Payload types ────────────────────────────────────────────────────────────
 
 export interface AccessTokenPayload {
-  sub: string;        // admin._id (string)
+  sub: string; // admin._id (string)
   username: string;
-  role: IAdmin['role'];
-  type: 'access';
+  role: IAdmin["role"];
+  type: "access";
 }
 
 export interface RefreshTokenPayload {
   sub: string;
-  jti: string;        // unique token id — links to RefreshToken document
-  type: 'refresh';
+  jti: string; // unique token id — links to RefreshToken document
+  type: "refresh";
 }
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
@@ -46,9 +48,11 @@ export function signAccessToken(admin: IAdmin): string {
     sub: (admin._id as any).toString(),
     username: admin.username,
     role: admin.role,
-    type: 'access',
+    type: "access",
   };
-  return jwt.sign(payload, ACCESS_SECRET, { expiresIn: ACCESS_TOKEN_TTL } as SignOptions);
+  return jwt.sign(payload, ACCESS_SECRET, {
+    expiresIn: ACCESS_TOKEN_TTL,
+  } as SignOptions);
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
@@ -71,7 +75,7 @@ interface LoginOptions {
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  admin: Pick<IAdmin, '_id' | 'username' | 'displayName' | 'role'>;
+  admin: Pick<IAdmin, "_id" | "username" | "displayName" | "role">;
 }
 
 /**
@@ -83,26 +87,26 @@ export async function login(opts: LoginOptions): Promise<AuthTokens> {
   const { username, password, userAgent, ipAddress } = opts;
 
   // Explicitly select password (excluded by default on the schema)
-  const admin = await AdminModel.findOne({ username: username.toLowerCase().trim() }).select(
-    '+password',
-  );
+  const admin = await AdminModel.findOne({
+    username: username.toLowerCase().trim(),
+  }).select("+password");
 
   if (!admin || !admin.isActive) {
-    const err: any = new Error('Invalid credentials');
+    const err: any = new Error("Invalid credentials");
     err.statusCode = 401;
     throw err;
   }
 
   const isValid = await admin.comparePassword(password);
   if (!isValid) {
-    const err: any = new Error('Invalid credentials');
+    const err: any = new Error("Invalid credentials");
     err.statusCode = 401;
     throw err;
   }
 
   // Update last login timestamp (fire-and-forget, don't block response)
-  AdminModel.findByIdAndUpdate(admin._id, { lastLoginAt: new Date() }).catch((e) =>
-    logger.error('[AUTH] Failed to update lastLoginAt:', e),
+  AdminModel.findByIdAndUpdate(admin._id, { lastLoginAt: new Date() }).catch(
+    (e) => logger.error("[AUTH] Failed to update lastLoginAt:", e),
   );
 
   const tokens = await issueTokenPair(admin, { userAgent, ipAddress });
@@ -119,24 +123,32 @@ export async function refresh(rawRefreshToken: string): Promise<AuthTokens> {
   try {
     payload = verifyRefreshToken(rawRefreshToken);
   } catch {
-    const err: any = new Error('Invalid or expired refresh token');
+    const err: any = new Error("Invalid or expired refresh token");
     err.statusCode = 401;
     throw err;
   }
 
   // Load the stored token document
-  const storedToken = await RefreshTokenModel.findOne({ token: rawRefreshToken });
+  const storedToken = await RefreshTokenModel.findOne({
+    token: rawRefreshToken,
+  });
 
-  if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
+  if (
+    !storedToken ||
+    storedToken.isRevoked ||
+    storedToken.expiresAt < new Date()
+  ) {
     // Potential token reuse — revoke the entire family for this admin
     if (storedToken) {
       await RefreshTokenModel.updateMany(
         { adminId: storedToken.adminId },
         { isRevoked: true },
       );
-      logger.warn(`[AUTH] Potential refresh token reuse detected for admin ${storedToken.adminId}`);
+      logger.warn(
+        `[AUTH] Potential refresh token reuse detected for admin ${storedToken.adminId}`,
+      );
     }
-    const err: any = new Error('Refresh token is no longer valid');
+    const err: any = new Error("Refresh token is no longer valid");
     err.statusCode = 401;
     throw err;
   }
@@ -147,7 +159,7 @@ export async function refresh(rawRefreshToken: string): Promise<AuthTokens> {
 
   const admin = await AdminModel.findById(storedToken.adminId);
   if (!admin || !admin.isActive) {
-    const err: any = new Error('Account not found or inactive');
+    const err: any = new Error("Account not found or inactive");
     err.statusCode = 401;
     throw err;
   }
@@ -188,7 +200,7 @@ async function issueTokenPair(
   const refreshPayload: RefreshTokenPayload = {
     sub: (admin._id as any).toString(),
     jti,
-    type: 'refresh',
+    type: "refresh",
   };
   const rawRefreshToken = jwt.sign(refreshPayload, REFRESH_SECRET, {
     expiresIn: `${REFRESH_TOKEN_TTL_MS}ms`,

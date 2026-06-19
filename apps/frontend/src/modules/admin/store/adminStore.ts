@@ -1,14 +1,14 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { AdminContentState, ContentRecord } from '../types/admin.types';
-import { mockSections, mockRecords } from '../data/mockSections';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { AdminContentState, ContentRecord } from "../types/admin.types";
+import { mockSections, mockRecords } from "../data/mockSections";
 import {
   loginRequest,
   refreshRequest,
   logoutRequest,
   type AdminProfile,
   type LoginPayload,
-} from '../services/auth.api';
+} from "../services/auth.api";
 
 // ─── Auth slice ───────────────────────────────────────────────────────────────
 
@@ -69,8 +69,13 @@ export const useAdminStore = create<AdminStore>()(
           });
         } catch (err: any) {
           const message =
-            err?.response?.data?.message || 'Invalid credentials. Please try again.';
-          set({ isAuthenticated: false, isAuthLoading: false, authError: message });
+            err?.response?.data?.message ||
+            "Invalid credentials. Please try again.";
+          set({
+            isAuthenticated: false,
+            isAuthLoading: false,
+            authError: message,
+          });
           throw new Error(message);
         }
       },
@@ -154,7 +159,9 @@ export const useAdminStore = create<AdminStore>()(
         set((state) => ({
           records: {
             ...state.records,
-            [sectionKey]: (state.records[sectionKey] ?? []).filter((rec) => rec.id !== id),
+            [sectionKey]: (state.records[sectionKey] ?? []).filter(
+              (rec) => rec.id !== id,
+            ),
           },
         }));
       },
@@ -164,7 +171,7 @@ export const useAdminStore = create<AdminStore>()(
       },
     }),
     {
-      name: 'admin-auth',
+      name: "admin-auth",
       storage: createJSONStorage(() => localStorage),
       // Only persist auth tokens — not loading/error state or UI state
       partialize: (state) => ({

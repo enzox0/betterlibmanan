@@ -1,2 +1,2 @@
 // Queue coming soon
-export {}
+export {};

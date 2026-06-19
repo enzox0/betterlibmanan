@@ -1,2 +1,2 @@
-export * from '../types/types';
-export * from './transparency.api';
+export * from "../types/types";
+export * from "./transparency.api";
