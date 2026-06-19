@@ -5,7 +5,9 @@ import {
   FaClock,
   FaFax,
   FaFacebook,
-  FaTwitter,
+} from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
+import {
   FaInstagram,
   FaYoutube,
   FaShieldAlt,
@@ -99,7 +101,7 @@ export const mockContactData: ContactData = {
   ],
   socialLinks: [
     { icon: FaFacebook, name: 'Facebook', href: '#', color: 'hover:text-blue-600' },
-    { icon: FaTwitter, name: 'Twitter', href: '#', color: 'hover:text-blue-400' },
+    { icon: FaXTwitter, name: 'X', href: '#', color: 'hover:text-gray-900' },
     { icon: FaInstagram, name: 'Instagram', href: '#', color: 'hover:text-pink-600' },
     { icon: FaYoutube, name: 'YouTube', href: '#', color: 'hover:text-red-600' }
   ]
