@@ -112,6 +112,13 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     keywords: 'contact, contact us, get in touch, office locations, inquiries',
   },
 
+  // Tourism
+  '/tourism': {
+    title: 'Tourism',
+    description: 'Discover the natural and cultural wonders of Libmanan, Camarines Sur — from caves and rivers to heritage churches and local cuisine.',
+    keywords: 'tourism, Libmanan tourism, tourist spots, Camarines Sur, Bicol tourism, travel, heritage, nature',
+  },
+
   // Error Pages
   '/404': {
     title: 'Page Not Found',
