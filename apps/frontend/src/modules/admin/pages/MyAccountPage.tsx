@@ -146,7 +146,7 @@ function SectionCard({
 }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100">
         <div>
           <h2 className="text-sm font-bold text-gray-900">{title}</h2>
           {description && (
