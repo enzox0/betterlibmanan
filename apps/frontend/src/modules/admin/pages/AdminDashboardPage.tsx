@@ -3,6 +3,15 @@ import { Link } from "react-router-dom";
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
 import { mockSections } from "../data/mockSections";
+import {
+  LuChevronRight,
+  LuHouse,
+  LuWrench,
+  LuBuilding2,
+  LuPhone,
+  LuUsers,
+  LuSearch,
+} from "react-icons/lu";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -63,19 +72,10 @@ function QuickLink({ to, label, description, icon, color }: QuickLinkProps) {
           {description}
         </p>
       </div>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 16 16"
-        fill="currentColor"
+      <LuChevronRight
         className="h-4 w-4 text-gray-300 group-hover:text-blue-400 mt-0.5 ml-auto flex-shrink-0 transition-colors"
         aria-hidden="true"
-      >
-        <path
-          fillRule="evenodd"
-          d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z"
-          clipRule="evenodd"
-        />
-      </svg>
+      />
     </Link>
   );
 }
@@ -87,133 +87,42 @@ const QUICK_LINKS: QuickLinkProps[] = [
     description:
       "Edit hero, leadership, updates, and all public home sections.",
     color: "bg-blue-50 text-blue-600",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </svg>
-    ),
+    icon: <LuHouse className="h-5 w-5" aria-hidden="true" />,
   },
   {
     to: "/admin/services",
     label: "Services",
     description: "Manage citizen-facing government services and categories.",
     color: "bg-violet-50 text-violet-600",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-      </svg>
-    ),
+    icon: <LuWrench className="h-5 w-5" aria-hidden="true" />,
   },
   {
     to: "/admin/government",
     label: "Government",
     description: "Update organizational structure and department info.",
     color: "bg-amber-50 text-amber-600",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="M3 22V8l9-6 9 6v14" />
-        <path d="M9 22V12h6v10" />
-        <path d="M3 22h18" />
-      </svg>
-    ),
+    icon: <LuBuilding2 className="h-5 w-5" aria-hidden="true" />,
   },
   {
     to: "/admin/contacts",
     label: "Contacts",
     description: "View and manage public inquiries submitted through the site.",
     color: "bg-green-50 text-green-600",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-      </svg>
-    ),
+    icon: <LuPhone className="h-5 w-5" aria-hidden="true" />,
   },
   {
     to: "/admin/accounts",
     label: "Manage Accounts",
     description: "Add, edit, or remove admin user accounts.",
     color: "bg-rose-50 text-rose-600",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
+    icon: <LuUsers className="h-5 w-5" aria-hidden="true" />,
   },
   {
     to: "/admin/transparency",
     label: "Transparency",
     description: "Publish budget reports, ordinances, and public documents.",
     color: "bg-sky-50 text-sky-600",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <circle cx="11" cy="11" r="8" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      </svg>
-    ),
+    icon: <LuSearch className="h-5 w-5" aria-hidden="true" />,
   },
 ];
 

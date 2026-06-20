@@ -1,6 +1,22 @@
 import { useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactDOM from "react-dom";
+import {
+  LuX,
+  LuCheck,
+  LuPencil,
+  LuUserPlus,
+  LuCircleCheck,
+  LuTrash2,
+  LuLogIn,
+  LuCalendar,
+  LuClock,
+  LuShield,
+  LuBuilding2,
+  LuPhone,
+  LuMail,
+  LuUser,
+} from "react-icons/lu";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -269,15 +285,7 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
               aria-label="Close"
               className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-              </svg>
+              <LuX className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
           <form onSubmit={handleSubmit} noValidate>
@@ -471,34 +479,17 @@ function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
               aria-label="Close"
               className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-              </svg>
+              <LuX className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
 
           {success ? (
             <div className="px-6 py-10 flex flex-col items-center gap-3 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-50">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <LuCheck
                   className="h-6 w-6 text-green-600"
                   aria-hidden="true"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                />
               </div>
               <p className="text-sm font-semibold text-gray-900">
                 Password updated!
@@ -645,80 +636,14 @@ const ACTIVITY_LOG = [
 
 function ActivityIcon({ type }: { type: string }) {
   const base = "h-4 w-4";
-  if (type === "edit")
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 16 16"
-        fill="currentColor"
-        className={base}
-        aria-hidden="true"
-      >
-        <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.79 2.291a.75.75 0 0 0 .949.95l2.29-.79a2.75 2.75 0 0 0 .892-.597l4.262-4.262a1.75 1.75 0 0 0 0-2.475Z" />
-        <path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9a.75.75 0 0 1 1.5 0v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z" />
-      </svg>
-    );
+  if (type === "edit") return <LuPencil className={base} aria-hidden="true" />;
   if (type === "user-plus")
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 16 16"
-        fill="currentColor"
-        className={base}
-        aria-hidden="true"
-      >
-        <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 8 17c1.52 0 2.959-.346 4.125-.955A1.23 1.23 0 0 0 12.535 14.493C11.657 12.39 9.998 11 8 11c-1.998 0-3.657 1.39-4.535 3.493Z" />
-        <path d="M13.25 8.75a.75.75 0 0 1 .75.75v1.25h1.25a.75.75 0 0 1 0 1.5H14v1.25a.75.75 0 0 1-1.5 0V12.25H11.25a.75.75 0 0 1 0-1.5H12.5V9.5a.75.75 0 0 1 .75-.75Z" />
-      </svg>
-    );
+    return <LuUserPlus className={base} aria-hidden="true" />;
   if (type === "check")
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 16 16"
-        fill="currentColor"
-        className={base}
-        aria-hidden="true"
-      >
-        <path
-          fillRule="evenodd"
-          d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z"
-          clipRule="evenodd"
-        />
-      </svg>
-    );
-  if (type === "trash")
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 16 16"
-        fill="currentColor"
-        className={base}
-        aria-hidden="true"
-      >
-        <path
-          fillRule="evenodd"
-          d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5Z"
-          clipRule="evenodd"
-        />
-      </svg>
-    );
+    return <LuCircleCheck className={base} aria-hidden="true" />;
+  if (type === "trash") return <LuTrash2 className={base} aria-hidden="true" />;
   // login
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      className={base}
-      aria-hidden="true"
-    >
-      <path
-        fillRule="evenodd"
-        d="M2 4.75A2.75 2.75 0 0 1 4.75 2h3a2.75 2.75 0 0 1 2.75 2.75v.5a.75.75 0 0 1-1.5 0v-.5c0-.69-.56-1.25-1.25-1.25h-3c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h3c.69 0 1.25-.56 1.25-1.25v-.5a.75.75 0 0 1 1.5 0v.5A2.75 2.75 0 0 1 7.75 14h-3A2.75 2.75 0 0 1 2 11.25v-6.5Zm9.47.47a.75.75 0 0 1 1.06 0l2.25 2.25a.75.75 0 0 1 0 1.06l-2.25 2.25a.75.75 0 1 1-1.06-1.06l.97-.97H6.75a.75.75 0 0 1 0-1.5h5.69l-.97-.97a.75.75 0 0 1 0-1.06Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
+  return <LuLogIn className={base} aria-hidden="true" />;
 }
 
 const ACTIVITY_ICON_COLORS: Record<string, string> = {
@@ -788,16 +713,7 @@ export function MyAccountPage() {
               onClick={() => setEditOpen(true)}
               className="mt-12 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.79 2.291a.75.75 0 0 0 .949.95l2.29-.79a2.75 2.75 0 0 0 .892-.597l4.262-4.262a1.75 1.75 0 0 0 0-2.475Z" />
-                <path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9a.75.75 0 0 1 1.5 0v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z" />
-              </svg>
+              <LuPencil className="h-4 w-4" aria-hidden="true" />
               Edit Profile
             </button>
           </div>
@@ -823,35 +739,17 @@ export function MyAccountPage() {
           {/* Quick stats strip */}
           <div className="mt-5 flex flex-wrap gap-4 pt-5 border-t border-gray-100">
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                fill="currentColor"
+              <LuCalendar
                 className="h-3.5 w-3.5 text-gray-400"
                 aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 1.75a.75.75 0 0 1 1.5 0V3h5V1.75a.75.75 0 0 1 1.5 0V3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2V1.75ZM4.5 6a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1h-7Z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              />
               Joined {formatDate(profile.joinedAt)}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                fill="currentColor"
+              <LuClock
                 className="h-3.5 w-3.5 text-gray-400"
                 aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7.75-4.25a.75.75 0 0 0-1.5 0V8c0 .414.336.75.75.75h3.25a.75.75 0 0 0 0-1.5h-2.5v-3.5Z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              />
               Last login {formatDateTime(profile.lastLogin)}
             </div>
           </div>
@@ -869,19 +767,7 @@ export function MyAccountPage() {
               role="status"
               aria-live="polite"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <LuCheck className="h-4 w-4" aria-hidden="true" />
               Profile saved
             </motion.div>
           )}
@@ -906,39 +792,14 @@ export function MyAccountPage() {
                   {profile.email}
                 </a>
               }
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                  aria-hidden="true"
-                >
-                  <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
-                  <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
-                </svg>
-              }
+              icon={<LuMail className="h-3.5 w-3.5" aria-hidden="true" />}
             />
             <InfoRow
               label="Phone Number"
               value={
                 profile.phone || <span className="text-gray-300">Not set</span>
               }
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3.5 2A1.5 1.5 0 0 0 2 3.5V5c0 5.799 4.701 10.5 10.5 10.5H14a1.5 1.5 0 0 0 1.5-1.5v-1.232a1.5 1.5 0 0 0-1.12-1.452l-2.07-.518a1.5 1.5 0 0 0-1.586.698l-.032.052a11.034 11.034 0 0 1-4.24-4.24l.052-.032a1.5 1.5 0 0 0 .698-1.586L6.684 3.62A1.5 1.5 0 0 0 5.232 2.5H3.5Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              }
+              icon={<LuPhone className="h-3.5 w-3.5" aria-hidden="true" />}
             />
             <InfoRow
               label="Department"
@@ -947,21 +808,7 @@ export function MyAccountPage() {
                   <span className="text-gray-300">Not set</span>
                 )
               }
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 3.5A1.5 1.5 0 0 1 4.5 2h7A1.5 1.5 0 0 1 13 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 12.5v-9Zm4 6a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1H7Zm0-2.5a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1H7ZM6.5 5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              }
+              icon={<LuBuilding2 className="h-3.5 w-3.5" aria-hidden="true" />}
             />
             <InfoRow
               label="Username"
@@ -970,17 +817,7 @@ export function MyAccountPage() {
                   @{profile.username}
                 </span>
               }
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                  aria-hidden="true"
-                >
-                  <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
-                </svg>
-              }
+              icon={<LuUser className="h-3.5 w-3.5" aria-hidden="true" />}
             />
           </SectionCard>
 
@@ -1068,19 +905,7 @@ export function MyAccountPage() {
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-500 shadow-sm">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <LuShield className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-gray-700">
@@ -1103,19 +928,7 @@ export function MyAccountPage() {
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-500 shadow-sm">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M15 8A7 7 0 1 1 1 8a7 7 0 0 1 14 0ZM9.5 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM6.75 9.5a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 0-1.5h-2.5Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <LuShield className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-gray-700">
