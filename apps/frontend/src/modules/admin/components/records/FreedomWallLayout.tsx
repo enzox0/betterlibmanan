@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  LuFileText,
+  LuSearch,
+  LuX,
+  LuTrash2,
+  LuTriangleAlert,
+} from "react-icons/lu";
 import { useAdminStore } from "../../store/adminStore";
 import {
   listNotes,
@@ -45,21 +52,10 @@ function colorSwatchClass(noteColor: string): string {
 function EmptyState() {
   return (
     <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 py-14 text-center">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
+      <LuFileText
         className="mx-auto h-9 w-9 text-gray-300 mb-2"
         aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z"
-        />
-      </svg>
+      />
       <p className="text-sm text-gray-400">
         No notes posted yet on the Freedom Wall.
       </p>
@@ -181,19 +177,10 @@ export function FreedomWallLayout({
 
         {/* Search */}
         <div className="relative flex-1 sm:max-w-xs">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 16"
-            fill="currentColor"
+          <LuSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none"
             aria-hidden="true"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-              clipRule="evenodd"
-            />
-          </svg>
+          />
           <input
             type="search"
             value={query}
@@ -207,15 +194,7 @@ export function FreedomWallLayout({
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               aria-label="Clear search"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                className="h-3.5 w-3.5"
-                aria-hidden="true"
-              >
-                <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
-              </svg>
+              <LuX className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -272,19 +251,7 @@ export function FreedomWallLayout({
                       onClick={() => setConfirm({ open: true, note })}
                       className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 transition-colors"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                        className="h-3.5 w-3.5"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5Z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <LuTrash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       Remove
                     </button>
                   </td>
@@ -317,19 +284,10 @@ export function FreedomWallLayout({
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 16 16"
-                    fill="currentColor"
+                  <LuTriangleAlert
                     className="h-5 w-5 text-red-500"
                     aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 5Zm0 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-gray-900">
