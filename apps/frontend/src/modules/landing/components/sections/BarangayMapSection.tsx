@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import {
+  LuMapPin,
+  LuX,
+  LuUsers,
+  LuGlobe,
+  LuCamera,
+  LuCalendar,
+} from "react-icons/lu";
 import { Skeleton } from "@/shared/ui";
 
 // Barangay data with detailed info
@@ -461,25 +469,7 @@ export function BarangayMapSection({
                 ) : (
                   <div className="text-center">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900 text-white shadow-md">
-                      <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
+                      <LuMapPin className="w-6 h-6" aria-hidden="true" />
                     </div>
                     <p className="mt-3 text-sm font-medium text-neutral-600">
                       Loading map...
@@ -594,19 +584,7 @@ export function BarangayMapSection({
               className="absolute top-4 right-4 z-10 p-2 text-neutral-500 hover:text-neutral-900 transition-colors"
               onClick={() => setSelectedBarangay(null)}
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <LuX className="w-6 h-6" aria-hidden="true" />
             </button>
 
             <div className="p-0 lg:p-5">
@@ -636,19 +614,7 @@ export function BarangayMapSection({
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                      <svg
-                        className="text-xs"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
+                      <LuUsers className="w-4 h-4" aria-hidden="true" />
                     </div>
                     <div>
                       <div className="text-lg font-bold text-neutral-900">
@@ -661,19 +627,7 @@ export function BarangayMapSection({
                   </div>
                   <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                      <svg
-                        className="text-xs"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                      <LuGlobe className="w-4 h-4" aria-hidden="true" />
                     </div>
                     <div>
                       <div className="text-lg font-bold text-neutral-900">
@@ -690,25 +644,7 @@ export function BarangayMapSection({
                 <div className="mb-4 rounded-lg border border-neutral-200 bg-white p-4">
                   <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
+                      <LuCamera className="w-3.5 h-3.5" aria-hidden="true" />
                     </div>
                     Tourist Attractions
                   </h3>
@@ -731,19 +667,7 @@ export function BarangayMapSection({
                 <div className="rounded-lg border border-neutral-200 bg-white p-4">
                   <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
+                      <LuCalendar className="w-3.5 h-3.5" aria-hidden="true" />
                     </div>
                     Festivals
                   </h3>
