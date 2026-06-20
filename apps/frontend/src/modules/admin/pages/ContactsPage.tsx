@@ -486,7 +486,7 @@ function SectionCard({
 }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100">
         <div>
           <h2 className="text-base font-bold text-gray-900">{title}</h2>
           <p className="mt-0.5 text-xs text-gray-400">{description}</p>
@@ -578,7 +578,10 @@ function ContactInfoSection() {
         {contacts.map((c) => {
           const meta = CONTACT_TYPE_META[c.type];
           return (
-            <div key={c.id} className="flex items-center gap-4 px-6 py-4">
+            <div
+              key={c.id}
+              className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
+            >
               <div
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.bg}`}
               >
@@ -593,7 +596,7 @@ function ContactInfoSection() {
                   {c.href}
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 sm:shrink-0 sm:ml-auto">
                 <AnimatePresence>
                   {savedIds.has(c.id) && (
                     <motion.span
