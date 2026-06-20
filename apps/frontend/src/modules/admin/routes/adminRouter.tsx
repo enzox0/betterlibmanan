@@ -8,6 +8,11 @@ import { AccountManagementPage } from "../pages/AccountManagementPage";
 import { MyAccountPage } from "../pages/MyAccountPage";
 import { ContactsPage } from "../pages/ContactsPage";
 import { AdminLoginPage } from "../components/auth/AdminLoginPage";
+import { GovernmentModulePage } from "../pages/GovernmentModulePage";
+import { LegislativeModulePage } from "../pages/LegislativeModulePage";
+import { TransparencyModulePage } from "../pages/TransparencyModulePage";
+import { ServicesModulePage } from "../pages/ServicesModulePage";
+import { StatisticsModulePage } from "../pages/StatisticsModulePage";
 
 export const adminRoutes: RouteObject[] = [
   // Public login page — no auth guard
@@ -41,6 +46,26 @@ export const adminRoutes: RouteObject[] = [
           {
             path: "contacts",
             element: <ContactsPage />,
+          },
+          {
+            path: "government",
+            element: <GovernmentModulePage />,
+          },
+          {
+            path: "legislative",
+            element: <LegislativeModulePage />,
+          },
+          {
+            path: "transparency",
+            element: <TransparencyModulePage />,
+          },
+          {
+            path: "services",
+            element: <ServicesModulePage />,
+          },
+          {
+            path: "statistics",
+            element: <StatisticsModulePage />,
           },
           {
             path: ":module",
