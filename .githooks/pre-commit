@@ -196,14 +196,19 @@ done
 if [ "$HAS_TS_FILES" -eq 1 ]; then
   if command -v pnpm >/dev/null 2>&1; then
     cd "$ROOT_DIR"
-    # Run typecheck via turbo so each package/app uses its own tsconfig.
-    # That's the only way path aliases like `@/*` (defined per-app, not in
-    # the base config) resolve correctly. Turbo caches successful runs so
-    # unchanged packages are instant.
-    TYPECHECK_OUTPUT=$(pnpm exec turbo run typecheck 2>&1)
-    TYPECHECK_EXIT=$?
-    if [ "$TYPECHECK_EXIT" -ne 0 ]; then
-      echo "$TYPECHECK_OUTPUT" | grep -E "error TS|ERROR" || echo "$TYPECHECK_OUTPUT"
+    # Run tsc directly on each app/package that has a tsconfig.
+    # Avoids turbo which may hang if its platform binary is missing.
+    TYPECHECK_FAILED=0
+    for TSCONFIG in apps/*/tsconfig.json packages/*/tsconfig.json; do
+      [ -f "$TSCONFIG" ] || continue
+      PKG_DIR=$(dirname "$TSCONFIG")
+      TYPECHECK_OUTPUT=$(pnpm exec tsc --noEmit --project "$TSCONFIG" 2>&1)
+      if [ $? -ne 0 ]; then
+        echo "$TYPECHECK_OUTPUT" | grep -E "error TS" | head -10
+        TYPECHECK_FAILED=1
+      fi
+    done
+    if [ "$TYPECHECK_FAILED" -eq 1 ]; then
       echo "${RED}❌ TypeScript errors found. Fix them before committing.${NC}"
       ERRORS=$((ERRORS + 1))
     else
