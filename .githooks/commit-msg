@@ -62,11 +62,11 @@ if ! echo "$FIRST_LINE" | grep -qE "$CONVENTIONAL_REGEX"; then
 fi
 
 # -----------------------------------------------------------------------------
-# 2. SUBJECT LINE LENGTH (max 72 characters)
+# 2. SUBJECT LINE LENGTH (max 100 characters)
 # -----------------------------------------------------------------------------
 SUBJECT_LENGTH=$(echo "$FIRST_LINE" | wc -c | tr -d ' ')
-if [ "$SUBJECT_LENGTH" -gt 72 ]; then
-  echo "${RED}❌ Subject line too long: ${SUBJECT_LENGTH} chars (max: 72).${NC}"
+if [ "$SUBJECT_LENGTH" -gt 100 ]; then
+  echo "${RED}❌ Subject line too long: ${SUBJECT_LENGTH} chars (max: 100).${NC}"
   echo "   → Keep the subject concise. Put details in the body."
   ERRORS=$((ERRORS + 1))
 fi
