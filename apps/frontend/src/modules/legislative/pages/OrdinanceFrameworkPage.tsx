@@ -10,19 +10,40 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { mockLegislativeData } from "../data/mockData";
+import { ListRowSkeleton, Pagination } from "@/shared/ui";
+
+const PAGE_SIZE = 20;
 
 export function OrdinanceFrameworkPage() {
   const data = mockLegislativeData.ordinance;
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const filtered = data.documents.filter((doc) => {
     const matchesSearch =
       !search.trim() ||
       doc.title.toLowerCase().includes(search.toLowerCase()) ||
       doc.number.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
+    const matchesCategory =
+      !activeCategory ||
+      doc.title.toLowerCase().includes(activeCategory.toLowerCase());
+    return matchesSearch && matchesCategory;
   });
+
+  // Reset page on filter changes
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  function handleSearchChange(val: string) {
+    setSearch(val);
+    setPage(1);
+  }
+
+  function handleCategoryChange(cat: string | null) {
+    setActiveCategory(cat);
+    setPage(1);
+  }
 
   return (
     <div className="min-h-screen bg-neutral-100">
@@ -78,7 +99,7 @@ export function OrdinanceFrameworkPage() {
                 type="text"
                 placeholder="Search ordinances by title or number…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="relative z-10 w-full pl-11 pr-10 py-3.5 rounded-xl bg-transparent border border-transparent text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/60 transition-all"
               />
               <AnimatePresence>
@@ -88,7 +109,7 @@ export function OrdinanceFrameworkPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => setSearch("")}
+                    onClick={() => handleSearchChange("")}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     <FaTimes size={12} />
@@ -163,7 +184,9 @@ export function OrdinanceFrameworkPage() {
                       whileInView={{ opacity: 1, scale: 1 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.25, delay: index * 0.04 }}
-                      onClick={() => setActiveCategory(isActive ? null : cat)}
+                      onClick={() =>
+                        handleCategoryChange(isActive ? null : cat)
+                      }
                       className={[
                         "rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200",
                         isActive
@@ -178,7 +201,7 @@ export function OrdinanceFrameworkPage() {
               </div>
               {activeCategory && (
                 <button
-                  onClick={() => setActiveCategory(null)}
+                  onClick={() => handleCategoryChange(null)}
                   className="mt-3 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <FaTimes size={9} /> Clear filter
@@ -230,7 +253,7 @@ export function OrdinanceFrameworkPage() {
                 transition={{ duration: 0.2 }}
                 className="space-y-2"
               >
-                {filtered.map((doc, index) => (
+                {paginated.map((doc, index) => (
                   <motion.div
                     key={doc.number}
                     initial={{ opacity: 0, y: 10 }}
@@ -279,6 +302,7 @@ export function OrdinanceFrameworkPage() {
                   onClick={() => {
                     setSearch("");
                     setActiveCategory(null);
+                    setPage(1);
                   }}
                   className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                 >
@@ -287,6 +311,24 @@ export function OrdinanceFrameworkPage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  total={filtered.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={(p) => {
+                    setPage(p);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </div>
