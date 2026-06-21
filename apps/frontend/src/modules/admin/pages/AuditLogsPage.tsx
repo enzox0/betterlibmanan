@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAdminStore } from "../store/adminStore";
+import { TableSkeletonRows, Pagination } from "@/shared/ui";
 import {
   fetchAuditLogs,
   type AuditLog,
@@ -190,38 +191,39 @@ export function AuditLogsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="py-16 text-center text-sm text-gray-400">
-            Loading audit logs…
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Timestamp
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    User
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Role
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Action
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Module
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Description
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    IP Address
-                  </th>
-                </tr>
-              </thead>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Timestamp
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  User
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Role
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Action
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Module
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Description
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  IP Address
+                </th>
+              </tr>
+            </thead>
+
+            {loading ? (
+              <tbody>
+                <TableSkeletonRows rows={10} cols={7} />
+              </tbody>
+            ) : (
               <tbody>
                 {logs.length === 0 ? (
                   <tr>
@@ -273,51 +275,18 @@ export function AuditLogsPage() {
                   ))
                 )}
               </tbody>
-            </table>
-          </div>
-        )}
+            )}
+          </table>
+        </div>
 
         {/* Pagination */}
-        {pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
-            <p className="text-xs text-gray-400">
-              Showing {(pagination.page - 1) * pagination.limit + 1}–
-              {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-              of {pagination.total} entries
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={pagination.page <= 1}
-                onClick={() =>
-                  setFilters((p) => ({ ...p, page: (p.page ?? 1) - 1 }))
-                }
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-              >
-                Previous
-              </button>
-              <span className="text-xs text-gray-500">
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <button
-                type="button"
-                disabled={pagination.page >= pagination.pages}
-                onClick={() =>
-                  setFilters((p) => ({ ...p, page: (p.page ?? 1) + 1 }))
-                }
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-        {!loading && pagination.pages <= 1 && (
-          <p className="px-5 py-3 text-xs text-gray-400 border-t border-gray-50">
-            {pagination.total} total{" "}
-            {pagination.total === 1 ? "entry" : "entries"}
-          </p>
-        )}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.pages}
+          total={pagination.total}
+          pageSize={pagination.limit}
+          onPageChange={(p) => setFilters((prev) => ({ ...prev, page: p }))}
+        />
       </div>
     </motion.div>
   );

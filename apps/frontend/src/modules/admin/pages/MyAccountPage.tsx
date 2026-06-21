@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactDOM from "react-dom";
 import {
@@ -16,54 +16,31 @@ import {
   LuPhone,
   LuMail,
   LuUser,
+  LuLoader,
+  LuLoaderCircle,
 } from "react-icons/lu";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type AccountRole = "super-admin" | "editor" | "viewer";
-
-interface UserProfile {
-  name: string;
-  username: string;
-  email: string;
-  role: AccountRole;
-  phone: string;
-  department: string;
-  bio: string;
-  joinedAt: string;
-  lastLogin: string;
-}
-
-// ─── Mock "current user" ─────────────────────────────────────────────────────
-
-const CURRENT_USER: UserProfile = {
-  name: "Maria Santos",
-  username: "admin",
-  email: "mayor@libmanan.gov.ph",
-  role: "super-admin",
-  phone: "+63 917 123 4567",
-  department: "Office of the Mayor",
-  bio: "Administrator for the BetterLibmanan web platform. Manages content, accounts, and site settings.",
-  joinedAt: "2024-01-10T08:00:00.000Z",
-  lastLogin: "2024-06-14T09:22:00.000Z",
-};
+import { useAdminStore } from "../store/adminStore";
+import {
+  getMeRequest,
+  updateMeRequest,
+  changeMyPasswordRequest,
+  getMyActivityRequest,
+  type ActivityLogEntry,
+  type AdminProfile,
+} from "../services/auth.api";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const ROLE_META: Record<AccountRole, { label: string; classes: string }> = {
-  "super-admin": {
+const ROLE_META: Record<string, { label: string; classes: string }> = {
+  superadmin: {
     label: "Super Admin",
     classes: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
   },
-  editor: {
-    label: "Editor",
+  admin: {
+    label: "Admin",
     classes: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
-  },
-  viewer: {
-    label: "Viewer",
-    classes: "bg-gray-100 text-gray-600 ring-1 ring-gray-200",
   },
 };
 
@@ -120,15 +97,29 @@ function formatDateTime(iso: string) {
   });
 }
 
+/** Map an audit log action string to an icon type for the activity list. */
+function actionToIcon(action: string, module: string): string {
+  if (action === "LOGIN") return "login";
+  if (action === "LOGOUT" || action === "LOGOUT_ALL") return "login";
+  if (action === "DELETE") return "trash";
+  if (action === "CREATE") return "user-plus";
+  if (module === "MyAccount" || action === "UPDATE") return "edit";
+  if (action === "ACTIVATE") return "check";
+  return "edit";
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function RoleBadge({ role }: { role: AccountRole }) {
-  const { label, classes } = ROLE_META[role];
+function RoleBadge({ role }: { role: string }) {
+  const meta = ROLE_META[role] ?? {
+    label: role,
+    classes: "bg-gray-100 text-gray-600 ring-1 ring-gray-200",
+  };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${classes}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${meta.classes}`}
     >
-      {label}
+      {meta.label}
     </span>
   );
 }
@@ -186,22 +177,50 @@ function InfoRow({
   );
 }
 
-// ─── Edit Profile Modal ────────────────────────────────────────────────────────
+const ACTIVITY_ICON_COLORS: Record<string, string> = {
+  edit: "bg-blue-50 text-blue-500",
+  "user-plus": "bg-violet-50 text-violet-500",
+  check: "bg-green-50 text-green-500",
+  trash: "bg-red-50 text-red-500",
+  login: "bg-gray-100 text-gray-500",
+};
 
-interface EditProfileModalProps {
-  profile: UserProfile;
-  onClose: () => void;
-  onSave: (updates: Partial<UserProfile>) => void;
+function ActivityIcon({ type }: { type: string }) {
+  const base = "h-4 w-4";
+  if (type === "edit") return <LuPencil className={base} aria-hidden="true" />;
+  if (type === "user-plus")
+    return <LuUserPlus className={base} aria-hidden="true" />;
+  if (type === "check")
+    return <LuCircleCheck className={base} aria-hidden="true" />;
+  if (type === "trash") return <LuTrash2 className={base} aria-hidden="true" />;
+  return <LuLogIn className={base} aria-hidden="true" />;
 }
 
-function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
+// ─── Edit Profile Modal ───────────────────────────────────────────────────────
+
+interface EditProfileModalProps {
+  profile: AdminProfile;
+  onClose: () => void;
+  onSave: (updated: AdminProfile) => void;
+  accessToken: string;
+}
+
+function EditProfileModal({
+  profile,
+  onClose,
+  onSave,
+  accessToken,
+}: EditProfileModalProps) {
   const [form, setForm] = useState({
-    name: profile.name,
-    phone: profile.phone,
-    department: profile.department,
-    bio: profile.bio,
+    displayName: profile.displayName ?? "",
+    email: profile.email ?? "",
+    phone: profile.phone ?? "",
+    department: profile.department ?? "",
+    bio: profile.bio ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   function setField<K extends keyof typeof form>(key: K, val: string) {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -215,21 +234,39 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
 
   function validate() {
     const next: Record<string, string> = {};
-    if (!form.name.trim()) next.name = "Full name is required.";
+    if (!form.displayName.trim()) next.displayName = "Full name is required.";
+    if (!form.email.trim()) next.email = "Email address is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      next.email = "Enter a valid email address.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    onSave({
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      department: form.department.trim(),
-      bio: form.bio.trim(),
-    });
-    onClose();
+    setSubmitting(true);
+    setApiError(null);
+    try {
+      const updated = await updateMeRequest(
+        {
+          displayName: form.displayName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          department: form.department.trim(),
+          bio: form.bio.trim(),
+        },
+        accessToken,
+      );
+      onSave(updated);
+      onClose();
+    } catch (err: any) {
+      setApiError(
+        err?.response?.data?.message ?? "Failed to save. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const inputBase =
@@ -290,6 +327,18 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
           </div>
           <form onSubmit={handleSubmit} noValidate>
             <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              {apiError && (
+                <div
+                  className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-700"
+                  role="alert"
+                >
+                  <LuLoaderCircle
+                    className="h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {apiError}
+                </div>
+              )}
               <div>
                 <label
                   htmlFor="ep-name"
@@ -303,15 +352,40 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
                 <input
                   id="ep-name"
                   type="text"
-                  value={form.name}
-                  onChange={(e) => setField("name", e.target.value)}
+                  value={form.displayName}
+                  onChange={(e) => setField("displayName", e.target.value)}
                   placeholder="Your full name"
-                  aria-invalid={!!errors.name}
-                  className={errors.name ? inputError : inputNormal}
+                  aria-invalid={!!errors.displayName}
+                  className={errors.displayName ? inputError : inputNormal}
                 />
-                {errors.name && (
+                {errors.displayName && (
                   <p role="alert" className="mt-1 text-xs text-red-600">
-                    {errors.name}
+                    {errors.displayName}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label
+                  htmlFor="ep-email"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Email Address{" "}
+                  <span className="text-red-500" aria-hidden="true">
+                    *
+                  </span>
+                </label>
+                <input
+                  id="ep-email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setField("email", e.target.value)}
+                  placeholder="you@libmanan.gov.ph"
+                  aria-invalid={!!errors.email}
+                  className={errors.email ? inputError : inputNormal}
+                />
+                {errors.email && (
+                  <p role="alert" className="mt-1 text-xs text-red-600">
+                    {errors.email}
                   </p>
                 )}
               </div>
@@ -368,14 +442,22 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all"
+                disabled={submitting}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+                disabled={submitting}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-60"
               >
+                {submitting && (
+                  <LuLoader
+                    className="h-3.5 w-3.5 animate-spin"
+                    aria-hidden="true"
+                  />
+                )}
                 Save Changes
               </button>
             </div>
@@ -391,11 +473,17 @@ function EditProfileModal({ profile, onClose, onSave }: EditProfileModalProps) {
 
 interface ChangePasswordModalProps {
   onClose: () => void;
+  accessToken: string;
 }
 
-function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
+function ChangePasswordModal({
+  onClose,
+  accessToken,
+}: ChangePasswordModalProps) {
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   function setField(key: keyof typeof form, val: string) {
@@ -419,11 +507,26 @@ function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    setSuccess(true);
-    setTimeout(onClose, 1400);
+    setSubmitting(true);
+    setApiError(null);
+    try {
+      await changeMyPasswordRequest(
+        { currentPassword: form.current, newPassword: form.next },
+        accessToken,
+      );
+      setSuccess(true);
+      setTimeout(onClose, 1400);
+    } catch (err: any) {
+      setApiError(
+        err?.response?.data?.message ??
+          "Failed to update password. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const inputBase =
@@ -499,6 +602,18 @@ function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
           ) : (
             <form onSubmit={handleSubmit} noValidate>
               <div className="px-6 py-5 space-y-4">
+                {apiError && (
+                  <div
+                    className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-700"
+                    role="alert"
+                  >
+                    <LuLoaderCircle
+                      className="h-4 w-4 shrink-0"
+                      aria-hidden="true"
+                    />
+                    {apiError}
+                  </div>
+                )}
                 <div>
                   <label
                     htmlFor="cp-current"
@@ -579,14 +694,22 @@ function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all"
+                  disabled={submitting}
+                  className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-60"
                 >
+                  {submitting && (
+                    <LuLoader
+                      className="h-3.5 w-3.5 animate-spin"
+                      aria-hidden="true"
+                    />
+                  )}
                   Update Password
                 </button>
               </div>
@@ -599,78 +722,218 @@ function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
   );
 }
 
-// ─── Activity Log (mock) ──────────────────────────────────────────────────────
+// ─── Skeleton loader ──────────────────────────────────────────────────────────
 
-const ACTIVITY_LOG = [
-  {
-    id: 1,
-    action: "Updated hero section content",
-    ts: "2024-06-14T09:22:00.000Z",
-    icon: "edit",
-  },
-  {
-    id: 2,
-    action: "Created new editor account",
-    ts: "2024-06-13T14:05:00.000Z",
-    icon: "user-plus",
-  },
-  {
-    id: 3,
-    action: "Published latest update #12",
-    ts: "2024-06-12T11:30:00.000Z",
-    icon: "check",
-  },
-  {
-    id: 4,
-    action: "Deleted draft from services section",
-    ts: "2024-06-10T08:47:00.000Z",
-    icon: "trash",
-  },
-  {
-    id: 5,
-    action: "Logged in from Chrome / Windows",
-    ts: "2024-06-09T07:15:00.000Z",
-    icon: "login",
-  },
-];
-
-function ActivityIcon({ type }: { type: string }) {
-  const base = "h-4 w-4";
-  if (type === "edit") return <LuPencil className={base} aria-hidden="true" />;
-  if (type === "user-plus")
-    return <LuUserPlus className={base} aria-hidden="true" />;
-  if (type === "check")
-    return <LuCircleCheck className={base} aria-hidden="true" />;
-  if (type === "trash") return <LuTrash2 className={base} aria-hidden="true" />;
-  // login
-  return <LuLogIn className={base} aria-hidden="true" />;
+function PageSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="h-6 w-40 rounded bg-gray-200" />
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="h-24 bg-gray-200" />
+        <div className="px-6 pb-6 pt-4 space-y-3">
+          <div className="h-16 w-16 rounded-2xl bg-gray-300 -mt-10" />
+          <div className="h-5 w-48 rounded bg-gray-200" />
+          <div className="h-3 w-32 rounded bg-gray-100" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-gray-100" />
+          ))}
+        </div>
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-gray-100" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const ACTIVITY_ICON_COLORS: Record<string, string> = {
-  edit: "bg-blue-50 text-blue-500",
-  "user-plus": "bg-violet-50 text-violet-500",
-  check: "bg-green-50 text-green-500",
-  trash: "bg-red-50 text-red-500",
-  login: "bg-gray-100 text-gray-500",
-};
+// ─── Activity Section ─────────────────────────────────────────────────────────
+
+const ACTIVITY_PAGE_SIZE = 10;
+
+function ActivitySection({
+  log,
+  loading,
+  ease,
+}: {
+  log: ActivityLogEntry[];
+  loading: boolean;
+  ease: [number, number, number, number];
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const visible = expanded ? log : log.slice(0, ACTIVITY_PAGE_SIZE);
+  const hasMore = log.length > ACTIVITY_PAGE_SIZE;
+
+  return (
+    <SectionCard
+      title="Recent Activity"
+      description="Your latest actions on the admin panel."
+    >
+      {loading ? (
+        <div className="flex items-center justify-center py-8 gap-2 text-gray-400 text-sm">
+          <LuLoader className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Loading activity…
+        </div>
+      ) : log.length === 0 ? (
+        <p className="py-6 text-center text-sm text-gray-400">
+          No activity recorded yet.
+        </p>
+      ) : (
+        <>
+          <ul className="space-y-1" aria-label="Recent activity list">
+            {visible.map((entry, i) => {
+              const iconType = actionToIcon(entry.action, entry.module);
+              return (
+                <motion.li
+                  key={entry._id}
+                  className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0"
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03, duration: 0.22, ease }}
+                >
+                  <div
+                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${ACTIVITY_ICON_COLORS[iconType]}`}
+                  >
+                    <ActivityIcon type={iconType} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 leading-snug">
+                      {entry.description}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {formatDateTime(entry.createdAt)}
+                    </p>
+                  </div>
+                </motion.li>
+              );
+            })}
+          </ul>
+
+          {hasMore && (
+            <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between">
+              <p className="text-[11px] text-gray-400">
+                {expanded
+                  ? `Showing all ${log.length} entries`
+                  : `Showing ${ACTIVITY_PAGE_SIZE} of ${log.length} entries`}
+              </p>
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
+              >
+                {expanded
+                  ? "Show less"
+                  : `View ${log.length - ACTIVITY_PAGE_SIZE} more`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </SectionCard>
+  );
+}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function MyAccountPage() {
-  const [profile, setProfile] = useState<UserProfile>(CURRENT_USER);
+  const {
+    admin: storeAdmin,
+    accessToken,
+    setAdmin,
+  } = useAdminStore((s) => ({
+    admin: s.admin,
+    accessToken: s.accessToken,
+    setAdmin: s.setAdmin,
+  }));
+
+  // Always null on mount — the skeleton shows until the DB response arrives.
+  // Never use the persisted store value here; it may be stale or missing
+  // the extended fields (phone, department, bio, passwordChangedAt).
+  const [profile, setProfile] = useState<AdminProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState<string | null>(null);
+
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
   const [editOpen, setEditOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
-  function handleProfileSave(updates: Partial<UserProfile>) {
-    setProfile((prev) => ({ ...prev, ...updates }));
+  // Fetch full profile on mount (DB hit for extended fields)
+  const fetchProfile = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      setLoading(true);
+      setPageError(null);
+      const data = await getMeRequest(accessToken);
+      setProfile(data);
+    } catch (err: any) {
+      setPageError(err?.response?.data?.message ?? "Failed to load profile.");
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  // Fetch activity log on mount
+  const fetchActivity = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      setActivityLoading(true);
+      const logs = await getMyActivityRequest(accessToken);
+      setActivityLog(logs);
+    } catch {
+      // non-critical — silently fail
+    } finally {
+      setActivityLoading(false);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    fetchProfile();
+    fetchActivity();
+  }, [fetchProfile, fetchActivity]);
+
+  function handleProfileSave(updated: AdminProfile) {
+    setProfile(updated);
+    setAdmin(updated); // sync store so sidebar/header reflect the new name
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
 
-  const gradient = getAvatarGradient(profile.name);
+  if (loading) return <PageSkeleton />;
+
+  if (pageError || !profile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+          <LuLoaderCircle className="h-6 w-6 text-red-500" aria-hidden="true" />
+        </div>
+        <p className="text-sm font-semibold text-gray-800">
+          Could not load profile
+        </p>
+        <p className="text-xs text-gray-400 max-w-xs">{pageError}</p>
+        <button
+          type="button"
+          onClick={fetchProfile}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const gradient = getAvatarGradient(profile.displayName);
+  const token = accessToken ?? "";
 
   return (
     <motion.div
@@ -689,24 +952,18 @@ export function MyAccountPage() {
 
       {/* ── Profile Hero Card ── */}
       <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Banner */}
         <div
           className="h-24 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-900"
           aria-hidden="true"
         />
-
         <div className="px-6 pb-6">
-          {/* Avatar + actions row */}
           <div className="flex items-start justify-between gap-4 -mt-10">
-            {/* Avatar — straddles banner */}
             <div
               className={`h-20 w-20 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-2xl font-black shrink-0 ring-4 ring-white shadow-lg select-none`}
               aria-hidden="true"
             >
-              {getInitials(profile.name)}
+              {getInitials(profile.displayName)}
             </div>
-
-            {/* Edit profile button — pinned to the right, on white */}
             <button
               ref={editButtonRef}
               type="button"
@@ -717,45 +974,43 @@ export function MyAccountPage() {
               Edit Profile
             </button>
           </div>
-
-          {/* Name + role — always below the avatar, fully on white */}
           <div className="mt-3 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg font-bold text-gray-900 leading-tight">
-                {profile.name}
+                {profile.displayName}
               </h2>
               <RoleBadge role={profile.role} />
             </div>
             <p className="text-sm text-gray-400 mt-0.5">@{profile.username}</p>
           </div>
-
-          {/* Bio */}
           {profile.bio && (
             <p className="mt-4 text-sm text-gray-500 max-w-prose leading-relaxed">
               {profile.bio}
             </p>
           )}
-
-          {/* Quick stats strip */}
           <div className="mt-5 flex flex-wrap gap-4 pt-5 border-t border-gray-100">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <LuCalendar
-                className="h-3.5 w-3.5 text-gray-400"
-                aria-hidden="true"
-              />
-              Joined {formatDate(profile.joinedAt)}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <LuClock
-                className="h-3.5 w-3.5 text-gray-400"
-                aria-hidden="true"
-              />
-              Last login {formatDateTime(profile.lastLogin)}
-            </div>
+            {profile.createdAt && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <LuCalendar
+                  className="h-3.5 w-3.5 text-gray-400"
+                  aria-hidden="true"
+                />
+                Joined {formatDate(profile.createdAt)}
+              </div>
+            )}
+            {profile.lastLoginAt && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <LuClock
+                  className="h-3.5 w-3.5 text-gray-400"
+                  aria-hidden="true"
+                />
+                Last login {formatDateTime(profile.lastLoginAt)}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Save confirmation toast */}
+        {/* Save toast */}
         <AnimatePresence>
           {saved && (
             <motion.div
@@ -776,7 +1031,7 @@ export function MyAccountPage() {
 
       {/* ── Two-column grid ── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left: Contact Info */}
+        {/* Left column */}
         <div className="lg:col-span-2 space-y-6">
           <SectionCard
             title="Contact Information"
@@ -822,41 +1077,15 @@ export function MyAccountPage() {
           </SectionCard>
 
           {/* Activity Log */}
-          <SectionCard
-            title="Recent Activity"
-            description="Your latest actions on the admin panel."
-          >
-            <ul className="space-y-1" aria-label="Recent activity list">
-              {ACTIVITY_LOG.map((entry, i) => (
-                <motion.li
-                  key={entry.id}
-                  className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0"
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05, duration: 0.22, ease: EASE }}
-                >
-                  <div
-                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${ACTIVITY_ICON_COLORS[entry.icon]}`}
-                  >
-                    <ActivityIcon type={entry.icon} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 leading-snug">
-                      {entry.action}
-                    </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      {formatDateTime(entry.ts)}
-                    </p>
-                  </div>
-                </motion.li>
-              ))}
-            </ul>
-          </SectionCard>
+          <ActivitySection
+            log={activityLog}
+            loading={activityLoading}
+            ease={EASE}
+          />
         </div>
 
-        {/* Right: Quick actions + Security */}
+        {/* Right column */}
         <div className="space-y-6">
-          {/* Account Details */}
           <SectionCard title="Account Details">
             <div className="space-y-3">
               <div>
@@ -877,26 +1106,29 @@ export function MyAccountPage() {
                   Active
                 </span>
               </div>
-              <div className="pt-3 border-t border-gray-50">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">
-                  Member Since
-                </p>
-                <p className="text-sm font-medium text-gray-700">
-                  {formatDate(profile.joinedAt)}
-                </p>
-              </div>
-              <div className="pt-3 border-t border-gray-50">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">
-                  Last Login
-                </p>
-                <p className="text-sm font-medium text-gray-700">
-                  {formatDateTime(profile.lastLogin)}
-                </p>
-              </div>
+              {profile.createdAt && (
+                <div className="pt-3 border-t border-gray-50">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">
+                    Member Since
+                  </p>
+                  <p className="text-sm font-medium text-gray-700">
+                    {formatDate(profile.createdAt)}
+                  </p>
+                </div>
+              )}
+              {profile.lastLoginAt && (
+                <div className="pt-3 border-t border-gray-50">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">
+                    Last Login
+                  </p>
+                  <p className="text-sm font-medium text-gray-700">
+                    {formatDateTime(profile.lastLoginAt)}
+                  </p>
+                </div>
+              )}
             </div>
           </SectionCard>
 
-          {/* Security */}
           <SectionCard
             title="Security"
             description="Manage your login credentials."
@@ -912,7 +1144,9 @@ export function MyAccountPage() {
                       Password
                     </p>
                     <p className="text-[11px] text-gray-400">
-                      Last changed: never
+                      {profile.passwordChangedAt
+                        ? `Last changed ${formatDate(profile.passwordChangedAt)}`
+                        : "Last changed: never"}
                     </p>
                   </div>
                 </div>
@@ -924,7 +1158,6 @@ export function MyAccountPage() {
                   Change
                 </button>
               </div>
-
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-500 shadow-sm">
@@ -955,9 +1188,15 @@ export function MyAccountPage() {
             setTimeout(() => editButtonRef.current?.focus(), 0);
           }}
           onSave={handleProfileSave}
+          accessToken={token}
         />
       )}
-      {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
+      {pwOpen && (
+        <ChangePasswordModal
+          onClose={() => setPwOpen(false)}
+          accessToken={token}
+        />
+      )}
     </motion.div>
   );
 }

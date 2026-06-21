@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactDOM from "react-dom";
 import { useAdminStore } from "../store/adminStore";
+import { TableSkeletonRows, Pagination } from "@/shared/ui";
 import {
   fetchAccounts,
   createAccountRequest,
@@ -21,6 +22,7 @@ type AccountStatus = "active" | "inactive";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const PAGE_SIZE = 20;
 
 const ROLE_META: Record<AccountRole, { label: string; classes: string }> = {
   superadmin: {
@@ -154,7 +156,7 @@ function Avatar({ account }: { account: AdminAccount }) {
   );
 }
 
-// ─── Account Form Modal ────────────────────────────────────────────────────────
+// ─── Account Form Modal ───────────────────────────────────────────────────────
 
 interface AccountFormModalProps {
   mode: "create" | "edit";
@@ -758,6 +760,7 @@ export function AccountManagementPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [filterRole, setFilterRole] = useState<FilterRole>("all");
+  const [page, setPage] = useState(1);
   const [formMode, setFormMode] = useState<null | "create" | "edit">(null);
   const [editTarget, setEditTarget] = useState<AdminAccount | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null);
@@ -781,6 +784,11 @@ export function AccountManagementPage() {
     loadAccounts();
   }, [loadAccounts]);
 
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus, filterRole]);
+
   // ── Derived stats
   const totalActive = accounts.filter((a) => a.isActive).length;
   const totalSuperAdmins = accounts.filter(
@@ -788,7 +796,7 @@ export function AccountManagementPage() {
   ).length;
   const totalAdmins = accounts.filter((a) => a.role === "admin").length;
 
-  // ── Filtered list
+  // ── Filtered + paginated
   const filtered = accounts.filter((a) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -802,6 +810,10 @@ export function AccountManagementPage() {
     const matchRole = filterRole === "all" || a.role === filterRole;
     return matchSearch && matchStatus && matchRole;
   });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const colCount = isSuperAdmin ? 6 : 5;
 
   // ── CRUD handlers
   async function handleCreate(
@@ -969,54 +981,55 @@ export function AccountManagementPage() {
         </div>
 
         {/* Table */}
-        {loading ? (
-          <div className="py-16 text-center text-sm text-gray-400">
-            Loading accounts…
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Account
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Account
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Role
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Status
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Joined
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Last Login
+                </th>
+                {isSuperAdmin && (
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-widest text-gray-400">
+                    Actions
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Role
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Joined
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Last Login
-                  </th>
-                  {isSuperAdmin && (
-                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-widest text-gray-400">
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
+                )}
+              </tr>
+            </thead>
+
+            {loading ? (
+              <tbody>
+                <TableSkeletonRows rows={8} cols={colCount} />
+              </tbody>
+            ) : (
               <AnimatePresence mode="popLayout">
                 <motion.tbody
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
                 >
-                  {filtered.length === 0 ? (
+                  {paginated.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={isSuperAdmin ? 6 : 5}
+                        colSpan={colCount}
                         className="py-12 text-center text-sm text-gray-400"
                       >
                         No accounts match your filters.
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((account) => (
+                    paginated.map((account) => (
                       <motion.tr
                         key={account._id}
                         variants={rowVariants}
@@ -1095,12 +1108,20 @@ export function AccountManagementPage() {
                   )}
                 </motion.tbody>
               </AnimatePresence>
-            </table>
-          </div>
+            )}
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {!loading && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={filtered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
         )}
-        <p className="px-5 py-3 text-xs text-gray-400 border-t border-gray-50">
-          Showing {filtered.length} of {accounts.length} accounts
-        </p>
       </div>
 
       {/* Form modal */}
