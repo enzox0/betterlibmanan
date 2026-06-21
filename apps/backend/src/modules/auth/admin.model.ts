@@ -11,6 +11,11 @@ export interface IAdmin extends Document {
   role: AdminRole;
   isActive: boolean;
   lastLoginAt?: Date;
+  // ── Extended profile fields ─────────────────────────────────────────────────
+  phone?: string;
+  department?: string;
+  bio?: string;
+  passwordChangedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
@@ -58,6 +63,27 @@ const AdminSchema = new Schema<IAdmin>(
     lastLoginAt: {
       type: Date,
     },
+    phone: {
+      type: String,
+      trim: true,
+      maxlength: 32,
+      default: "",
+    },
+    department: {
+      type: String,
+      trim: true,
+      maxlength: 128,
+      default: "",
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: "",
+    },
+    passwordChangedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -71,11 +97,12 @@ const AdminSchema = new Schema<IAdmin>(
   },
 );
 
-// Hash password before save
+// Hash password before save, stamp passwordChangedAt
 AdminSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
+  this.passwordChangedAt = new Date();
   next();
 });
 

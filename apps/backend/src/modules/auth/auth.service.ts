@@ -190,6 +190,87 @@ export async function logoutAll(adminId: string): Promise<void> {
   await RefreshTokenModel.updateMany({ adminId }, { isRevoked: true });
 }
 
+// ─── Self-service profile operations ─────────────────────────────────────────
+
+export interface UpdateMeInput {
+  displayName?: string;
+  email?: string;
+  phone?: string;
+  department?: string;
+  bio?: string;
+}
+
+/**
+ * Update the authenticated admin's own profile fields.
+ * Role and isActive cannot be changed via this endpoint.
+ */
+export async function updateMe(
+  adminId: string,
+  input: UpdateMeInput,
+): Promise<Pick<IAdmin, "_id" | "username" | "displayName" | "email" | "role" | "phone" | "department" | "bio" | "lastLoginAt" | "passwordChangedAt" | "createdAt">> {
+  const admin = await AdminModel.findById(adminId);
+  if (!admin || !admin.isActive) {
+    const err: any = new Error("Account not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Check email uniqueness if being changed
+  if (input.email && input.email.toLowerCase() !== admin.email) {
+    const taken = await AdminModel.findOne({
+      email: input.email.toLowerCase(),
+      _id: { $ne: adminId },
+    });
+    if (taken) {
+      const err: any = new Error("Email already in use");
+      err.statusCode = 409;
+      throw err;
+    }
+  }
+
+  if (input.displayName !== undefined) admin.displayName = input.displayName;
+  if (input.email !== undefined) admin.email = input.email;
+  if (input.phone !== undefined) admin.phone = input.phone;
+  if (input.department !== undefined) admin.department = input.department;
+  if (input.bio !== undefined) admin.bio = input.bio;
+
+  await admin.save();
+
+  return AdminModel.findById(adminId)
+    .select("-password")
+    .lean() as any;
+}
+
+export interface ChangeMyPasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/**
+ * Change the authenticated admin's own password after verifying the current one.
+ */
+export async function changeMyPassword(
+  adminId: string,
+  input: ChangeMyPasswordInput,
+): Promise<void> {
+  const admin = await AdminModel.findById(adminId).select("+password");
+  if (!admin || !admin.isActive) {
+    const err: any = new Error("Account not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const isValid = await admin.comparePassword(input.currentPassword);
+  if (!isValid) {
+    const err: any = new Error("Current password is incorrect");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  admin.password = input.newPassword; // pre-save hook hashes + stamps passwordChangedAt
+  await admin.save();
+}
+
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 async function issueTokenPair(

@@ -6,6 +6,9 @@ import {
   handleLogout,
   handleLogoutAll,
   handleMe,
+  handleUpdateMe,
+  handleChangeMyPassword,
+  handleGetMyActivity,
 } from "./auth.controller";
 import { requireAuth } from "./auth.middleware";
 
@@ -47,3 +50,6 @@ authRouter.post("/refresh", refreshLimiter, handleRefresh);
 authRouter.post("/logout", requireAuth, handleLogout);
 authRouter.post("/logout-all", requireAuth, handleLogoutAll);
 authRouter.get("/me", requireAuth, handleMe);
+authRouter.patch("/me", requireAuth, handleUpdateMe);
+authRouter.post("/me/password", requireAuth, handleChangeMyPassword);
+authRouter.get("/me/activity", requireAuth, handleGetMyActivity);

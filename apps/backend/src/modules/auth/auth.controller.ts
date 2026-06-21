@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { login, refresh, logout, logoutAll } from "./auth.service";
+import { login, refresh, logout, logoutAll, updateMe, changeMyPassword } from "./auth.service";
 import { logger } from "@/shared/logger";
 import { writeAuditLog } from "@/modules/audit/audit.service";
+import { queryAuditLogs } from "@/modules/audit/audit.service";
 
 // ─── Request schemas ──────────────────────────────────────────────────────────
 
@@ -215,21 +216,181 @@ export async function handleLogoutAll(
 
 /**
  * GET /api/auth/me
- * Returns the authenticated admin's profile from the JWT payload.
+ * Returns the authenticated admin's profile from the database (includes extended fields).
  * Requires: Bearer access token
  */
-export function handleMe(req: Request, res: Response): void {
+export async function handleMe(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   if (!req.admin) {
     res.status(401).json({ success: false, message: "Not authenticated" });
     return;
   }
-  res.status(200).json({
-    success: true,
-    data: {
-      id: req.admin.sub,
-      username: req.admin.username,
-      displayName: req.admin.displayName,
-      role: req.admin.role,
-    },
-  });
+
+  try {
+    const { AdminModel } = await import("./admin.model");
+    const admin = await AdminModel.findById(req.admin.sub)
+      .select("-password")
+      .lean();
+
+    if (!admin) {
+      res.status(404).json({ success: false, message: "Account not found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: admin });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Self-service profile handlers ───────────────────────────────────────────
+
+const updateMeSchema = z.object({
+  displayName: z.string().min(1).max(64).trim().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().max(32).trim().optional(),
+  department: z.string().max(128).trim().optional(),
+  bio: z.string().max(500).trim().optional(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters").max(128),
+});
+
+/**
+ * PATCH /api/auth/me
+ * Update the authenticated admin's own profile (displayName, email, phone, department, bio).
+ * Role and isActive cannot be modified here.
+ * Requires: Bearer access token
+ */
+export async function handleUpdateMe(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.admin) {
+      res.status(401).json({ success: false, message: "Not authenticated" });
+      return;
+    }
+
+    const parsed = updateMeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map((e) => e.message);
+      res.status(400).json({ success: false, message: errors[0], errors });
+      return;
+    }
+
+    const admin = await updateMe(req.admin.sub, parsed.data);
+
+    // Audit
+    const changes = Object.keys(parsed.data).join(", ");
+    writeAuditLog(
+      {
+        admin: req.admin,
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"],
+      },
+      {
+        action: "UPDATE",
+        module: "MyAccount",
+        resourceId: req.admin.sub,
+        description: `${req.admin.displayName} updated their profile${changes ? ` (${changes})` : ""}`,
+      },
+    );
+
+    res.status(200).json({ success: true, data: admin });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * POST /api/auth/me/password
+ * Change the authenticated admin's own password.
+ * Requires: Bearer access token
+ */
+export async function handleChangeMyPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.admin) {
+      res.status(401).json({ success: false, message: "Not authenticated" });
+      return;
+    }
+
+    const parsed = changePasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map((e) => e.message);
+      res.status(400).json({ success: false, message: errors[0], errors });
+      return;
+    }
+
+    await changeMyPassword(req.admin.sub, {
+      currentPassword: parsed.data.currentPassword,
+      newPassword: parsed.data.newPassword,
+    });
+
+    // Audit
+    writeAuditLog(
+      {
+        admin: req.admin,
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"],
+      },
+      {
+        action: "UPDATE",
+        module: "MyAccount",
+        resourceId: req.admin.sub,
+        description: `${req.admin.displayName} changed their password`,
+      },
+    );
+
+    logger.info(`[AUTH] Password changed for admin: ${req.admin.username}`);
+    res.status(200).json({ success: true, message: "Password updated successfully" });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * GET /api/auth/me/activity
+ * Returns the authenticated admin's recent audit log entries (last 20).
+ * Requires: Bearer access token
+ */
+export async function handleGetMyActivity(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.admin) {
+      res.status(401).json({ success: false, message: "Not authenticated" });
+      return;
+    }
+
+    const result = await queryAuditLogs({
+      adminId: req.admin.sub,
+      limit: 20,
+      page: 1,
+    });
+
+    res.status(200).json({ success: true, data: result.logs });
+  } catch (err) {
+    next(err);
+  }
 }
