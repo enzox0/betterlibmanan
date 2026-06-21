@@ -14,7 +14,8 @@ export interface AdminProfile {
   id: string;
   username: string;
   displayName: string;
-  role: "superadmin" | "admin" | "editor";
+  email?: string;
+  role: "superadmin" | "admin";
 }
 
 export interface AuthTokens {
