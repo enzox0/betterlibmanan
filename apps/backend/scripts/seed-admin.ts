@@ -39,6 +39,9 @@ interface SeedUser {
   email: string;
   role: "superadmin" | "admin";
   isActive: boolean;
+  phone?: string;
+  department?: string;
+  bio?: string;
 }
 
 const SEED_USERS: SeedUser[] = [
@@ -49,6 +52,9 @@ const SEED_USERS: SeedUser[] = [
     email: "mayor@libmanan.gov.ph",
     role: "superadmin",
     isActive: true,
+    phone: "+63 917 123 4567",
+    department: "Office of the Mayor",
+    bio: "Administrator for the BetterLibmanan web platform. Manages content, accounts, and site settings.",
   },
   {
     username: "jreyes",
@@ -57,6 +63,9 @@ const SEED_USERS: SeedUser[] = [
     email: "jreyes@libmanan.gov.ph",
     role: "admin",
     isActive: true,
+    phone: "+63 918 234 5678",
+    department: "Office of the Municipal Administrator",
+    bio: "Manages legislative content and official government records.",
   },
   {
     username: "adelacruz",
@@ -65,6 +74,9 @@ const SEED_USERS: SeedUser[] = [
     email: "adelacruz@libmanan.gov.ph",
     role: "admin",
     isActive: false,
+    phone: "+63 919 345 6789",
+    department: "Municipal Civil Registrar",
+    bio: "Handles civil registration records and transparency documents.",
   },
   {
     username: "rvillanueva",
@@ -73,6 +85,9 @@ const SEED_USERS: SeedUser[] = [
     email: "rvillanueva@libmanan.gov.ph",
     role: "admin",
     isActive: true,
+    phone: "+63 920 456 7890",
+    department: "Municipal Planning and Development Office",
+    bio: "Manages infrastructure transparency reports and DPWH project data.",
   },
 ];
 
@@ -94,7 +109,19 @@ async function seed(): Promise<void> {
     });
 
     if (existing) {
-      console.log(`⚠  "${user.username}" already exists — skipping.`);
+      // Patch extended profile fields onto pre-existing records so re-running
+      // the seed after the schema migration fills in the new columns.
+      let patched = false;
+      if (!existing.phone && user.phone) { existing.phone = user.phone; patched = true; }
+      if (!existing.department && user.department) { existing.department = user.department; patched = true; }
+      if (!existing.bio && user.bio) { existing.bio = user.bio; patched = true; }
+
+      if (patched) {
+        await existing.save();
+        console.log(`↻  "${user.username}" already exists — patched missing profile fields.`);
+      } else {
+        console.log(`⚠  "${user.username}" already exists — skipping.`);
+      }
       continue;
     }
 
