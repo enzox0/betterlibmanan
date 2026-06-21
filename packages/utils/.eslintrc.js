@@ -1,6 +1,8 @@
+const { base } = require("@betterlibmanan/eslint-config");
+
 module.exports = {
+  ...base,
   root: true,
-  extends: ["@betterlibmanan/eslint-config"],
   parserOptions: {
     project: "./tsconfig.json",
     tsconfigRootDir: __dirname,
