@@ -99,10 +99,14 @@ async function seed(): Promise<void> {
     }
 
     const admin = await AdminModel.create(user);
-    console.log(`✓ Created: ${admin.displayName} (${admin.username}) — ${admin.role}`);
+    console.log(
+      `✓ Created: ${admin.displayName} (${admin.username}) — ${admin.role}`,
+    );
   }
 
-  console.log("\n⚠  IMPORTANT: Change default passwords before going to production!");
+  console.log(
+    "\n⚠  IMPORTANT: Change default passwords before going to production!",
+  );
   await mongoose.disconnect();
   console.log("\n✓ Disconnected");
   console.log("─".repeat(60));
