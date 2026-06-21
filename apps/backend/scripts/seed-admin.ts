@@ -112,13 +112,24 @@ async function seed(): Promise<void> {
       // Patch extended profile fields onto pre-existing records so re-running
       // the seed after the schema migration fills in the new columns.
       let patched = false;
-      if (!existing.phone && user.phone) { existing.phone = user.phone; patched = true; }
-      if (!existing.department && user.department) { existing.department = user.department; patched = true; }
-      if (!existing.bio && user.bio) { existing.bio = user.bio; patched = true; }
+      if (!existing.phone && user.phone) {
+        existing.phone = user.phone;
+        patched = true;
+      }
+      if (!existing.department && user.department) {
+        existing.department = user.department;
+        patched = true;
+      }
+      if (!existing.bio && user.bio) {
+        existing.bio = user.bio;
+        patched = true;
+      }
 
       if (patched) {
         await existing.save();
-        console.log(`↻  "${user.username}" already exists — patched missing profile fields.`);
+        console.log(
+          `↻  "${user.username}" already exists — patched missing profile fields.`,
+        );
       } else {
         console.log(`⚠  "${user.username}" already exists — skipping.`);
       }
