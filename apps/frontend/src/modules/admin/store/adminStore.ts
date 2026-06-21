@@ -6,8 +6,11 @@ import {
   loginRequest,
   refreshRequest,
   logoutRequest,
+  getMeRequest,
+  updateMeRequest,
   type AdminProfile,
   type LoginPayload,
+  type UpdateMePayload,
 } from "../services/auth.api";
 
 // ─── Auth slice ───────────────────────────────────────────────────────────────
@@ -25,6 +28,8 @@ export interface AdminAuthState {
   logout: () => Promise<void>;
   refreshTokens: () => Promise<boolean>;
   clearAuthError: () => void;
+  /** Update the cached admin profile in the store after a self-service update */
+  setAdmin: (admin: AdminProfile) => void;
 
   // Legacy modal helpers kept for backward compatibility
   loginModalOpen: boolean;
@@ -53,6 +58,8 @@ export const useAdminStore = create<AdminStore>()(
       openLoginModal: () => set({ loginModalOpen: true }),
       closeLoginModal: () => set({ loginModalOpen: false }),
       clearAuthError: () => set({ authError: null }),
+
+      setAdmin: (admin: AdminProfile) => set({ admin }),
 
       login: async (payload: LoginPayload) => {
         set({ isAuthLoading: true, authError: null });
