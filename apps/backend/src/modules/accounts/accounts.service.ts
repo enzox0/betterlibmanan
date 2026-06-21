@@ -43,7 +43,7 @@ export async function listAccounts(): Promise<IAdmin[]> {
 export async function getAccount(id: string): Promise<IAdmin> {
   if (!Types.ObjectId.isValid(id)) throw accountError("Invalid ID", 400);
 
-  const admin = await AdminModel.findById(id).lean() as any;
+  const admin = (await AdminModel.findById(id).lean()) as any;
   if (!admin) throw accountError("Account not found", 404);
 
   return admin;
@@ -53,7 +53,9 @@ export async function getAccount(id: string): Promise<IAdmin> {
  * Create a new admin account.
  * Returns the saved document (password excluded via toJSON transform).
  */
-export async function createAccount(input: CreateAccountInput): Promise<IAdmin> {
+export async function createAccount(
+  input: CreateAccountInput,
+): Promise<IAdmin> {
   // Check uniqueness manually to give a clear error message
   const [existingUsername, existingEmail] = await Promise.all([
     AdminModel.findOne({ username: input.username.toLowerCase() }),

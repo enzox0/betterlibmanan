@@ -20,7 +20,10 @@ const createSchema = z.object({
     .string()
     .min(3)
     .max(32)
-    .regex(/^[a-z0-9_]+$/, "Username: lowercase letters, numbers, underscores only"),
+    .regex(
+      /^[a-z0-9_]+$/,
+      "Username: lowercase letters, numbers, underscores only",
+    ),
   password: z.string().min(8).max(128),
   displayName: z.string().min(1).max(64).trim(),
   email: z.string().email(),
@@ -64,8 +67,16 @@ export async function handleListAccounts(
     // Audit: read
     if (req.admin) {
       writeAuditLog(
-        { admin: req.admin, ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] },
-        { action: "READ", module: "AccountManagement", description: "Listed all accounts" },
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action: "READ",
+          module: "AccountManagement",
+          description: "Listed all accounts",
+        },
       );
     }
 
@@ -120,7 +131,11 @@ export async function handleCreateAccount(
     // Audit
     if (req.admin) {
       writeAuditLog(
-        { admin: req.admin, ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] },
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
         {
           action: "CREATE",
           module: "AccountManagement",
@@ -130,7 +145,9 @@ export async function handleCreateAccount(
       );
     }
 
-    logger.info(`[ACCOUNTS] Created: ${account.username} by ${req.admin?.username}`);
+    logger.info(
+      `[ACCOUNTS] Created: ${account.username} by ${req.admin?.username}`,
+    );
     res.status(201).json({ success: true, data: account });
   } catch (err: any) {
     if (err.statusCode) {
@@ -167,7 +184,11 @@ export async function handleUpdateAccount(
         .filter((k) => k !== "password")
         .join(", ");
       writeAuditLog(
-        { admin: req.admin, ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] },
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
         {
           action: "UPDATE",
           module: "AccountManagement",
@@ -200,7 +221,12 @@ export async function handleDeleteAccount(
   try {
     // Prevent self-deletion
     if (req.admin && req.admin.sub === req.params.id) {
-      res.status(400).json({ success: false, message: "You cannot delete your own account." });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "You cannot delete your own account.",
+        });
       return;
     }
 
@@ -211,7 +237,11 @@ export async function handleDeleteAccount(
     // Audit
     if (req.admin) {
       writeAuditLog(
-        { admin: req.admin, ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] },
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
         {
           action: "DELETE",
           module: "AccountManagement",
@@ -221,7 +251,9 @@ export async function handleDeleteAccount(
       );
     }
 
-    logger.info(`[ACCOUNTS] Deleted: ${account.username} by ${req.admin?.username}`);
+    logger.info(
+      `[ACCOUNTS] Deleted: ${account.username} by ${req.admin?.username}`,
+    );
     res.status(200).json({ success: true, message: "Account deleted" });
   } catch (err: any) {
     if (err.statusCode) {
@@ -246,13 +278,20 @@ export async function handleSetAccountStatus(
   try {
     const isActive = req.body?.isActive;
     if (typeof isActive !== "boolean") {
-      res.status(400).json({ success: false, message: "isActive (boolean) is required" });
+      res
+        .status(400)
+        .json({ success: false, message: "isActive (boolean) is required" });
       return;
     }
 
     // Prevent deactivating own account
     if (req.admin && req.admin.sub === req.params.id && !isActive) {
-      res.status(400).json({ success: false, message: "You cannot deactivate your own account." });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "You cannot deactivate your own account.",
+        });
       return;
     }
 
@@ -261,7 +300,11 @@ export async function handleSetAccountStatus(
     // Audit
     if (req.admin) {
       writeAuditLog(
-        { admin: req.admin, ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] },
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
         {
           action: isActive ? "ACTIVATE" : "DEACTIVATE",
           module: "AccountManagement",
