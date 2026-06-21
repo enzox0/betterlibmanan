@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
+import dns from "dns";
 import { logger } from "../shared/logger";
+
+// Force public DNS resolvers for SRV lookups (mongodb+srv:// URLs).
+// Local resolvers (some ISPs, routers, VPNs) can fail to return SRV records,
+// causing `querySrv ECONNREFUSED`. Cloudflare + Google are reliable.
+dns.setServers(["1.1.1.1", "8.8.8.8", "1.0.0.1", "8.8.4.4"]);
 
 export const connectDB = async (): Promise<void> => {
   try {
