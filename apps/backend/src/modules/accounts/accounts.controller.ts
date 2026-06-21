@@ -221,12 +221,10 @@ export async function handleDeleteAccount(
   try {
     // Prevent self-deletion
     if (req.admin && req.admin.sub === req.params.id) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "You cannot delete your own account.",
-        });
+      res.status(400).json({
+        success: false,
+        message: "You cannot delete your own account.",
+      });
       return;
     }
 
@@ -286,12 +284,10 @@ export async function handleSetAccountStatus(
 
     // Prevent deactivating own account
     if (req.admin && req.admin.sub === req.params.id && !isActive) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "You cannot deactivate your own account.",
-        });
+      res.status(400).json({
+        success: false,
+        message: "You cannot deactivate your own account.",
+      });
       return;
     }
 
