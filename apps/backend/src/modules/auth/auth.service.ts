@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import crypto from "crypto";
-import { AdminModel, IAdmin } from "./admin.model";
+import { AdminModel, IAdmin, AdminRole } from "./admin.model";
 import { RefreshTokenModel } from "./refresh-token.model";
 import { logger } from "@/shared/logger";
 
@@ -31,7 +31,8 @@ if (process.env.NODE_ENV === "production") {
 export interface AccessTokenPayload {
   sub: string; // admin._id (string)
   username: string;
-  role: IAdmin["role"];
+  displayName: string;
+  role: AdminRole;
   type: "access";
 }
 
@@ -47,6 +48,7 @@ export function signAccessToken(admin: IAdmin): string {
   const payload: AccessTokenPayload = {
     sub: (admin._id as any).toString(),
     username: admin.username,
+    displayName: admin.displayName,
     role: admin.role,
     type: "access",
   };
@@ -75,7 +77,7 @@ interface LoginOptions {
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  admin: Pick<IAdmin, "_id" | "username" | "displayName" | "role">;
+  admin: Pick<IAdmin, "_id" | "username" | "displayName" | "email" | "role">;
 }
 
 /**
@@ -224,6 +226,7 @@ async function issueTokenPair(
       _id: admin._id,
       username: admin.username,
       displayName: admin.displayName,
+      email: admin.email,
       role: admin.role,
     },
   };

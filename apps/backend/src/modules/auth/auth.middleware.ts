@@ -67,9 +67,7 @@ export function requireAuth(
  * Usage:
  *   router.delete('/admins/:id', requireAuth, requireRole('superadmin'), handler);
  */
-export function requireRole(
-  ...roles: Array<"superadmin" | "admin" | "editor">
-) {
+export function requireRole(...roles: Array<"superadmin" | "admin">) {
   return function (req: Request, res: Response, next: NextFunction): void {
     if (!req.admin) {
       res.status(401).json({ success: false, message: "Not authenticated" });

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { login, refresh, logout, logoutAll } from "./auth.service";
 import { logger } from "@/shared/logger";
+import { writeAuditLog } from "@/modules/audit/audit.service";
 
 // ─── Request schemas ──────────────────────────────────────────────────────────
 
@@ -54,6 +55,26 @@ export async function handleLogin(
       userAgent: req.headers["user-agent"],
       ipAddress: getClientIp(req),
     });
+
+    // Audit: record successful login
+    writeAuditLog(
+      {
+        admin: {
+          sub: (result.admin._id as any).toString(),
+          username: result.admin.username,
+          displayName: result.admin.displayName,
+          role: result.admin.role,
+          type: "access",
+        },
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"],
+      },
+      {
+        action: "LOGIN",
+        module: "Auth",
+        description: `${result.admin.displayName} (${result.admin.username}) logged in`,
+      },
+    );
 
     logger.info(`[AUTH] Login successful: ${username}`);
 
@@ -130,6 +151,23 @@ export async function handleLogout(
     if (parsed.success) {
       await logout(parsed.data.refreshToken);
     }
+
+    // Audit: record logout
+    if (req.admin) {
+      writeAuditLog(
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action: "LOGOUT",
+          module: "Auth",
+          description: `${req.admin.displayName} (${req.admin.username}) logged out`,
+        },
+      );
+    }
+
     // Always respond 200 — idempotent logout
     res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (err) {
@@ -154,6 +192,21 @@ export async function handleLogoutAll(
     }
     await logoutAll(req.admin.sub);
     logger.info(`[AUTH] All sessions revoked for admin: ${req.admin.username}`);
+
+    // Audit: record logout-all
+    writeAuditLog(
+      {
+        admin: req.admin,
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"],
+      },
+      {
+        action: "LOGOUT_ALL",
+        module: "Auth",
+        description: `${req.admin.displayName} (${req.admin.username}) revoked all sessions`,
+      },
+    );
+
     res.status(200).json({ success: true, message: "All sessions revoked" });
   } catch (err) {
     next(err);
@@ -175,6 +228,7 @@ export function handleMe(req: Request, res: Response): void {
     data: {
       id: req.admin.sub,
       username: req.admin.username,
+      displayName: req.admin.displayName,
       role: req.admin.role,
     },
   });

@@ -1,11 +1,14 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
+export type AdminRole = "superadmin" | "admin";
+
 export interface IAdmin extends Document {
   username: string;
   password: string;
   displayName: string;
-  role: "superadmin" | "admin" | "editor";
+  email: string;
+  role: AdminRole;
   isActive: boolean;
   lastLoginAt?: Date;
   createdAt: Date;
@@ -36,9 +39,16 @@ const AdminSchema = new Schema<IAdmin>(
       trim: true,
       maxlength: 64,
     },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     role: {
       type: String,
-      enum: ["superadmin", "admin", "editor"],
+      enum: ["superadmin", "admin"],
       default: "admin",
     },
     isActive: {
