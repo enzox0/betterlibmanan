@@ -104,12 +104,19 @@ fi
 echo "\n🚫 [3/5] Scanning for forbidden debug patterns..."
 
 TS_JS_FILES=""
+TEST_FILES=""
 for FILE in $STAGED_FILES; do
   case "$FILE" in
     *.ts|*.tsx|*.js|*.jsx)
-      # Exclude test/spec files and config files — they may legitimately have these
+      # Test/spec/config/declaration files are excluded from console.log/debugger
+      # checks (they may legitimately have these), but test files ARE checked
+      # separately for .only()/.skip() which would skip CI tests.
       case "$FILE" in
-        *.test.*|*.spec.*|*.config.*|*.d.ts) continue ;;
+        *.test.*|*.spec.*)
+          TEST_FILES="$TEST_FILES $FILE"
+          continue
+          ;;
+        *.config.*|*.d.ts) continue ;;
       esac
       TS_JS_FILES="$TS_JS_FILES $FILE"
       ;;
@@ -134,10 +141,17 @@ if [ -n "$TS_JS_FILES" ]; then
       ERRORS=$((ERRORS + 1))
       FORBIDDEN_FOUND=$((FORBIDDEN_FOUND + 1))
     fi
+  done
+fi
 
-    # .only() in tests (accidentally skipping all other tests)
-    if echo "$FILE_CONTENT" | grep -qE '\.(only|skip)\s*\(' 2>/dev/null; then
-      echo "${RED}  ❌ $FILE: .only() or .skip() in test file — would skip CI tests${NC}"
+# .only() / .skip() in tests — accidentally skips all other tests in CI.
+# Only check actual test files; .skip() is a legitimate Mongoose/query method
+# in production code.
+if [ -n "$TEST_FILES" ]; then
+  for FILE in $TEST_FILES; do
+    FILE_CONTENT=$(git show ":$FILE" 2>/dev/null)
+    if echo "$FILE_CONTENT" | grep -qE '\b(describe|it|test)\.(only|skip)\s*\(' 2>/dev/null; then
+      echo "${RED}  ❌ $FILE: describe/it/test .only() or .skip() — would skip CI tests${NC}"
       ERRORS=$((ERRORS + 1))
       FORBIDDEN_FOUND=$((FORBIDDEN_FOUND + 1))
     fi
