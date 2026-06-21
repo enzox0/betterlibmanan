@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LuHouse,
   LuWrench,
@@ -13,7 +13,9 @@ import {
   LuUsers,
   LuLogOut,
   LuClipboardList,
+  LuTriangleAlert,
 } from "react-icons/lu";
+import { useState } from "react";
 import { useAdminStore } from "../../store/adminStore";
 
 interface NavItem {
@@ -79,6 +81,34 @@ const navItemVariants = {
   },
 };
 
+const overlayVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.2,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: 8,
+    transition: {
+      duration: 0.15,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
+  },
+};
+
 export function AdminSidebar() {
   const { logout, admin } = useAdminStore((s) => ({
     logout: s.logout,
@@ -86,6 +116,7 @@ export function AdminSidebar() {
   }));
   const navigate = useNavigate();
   const isSuperAdmin = admin?.role === "superadmin";
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -240,13 +271,91 @@ export function AdminSidebar() {
       {/* Footer / Logout */}
       <div className="px-3 py-4 border-t border-white/10">
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutModal(true)}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-blue-200 hover:bg-red-500/20 hover:text-red-300 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 focus:ring-offset-blue-900"
         >
           <LuLogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>Logout</span>
         </button>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            variants={overlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowLogoutModal(false)}
+              aria-hidden="true"
+            />
+
+            {/* Modal */}
+            <motion.div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="logout-modal-title"
+              aria-describedby="logout-modal-desc"
+              className="relative w-full max-w-sm bg-gradient-to-b from-blue-950 to-blue-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {/* Top accent bar */}
+              <div className="h-1 w-full bg-gradient-to-r from-red-500 to-red-400" />
+
+              <div className="p-6">
+                {/* Icon + Title */}
+                <div className="flex flex-col items-center text-center gap-3 mb-5">
+                  <div className="flex items-center justify-center h-12 w-12 rounded-full bg-red-500/15 ring-1 ring-red-500/30">
+                    <LuTriangleAlert
+                      className="h-6 w-6 text-red-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <div>
+                    <h2
+                      id="logout-modal-title"
+                      className="text-base font-semibold text-white"
+                    >
+                      Sign out of Admin Panel?
+                    </h2>
+                    <p
+                      id="logout-modal-desc"
+                      className="mt-1 text-sm text-blue-300"
+                    >
+                      You'll need to sign in again to access the admin panel.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={() => setShowLogoutModal(false)}
+                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-blue-200 bg-white/10 hover:bg-white/15 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-white/30"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-all duration-150 shadow-lg shadow-red-900/40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 focus:ring-offset-blue-900"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.aside>
   );
 }
