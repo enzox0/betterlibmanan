@@ -1,8 +1,11 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
 import { mockSections } from "../data/mockSections";
+import adminLottie from "@/assets/lottiefiles/admin.lottie?url";
 import {
   LuChevronRight,
   LuHouse,
@@ -13,6 +16,7 @@ import {
   LuFileSearch,
   LuActivity,
   LuClock,
+  LuCalendar,
 } from "react-icons/lu";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -45,6 +49,81 @@ function formatRelative(isoString: string): string {
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays}d ago`;
   return `${MONTH_NAMES[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}, ${d.getFullYear()}`;
+}
+
+// ─── Live clock ───────────────────────────────────────────────────────────────
+
+function useLiveClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+// ─── Greeting Card ────────────────────────────────────────────────────────────
+
+function GreetingCard({ name, greeting }: { name: string; greeting: string }) {
+  const now = useLiveClock();
+
+  const dateStr = now.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+  const timeStr = now.toLocaleTimeString("en-PH", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  return (
+    <motion.div
+      className="relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 px-6 py-5 shadow-sm h-full min-h-[120px]"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -2, transition: { duration: 0.15 } }}
+    >
+      {/* Text content */}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-blue-500 font-medium leading-tight">
+          {greeting},
+        </p>
+        <p className="mt-0.5 text-xl font-extrabold text-gray-900 leading-tight truncate">
+          {name}!
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+          <span className="flex items-center gap-1.5">
+            <LuCalendar
+              className="h-3.5 w-3.5 text-blue-400"
+              aria-hidden="true"
+            />
+            {dateStr}
+          </span>
+          <span className="flex items-center gap-1.5 font-mono tabular-nums">
+            <LuClock className="h-3.5 w-3.5 text-blue-400" aria-hidden="true" />
+            {timeStr}
+          </span>
+        </div>
+      </div>
+
+      {/* Lottie illustration */}
+      <div
+        className="flex-shrink-0 flex h-24 w-24 items-center justify-center"
+        aria-hidden="true"
+      >
+        <DotLottieReact src={adminLottie} loop autoplay className="h-24 w-24" />
+      </div>
+
+      {/* Subtle corner glow */}
+      <div
+        className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-blue-200/30 blur-2xl"
+        aria-hidden="true"
+      />
+    </motion.div>
+  );
 }
 
 // ─── Quick Link ───────────────────────────────────────────────────────────────
@@ -210,6 +289,7 @@ export function AdminDashboardPage() {
   ).length;
   const draftCount = allRecords.filter((r) => r.status === "draft").length;
   const totalSections = mockSections.length;
+  void totalSections; // kept for section breakdown below
 
   // 8 most recently updated records
   const recentActivity = [...allRecords]
@@ -262,9 +342,6 @@ export function AdminDashboardPage() {
         className="flex items-start justify-between gap-4"
       >
         <div>
-          <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-0.5">
-            {greeting}, {adminName}
-          </p>
           <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
           <p className="mt-0.5 text-sm text-gray-500">
             Overview of your content, activity, and quick access to all modules.
@@ -280,29 +357,31 @@ export function AdminDashboardPage() {
         </div>
       </motion.div>
 
-      {/* ── Stats row ────────────────────────────────────────────────────────── */}
+      {/* ── Greeting + Stats row ─────────────────────────────────────────────── */}
       <motion.div
         variants={itemVariants}
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
       >
-        <StatsCard
-          label="Content Sections"
-          value={totalSections}
-          trend="neutral"
-          accentColor="blue"
-        />
+        {/* Greeting panel — 40% (2 of 5 cols on lg) */}
+        <div className="sm:col-span-2 lg:col-span-2">
+          <GreetingCard name={adminName} greeting={greeting} />
+        </div>
+
+        {/* Total Records — 20% */}
         <StatsCard
           label="Total Records"
           value={totalRecords}
           trend="up"
           accentColor="blue"
         />
+        {/* Published — 20% */}
         <StatsCard
           label="Published"
           value={publishedCount}
           trend="up"
           accentColor="green"
         />
+        {/* Drafts — 20% */}
         <StatsCard
           label="Drafts"
           value={draftCount}
