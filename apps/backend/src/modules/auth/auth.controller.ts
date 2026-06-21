@@ -1,6 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { login, refresh, logout, logoutAll, updateMe, changeMyPassword } from "./auth.service";
+import {
+  login,
+  refresh,
+  logout,
+  logoutAll,
+  updateMe,
+  changeMyPassword,
+} from "./auth.service";
 import { logger } from "@/shared/logger";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import { queryAuditLogs } from "@/modules/audit/audit.service";
@@ -258,7 +265,10 @@ const updateMeSchema = z.object({
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(8, "Password must be at least 8 characters").max(128),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128),
 });
 
 /**
@@ -357,7 +367,9 @@ export async function handleChangeMyPassword(
     );
 
     logger.info(`[AUTH] Password changed for admin: ${req.admin.username}`);
-    res.status(200).json({ success: true, message: "Password updated successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" });
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ success: false, message: err.message });

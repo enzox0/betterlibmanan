@@ -207,7 +207,22 @@ export interface UpdateMeInput {
 export async function updateMe(
   adminId: string,
   input: UpdateMeInput,
-): Promise<Pick<IAdmin, "_id" | "username" | "displayName" | "email" | "role" | "phone" | "department" | "bio" | "lastLoginAt" | "passwordChangedAt" | "createdAt">> {
+): Promise<
+  Pick<
+    IAdmin,
+    | "_id"
+    | "username"
+    | "displayName"
+    | "email"
+    | "role"
+    | "phone"
+    | "department"
+    | "bio"
+    | "lastLoginAt"
+    | "passwordChangedAt"
+    | "createdAt"
+  >
+> {
   const admin = await AdminModel.findById(adminId);
   if (!admin || !admin.isActive) {
     const err: any = new Error("Account not found");
@@ -236,9 +251,7 @@ export async function updateMe(
 
   await admin.save();
 
-  return AdminModel.findById(adminId)
-    .select("-password")
-    .lean() as any;
+  return AdminModel.findById(adminId).select("-password").lean() as any;
 }
 
 export interface ChangeMyPasswordInput {
