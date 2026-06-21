@@ -12,6 +12,7 @@ import {
   LuUser,
   LuUsers,
   LuLogOut,
+  LuClipboardList,
 } from "react-icons/lu";
 import { useAdminStore } from "../../store/adminStore";
 
@@ -79,8 +80,12 @@ const navItemVariants = {
 };
 
 export function AdminSidebar() {
-  const logout = useAdminStore((s) => s.logout);
+  const { logout, admin } = useAdminStore((s) => ({
+    logout: s.logout,
+    admin: s.admin,
+  }));
   const navigate = useNavigate();
+  const isSuperAdmin = admin?.role === "superadmin";
 
   const handleLogout = () => {
     logout();
@@ -194,20 +199,41 @@ export function AdminSidebar() {
             <LuUser className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span>My Account</span>
           </NavLink>
-          <NavLink
-            to="/admin/accounts"
-            className={({ isActive }) =>
-              [
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
-                isActive
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
-                  : "text-blue-200 hover:bg-white/10 hover:text-white",
-              ].join(" ")
-            }
-          >
-            <LuUsers className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>Manage Accounts</span>
-          </NavLink>
+          {isSuperAdmin && (
+            <NavLink
+              to="/admin/accounts"
+              className={({ isActive }) =>
+                [
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                  isActive
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
+                    : "text-blue-200 hover:bg-white/10 hover:text-white",
+                ].join(" ")
+              }
+            >
+              <LuUsers className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Manage Accounts</span>
+            </NavLink>
+          )}
+          {isSuperAdmin && (
+            <NavLink
+              to="/admin/audit-logs"
+              className={({ isActive }) =>
+                [
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                  isActive
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
+                    : "text-blue-200 hover:bg-white/10 hover:text-white",
+                ].join(" ")
+              }
+            >
+              <LuClipboardList
+                className="h-4 w-4 shrink-0"
+                aria-hidden="true"
+              />
+              <span>Audit Logs</span>
+            </NavLink>
+          )}
         </div>
       </div>
 

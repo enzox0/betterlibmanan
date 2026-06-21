@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { LuBell, LuMenu, LuSearch } from "react-icons/lu";
+import { useAdminStore } from "../../store/adminStore";
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
@@ -8,6 +9,17 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
+  const admin = useAdminStore((s) => s.admin);
+  const initials = admin?.displayName
+    ? admin.displayName
+        .split(" ")
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "A";
+  const roleLabel = admin?.role === "superadmin" ? "Super Admin" : "Admin";
+
   return (
     <motion.header
       className="h-16 bg-white border-b border-gray-100 flex items-center px-4 gap-3 shrink-0 shadow-sm"
@@ -48,7 +60,6 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
           className="relative p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
         >
           <LuBell className="h-5 w-5" aria-hidden="true" />
-          {/* Notification dot */}
           <span
             className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white"
             aria-hidden="true"
@@ -66,10 +77,10 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
         >
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-sm font-semibold text-gray-700 leading-tight">
-              Admin
+              {admin?.displayName ?? "Admin"}
             </span>
             <span className="text-xs text-gray-400 leading-tight">
-              Administrator
+              {roleLabel}
             </span>
           </div>
           {/* Avatar */}
@@ -77,7 +88,7 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
             className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white text-xs font-bold select-none shrink-0 ring-2 ring-blue-100"
             aria-hidden="true"
           >
-            A
+            {initials}
           </div>
         </Link>
       </div>
