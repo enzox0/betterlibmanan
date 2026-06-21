@@ -25,6 +25,7 @@ import {
 import React from "react";
 import CountUp from "@/shared/ui/CountUp";
 import { Project, ProjectSummary, fetchProjects } from "../api";
+import { ListRowSkeleton, Pagination } from "@/shared/ui";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -823,13 +824,16 @@ export function TransparencyPage() {
       <section className="py-8 sm:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {loading ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-32">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white shadow-sm">
-                <FaSpinner className="animate-spin text-gray-500" size={22} />
-              </div>
-              <p className="text-sm font-medium text-gray-600">
-                Loading projects…
-              </p>
+            <div
+              className={
+                view === "grid"
+                  ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  : "space-y-3"
+              }
+            >
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                <ListRowSkeleton key={i} />
+              ))}
             </div>
           ) : error ? (
             <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
@@ -916,66 +920,17 @@ export function TransparencyPage() {
 
           {/* ── Pagination ──────────────────────────────────────────── */}
           {!loading && !error && totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-between gap-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <FaChevronLeft size={10} /> Previous
-              </button>
-
-              <div className="flex items-center gap-1.5">
-                {(() => {
-                  const range: number[] = [];
-                  const delta = 2;
-                  for (
-                    let i = Math.max(1, page - delta);
-                    i <= Math.min(totalPages, page + delta);
-                    i++
-                  )
-                    range.push(i);
-                  if (range[0] > 1) {
-                    range.unshift(-1);
-                    if (range[1] > 2) range.unshift(1);
-                  }
-                  if (range[range.length - 1] < totalPages) {
-                    range.push(-2);
-                    if (range[range.length - 2] < totalPages - 1)
-                      range.push(totalPages);
-                  }
-                  return range.map((n, i) =>
-                    n < 0 ? (
-                      <span
-                        key={`ellipsis-${i}`}
-                        className="text-gray-400 text-xs px-1"
-                      >
-                        …
-                      </span>
-                    ) : (
-                      <button
-                        key={n}
-                        onClick={() => setPage(n)}
-                        className={`h-8 w-8 rounded-lg text-xs font-bold transition-colors ${
-                          page === n
-                            ? "bg-neutral-900 text-white shadow-sm"
-                            : "border border-neutral-200 bg-white text-gray-700 hover:bg-neutral-50"
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ),
-                  );
-                })()}
-              </div>
-
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Next <FaChevronRight size={10} />
-              </button>
+            <div className="mt-10 bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={filtered.length}
+                pageSize={ITEMS_PER_PAGE}
+                onPageChange={(p) => {
+                  setPage(p);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
             </div>
           )}
 
