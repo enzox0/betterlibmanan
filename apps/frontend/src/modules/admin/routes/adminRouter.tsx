@@ -13,6 +13,7 @@ import { LegislativeModulePage } from "../pages/LegislativeModulePage";
 import { TransparencyModulePage } from "../pages/TransparencyModulePage";
 import { ServicesModulePage } from "../pages/ServicesModulePage";
 import { StatisticsModulePage } from "../pages/StatisticsModulePage";
+import { AuditLogsPage } from "../pages/AuditLogsPage";
 
 export const adminRoutes: RouteObject[] = [
   // Public login page — no auth guard
@@ -38,6 +39,10 @@ export const adminRoutes: RouteObject[] = [
           {
             path: "accounts",
             element: <AccountManagementPage />,
+          },
+          {
+            path: "audit-logs",
+            element: <AuditLogsPage />,
           },
           {
             path: "my-account",
