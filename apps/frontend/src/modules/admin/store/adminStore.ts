@@ -173,6 +173,15 @@ export const useAdminStore = create<AdminStore>()(
         }));
       },
 
+      replaceRecords: (sectionKey, records) => {
+        set((state) => ({
+          records: {
+            ...state.records,
+            [sectionKey]: records,
+          },
+        }));
+      },
+
       getRecords: (sectionKey) => {
         return get().records[sectionKey] ?? [];
       },

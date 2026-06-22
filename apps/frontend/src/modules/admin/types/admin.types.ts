@@ -18,7 +18,7 @@ export interface FieldDefinition {
 }
 
 export interface ContentRecord {
-  id: string; // UUID generated client-side
+  id: string; // UUID or database ID
   sectionKey: string;
   title: string; // always present, used for table "Title/Name" column
   status: ContentStatus;
@@ -62,6 +62,7 @@ export interface AdminContentState {
     updates: Partial<ContentRecord>,
   ) => void;
   deleteRecord: (sectionKey: string, id: string) => void;
+  replaceRecords: (sectionKey: string, records: ContentRecord[]) => void;
   getRecords: (sectionKey: string) => ContentRecord[];
 }
 
@@ -78,4 +79,5 @@ export interface ContentFormProps {
   initialData?: ContentRecord;
   onClose: () => void;
   returnFocusRef: React.RefObject<HTMLElement>;
+  onSubmitted?: () => Promise<void> | void;
 }
