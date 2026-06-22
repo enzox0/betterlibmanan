@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LuPencil,
@@ -24,6 +24,7 @@ import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
 import { DeleteConfirmDialog } from "../components/records/DeleteConfirmDialog";
 import { FreedomWallLayout } from "../components/records/FreedomWallLayout";
+import { listAdminBetterLugsRequest } from "../services/better-lugs.api";
 
 const MONTH_NAMES = [
   "Jan",
@@ -747,8 +748,8 @@ function QuizLayout({
   );
 }
 
-/** Partner Logos — logo tiles grid with name and URL */
-function PartnerLogosLayout({
+/** Better LUGs — logo tiles grid with name and URL */
+function BetterLugsLayout({
   records,
   editRef,
   onEdit,
@@ -769,10 +770,17 @@ function PartnerLogosLayout({
           key={record.id}
           className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3"
         >
-          {/* Logo placeholder */}
-          <div className="h-16 w-full rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
-            <LuImage className="h-8 w-8 text-gray-300" aria-hidden="true" />
-          </div>
+          {record.fields.logo ? (
+            <img
+              src={record.fields.logo}
+              alt={record.fields.name ?? record.title}
+              className="h-16 w-full rounded-lg border border-gray-100 bg-white object-contain p-2"
+            />
+          ) : (
+            <div className="h-16 w-full rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <LuImage className="h-8 w-8 text-gray-300" aria-hidden="true" />
+            </div>
+          )}
           <div className="min-w-0">
             <p className="text-sm font-bold text-gray-900 truncate">
               {record.fields.name ?? record.title}
@@ -976,7 +984,7 @@ function SectionContent({
     case "quiz":
       return <QuizLayout {...props} />;
     case "partner-logos":
-      return <PartnerLogosLayout {...props} />;
+      return <BetterLugsLayout {...props} />;
     case "emergency-contacts":
       return <EmergencyContactsLayout {...props} />;
     case "freedom-wall":
@@ -990,6 +998,8 @@ function SectionContent({
 
 export function HomeModulePage() {
   const records = useAdminStore((s) => s.records);
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const replaceRecords = useAdminStore((s) => s.replaceRecords);
   const [activeTab, setActiveTab] = useState<string>(
     mockSections[0]?.key ?? "",
   );
@@ -1003,10 +1013,33 @@ export function HomeModulePage() {
     null,
   );
   const [freedomWallCount, setFreedomWallCount] = useState<number | null>(null);
+  const [betterLugsRecords, setBetterLugsRecords] = useState<ContentRecord[]>(
+    records["partner-logos"] ?? [],
+  );
   const newRecordButtonRef = useRef<HTMLButtonElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
-  const allRecords = Object.values(records).flat();
+  async function loadBetterLugsRecords() {
+    if (!accessToken) return;
+    try {
+      const nextRecords = await listAdminBetterLugsRequest(accessToken);
+      setBetterLugsRecords(nextRecords);
+      replaceRecords("partner-logos", nextRecords);
+    } catch {
+      // Preserve the last known records so the page remains usable offline.
+    }
+  }
+
+  useEffect(() => {
+    void loadBetterLugsRecords();
+  }, [accessToken]);
+
+  const mergedRecords: Record<string, ContentRecord[]> = {
+    ...records,
+    "partner-logos": betterLugsRecords,
+  };
+
+  const allRecords = Object.values(mergedRecords).flat();
   const publishedCount = allRecords.filter(
     (r) => r.status === "published",
   ).length;
@@ -1020,7 +1053,10 @@ export function HomeModulePage() {
     : "—";
 
   const activeSection = mockSections.find((s) => s.key === activeTab);
-  const activeRecords = records[activeTab] ?? [];
+  const activeRecords =
+    activeTab === "partner-logos"
+      ? betterLugsRecords
+      : (mergedRecords[activeTab] ?? []);
   const activePublished = activeRecords.filter(
     (r) => r.status === "published",
   ).length;
@@ -1224,6 +1260,9 @@ export function HomeModulePage() {
           sectionKey={activeTab}
           onClose={handleFormClose}
           returnFocusRef={newRecordButtonRef}
+          onSubmitted={
+            activeTab === "partner-logos" ? loadBetterLugsRecords : undefined
+          }
         />
       )}
 
@@ -1235,6 +1274,9 @@ export function HomeModulePage() {
           initialData={editingRecord}
           onClose={handleFormClose}
           returnFocusRef={editButtonRef}
+          onSubmitted={
+            activeTab === "partner-logos" ? loadBetterLugsRecords : undefined
+          }
         />
       )}
 
@@ -1244,6 +1286,9 @@ export function HomeModulePage() {
           record={deletingRecord}
           sectionKey={activeTab}
           onClose={handleDeleteClose}
+          onDeleted={
+            activeTab === "partner-logos" ? loadBetterLugsRecords : undefined
+          }
         />
       )}
     </motion.div>
