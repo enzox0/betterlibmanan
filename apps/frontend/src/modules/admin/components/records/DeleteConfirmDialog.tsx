@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import ReactDOM from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAdminStore } from "../../store/adminStore";
+import { deleteBetterLugRequest } from "../../services/better-lugs.api";
 import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
   record: ContentRecord;
   sectionKey: string;
   onClose: () => void;
+  onDeleted?: () => Promise<void> | void;
 }
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -29,8 +31,10 @@ function DialogContent({
   record,
   sectionKey,
   onClose,
+  onDeleted,
 }: DeleteConfirmDialogProps) {
   const deleteRecord = useAdminStore((s) => s.deleteRecord);
+  const accessToken = useAdminStore((s) => s.accessToken);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -50,8 +54,14 @@ function DialogContent({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  function handleConfirmDelete() {
-    deleteRecord(sectionKey, record.id);
+  async function handleConfirmDelete() {
+    if (sectionKey === "partner-logos") {
+      if (!accessToken) return;
+      await deleteBetterLugRequest(record.id, accessToken);
+      await onDeleted?.();
+    } else {
+      deleteRecord(sectionKey, record.id);
+    }
     onClose();
   }
 

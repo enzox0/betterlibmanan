@@ -5,6 +5,11 @@ import { mockSections } from "../../data/mockSections";
 import { useAdminStore } from "../../store/adminStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
+import {
+  createBetterLugRequest,
+  updateBetterLugRequest,
+  uploadBetterLugImageRequest,
+} from "../../services/better-lugs.api";
 import type {
   ContentFormProps,
   ContentRecord,
@@ -41,10 +46,27 @@ function buildInitialValues(
 ): Record<string, string> {
   const values: Record<string, string> = {};
   for (const field of fields) {
-    if (field.type === "image") continue; // image handled by ImageUploadPlaceholder
     values[field.key] = initialData?.fields[field.key] ?? "";
   }
   return values;
+}
+
+function isValidImageFile(file: File): boolean {
+  return (
+    ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(
+      file.type,
+    ) && file.size <= 5 * 1024 * 1024
+  );
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () =>
+      reject(new Error("Failed to read the selected image"));
+    reader.readAsDataURL(file);
+  });
 }
 
 const SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
@@ -67,13 +89,16 @@ export function ContentForm({
   initialData,
   onClose,
   returnFocusRef,
+  onSubmitted,
 }: ContentFormProps) {
   const addRecord = useAdminStore((s) => s.addRecord);
   const updateRecord = useAdminStore((s) => s.updateRecord);
+  const accessToken = useAdminStore((s) => s.accessToken);
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
   const supportsPreview = section?.supportsPreview ?? false;
+  const isBetterLugsSection = sectionKey === "partner-logos";
 
   // Status field (always present)
   const [status, setStatus] = useState<ContentStatus>(
@@ -87,9 +112,21 @@ export function ContentForm({
 
   // Validation errors keyed by field key; 'status' key reserved for the status field
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Preview toggle
   const [showPreview, setShowPreview] = useState(false);
+
+  const initialLogoUrl = initialData?.fields.logo ?? "";
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(
+    initialLogoUrl || null,
+  );
+  const [logoChangeState, setLogoChangeState] = useState<
+    "unchanged" | "selected" | "removed"
+  >(initialLogoUrl ? "unchanged" : "removed");
+  const [logoError, setLogoError] = useState<string | null>(null);
 
   // Ref for first focusable element in the panel (used for focus-on-open)
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
@@ -119,6 +156,7 @@ export function ContentForm({
 
   function handleFieldChange(key: string, value: string) {
     setFieldValues((prev) => ({ ...prev, [key]: value }));
+    setSubmitError(null);
     // Clear error on change
     if (errors[key]) {
       setErrors((prev) => {
@@ -155,10 +193,36 @@ export function ContentForm({
     return Object.keys(newErrors).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleLogoFileChange(file: File) {
+    if (!isValidImageFile(file)) {
+      setSelectedLogoFile(null);
+      setLogoError(
+        "File must be PNG, JPG, GIF, or WEBP and no larger than 5MB",
+      );
+      return;
+    }
+
+    const previewUrl = await readFileAsDataUrl(file);
+    setSelectedLogoFile(file);
+    setLogoPreviewUrl(previewUrl);
+    setLogoChangeState("selected");
+    setLogoError(null);
+    setSubmitError(null);
+  }
+
+  function handleRemoveLogo() {
+    setSelectedLogoFile(null);
+    setLogoPreviewUrl(null);
+    setLogoChangeState("removed");
+    setLogoError(null);
+    setFieldValues((prev) => ({ ...prev, logo: "" }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!validate()) return;
+    if (logoError) return;
 
     const titleFieldKey = getTitleFieldKey(fields);
     const title =
@@ -167,23 +231,74 @@ export function ContentForm({
       fieldValues["name"] ??
       "";
 
-    if (mode === "create") {
-      addRecord(sectionKey, {
-        title,
-        status,
-        sectionKey,
-        fields: fieldValues,
-      });
-    } else {
-      // edit mode — initialData is guaranteed when mode === 'edit'
-      updateRecord(sectionKey, initialData!.id, {
-        fields: fieldValues,
-        title,
-        status,
-      });
-    }
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    handleClose();
+    try {
+      if (isBetterLugsSection) {
+        if (!accessToken) {
+          throw new Error("You must be signed in to manage Better LUGs.");
+        }
+
+        const payload: {
+          name: string;
+          websiteUrl?: string;
+          logoUrl?: string;
+          logoKey?: string;
+          status: ContentStatus;
+        } = {
+          name: fieldValues.name?.trim() ?? title.trim(),
+          websiteUrl: fieldValues.websiteUrl?.trim() ?? "",
+          status,
+        };
+
+        if (logoChangeState === "selected" && selectedLogoFile) {
+          const uploaded = await uploadBetterLugImageRequest(
+            {
+              filename: selectedLogoFile.name,
+              mimeType: selectedLogoFile.type,
+              data: await readFileAsDataUrl(selectedLogoFile),
+            },
+            accessToken,
+          );
+          payload.logoUrl = uploaded.url;
+          payload.logoKey = uploaded.key;
+        } else if (logoChangeState === "removed") {
+          payload.logoUrl = "";
+          payload.logoKey = "";
+        }
+
+        if (mode === "create") {
+          await createBetterLugRequest(payload, accessToken);
+        } else {
+          await updateBetterLugRequest(initialData!.id, payload, accessToken);
+        }
+      } else if (mode === "create") {
+        addRecord(sectionKey, {
+          title,
+          status,
+          sectionKey,
+          fields: fieldValues,
+        });
+      } else {
+        updateRecord(sectionKey, initialData!.id, {
+          fields: fieldValues,
+          title,
+          status,
+        });
+      }
+
+      await onSubmitted?.();
+      handleClose();
+    } catch (error: any) {
+      setSubmitError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to save this record.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function renderField(field: (typeof fields)[number]) {
@@ -209,7 +324,69 @@ export function ContentForm({
           )}
         </label>
 
-        {field.type === "image" ? (
+        {field.type === "image" &&
+        isBetterLugsSection &&
+        field.key === "logo" ? (
+          <div className="space-y-3">
+            {logoPreviewUrl ? (
+              <div className="space-y-3">
+                <img
+                  src={logoPreviewUrl}
+                  alt="Better LUG logo preview"
+                  className="h-40 w-full rounded-xl border border-gray-200 bg-gray-50 object-contain p-3"
+                />
+                <div className="flex gap-2">
+                  <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Replace Image
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,image/webp"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) {
+                          void handleLogoFileChange(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
+                  >
+                    Remove Image
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center hover:border-blue-400 hover:bg-blue-50">
+                <span className="text-sm font-medium text-gray-700">
+                  Click to upload a logo
+                </span>
+                <span className="text-xs text-gray-500">
+                  PNG, JPG, GIF, or WEBP up to 5MB
+                </span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      void handleLogoFileChange(file);
+                    }
+                  }}
+                />
+              </label>
+            )}
+            {logoError && (
+              <p role="alert" className="text-xs text-red-600">
+                {logoError}
+              </p>
+            )}
+          </div>
+        ) : field.type === "image" ? (
           <ImageUploadPlaceholder />
         ) : field.type === "textarea" ? (
           <textarea
@@ -352,6 +529,15 @@ export function ContentForm({
               {/* Dynamic section fields */}
               {fields.map((field) => renderField(field))}
 
+              {submitError && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                >
+                  {submitError}
+                </p>
+              )}
+
               {/* Status field — always present */}
               <div className="flex flex-col gap-1.5">
                 <label
@@ -389,6 +575,7 @@ export function ContentForm({
           <button
             type="button"
             onClick={handleClose}
+            disabled={isSubmitting}
             className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all"
           >
             Cancel
@@ -396,9 +583,14 @@ export function ContentForm({
           <button
             type="submit"
             form="content-form"
+            disabled={isSubmitting}
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
           >
-            {mode === "create" ? "Create Record" : "Save Changes"}
+            {isSubmitting
+              ? "Saving..."
+              : mode === "create"
+                ? "Create Record"
+                : "Save Changes"}
           </button>
         </div>
       </motion.aside>
