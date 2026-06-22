@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import LogoLoop from "@/modules/landing/components/LogoLoop";
-import { listPublicBetterLugsRequest } from "@/modules/admin/services/better-lugs.api";
-import type { ContentRecord } from "@/modules/admin/types/admin.types";
+import { useBetterLugsStore } from "@/modules/admin/store/betterLugsStore";
 
 const FALLBACK_LOGOS = [
   {
@@ -67,30 +66,16 @@ const FALLBACK_LOGOS = [
 ];
 
 export default function PartnerLogos() {
-  const [records, setRecords] = useState<ContentRecord[]>([]);
+  const records = useBetterLugsStore((state) => state.publicRecords);
+  const fetchPublicRecords = useBetterLugsStore(
+    (state) => state.fetchPublicRecords,
+  );
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadRecords() {
-      try {
-        const nextRecords = await listPublicBetterLugsRequest();
-        if (isMounted) {
-          setRecords(nextRecords);
-        }
-      } catch {
-        if (isMounted) {
-          setRecords([]);
-        }
-      }
-    }
-
-    void loadRecords();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    fetchPublicRecords().catch(() => {
+      // Preserve the cached records so the logo section still renders offline.
+    });
+  }, [fetchPublicRecords]);
 
   const logos =
     records.length > 0
@@ -133,7 +118,7 @@ export default function PartnerLogos() {
               scaleOnHover
               fadeOut
               ariaLabel="Better LUGs"
-              className="opacity-60 hover:opacity-100 transition-opacity duration-500"
+              className="bg-neutral-100 opacity-60 hover:opacity-100 transition-opacity duration-500"
               renderItem={(item, key) => {
                 const image = (
                   <img
