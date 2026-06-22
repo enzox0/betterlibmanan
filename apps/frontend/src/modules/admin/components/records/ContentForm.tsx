@@ -3,13 +3,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LuX } from "react-icons/lu";
 import { mockSections } from "../../data/mockSections";
 import { useAdminStore } from "../../store/adminStore";
+import { useBetterLugsStore } from "../../store/betterLugsStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
-import {
-  createBetterLugRequest,
-  updateBetterLugRequest,
-  uploadBetterLugImageRequest,
-} from "../../services/better-lugs.api";
+import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
 import type {
   ContentFormProps,
   ContentRecord,
@@ -94,6 +91,8 @@ export function ContentForm({
   const addRecord = useAdminStore((s) => s.addRecord);
   const updateRecord = useAdminStore((s) => s.updateRecord);
   const accessToken = useAdminStore((s) => s.accessToken);
+  const createBetterLug = useBetterLugsStore((s) => s.createBetterLug);
+  const updateBetterLug = useBetterLugsStore((s) => s.updateBetterLug);
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
@@ -269,9 +268,9 @@ export function ContentForm({
         }
 
         if (mode === "create") {
-          await createBetterLugRequest(payload, accessToken);
+          await createBetterLug(payload, accessToken);
         } else {
-          await updateBetterLugRequest(initialData!.id, payload, accessToken);
+          await updateBetterLug(initialData!.id, payload, accessToken);
         }
       } else if (mode === "create") {
         addRecord(sectionKey, {

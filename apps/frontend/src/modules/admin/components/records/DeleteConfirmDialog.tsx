@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import ReactDOM from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAdminStore } from "../../store/adminStore";
-import { deleteBetterLugRequest } from "../../services/better-lugs.api";
+import { useBetterLugsStore } from "../../store/betterLugsStore";
 import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
@@ -31,10 +31,10 @@ function DialogContent({
   record,
   sectionKey,
   onClose,
-  onDeleted,
 }: DeleteConfirmDialogProps) {
   const deleteRecord = useAdminStore((s) => s.deleteRecord);
   const accessToken = useAdminStore((s) => s.accessToken);
+  const deleteBetterLug = useBetterLugsStore((s) => s.deleteBetterLug);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -57,8 +57,7 @@ function DialogContent({
   async function handleConfirmDelete() {
     if (sectionKey === "partner-logos") {
       if (!accessToken) return;
-      await deleteBetterLugRequest(record.id, accessToken);
-      await onDeleted?.();
+      await deleteBetterLug(record.id, accessToken);
     } else {
       deleteRecord(sectionKey, record.id);
     }
