@@ -8,6 +8,7 @@ import {
   updateMe,
   changeMyPassword,
 } from "./auth.service";
+import { AdminModel } from "./admin.model";
 import { logger } from "@/shared/logger";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import { queryAuditLogs } from "@/modules/audit/audit.service";
@@ -237,7 +238,6 @@ export async function handleMe(
   }
 
   try {
-    const { AdminModel } = await import("./admin.model");
     const admin = await AdminModel.findById(req.admin.sub)
       .select("-password")
       .lean();
