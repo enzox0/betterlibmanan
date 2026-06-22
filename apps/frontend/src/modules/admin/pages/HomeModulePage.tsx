@@ -19,12 +19,12 @@ import {
 } from "react-icons/lu";
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
+import { useBetterLugsStore } from "../store/betterLugsStore";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
 import { DeleteConfirmDialog } from "../components/records/DeleteConfirmDialog";
 import { FreedomWallLayout } from "../components/records/FreedomWallLayout";
-import { listAdminBetterLugsRequest } from "../services/better-lugs.api";
 
 const MONTH_NAMES = [
   "Jan",
@@ -999,7 +999,8 @@ function SectionContent({
 export function HomeModulePage() {
   const records = useAdminStore((s) => s.records);
   const accessToken = useAdminStore((s) => s.accessToken);
-  const replaceRecords = useAdminStore((s) => s.replaceRecords);
+  const betterLugsRecords = useBetterLugsStore((s) => s.adminRecords);
+  const fetchAdminBetterLugs = useBetterLugsStore((s) => s.fetchAdminRecords);
   const [activeTab, setActiveTab] = useState<string>(
     mockSections[0]?.key ?? "",
   );
@@ -1013,26 +1014,16 @@ export function HomeModulePage() {
     null,
   );
   const [freedomWallCount, setFreedomWallCount] = useState<number | null>(null);
-  const [betterLugsRecords, setBetterLugsRecords] = useState<ContentRecord[]>(
-    records["partner-logos"] ?? [],
-  );
   const newRecordButtonRef = useRef<HTMLButtonElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
-  async function loadBetterLugsRecords() {
-    if (!accessToken) return;
-    try {
-      const nextRecords = await listAdminBetterLugsRequest(accessToken);
-      setBetterLugsRecords(nextRecords);
-      replaceRecords("partner-logos", nextRecords);
-    } catch {
-      // Preserve the last known records so the page remains usable offline.
-    }
-  }
-
   useEffect(() => {
-    void loadBetterLugsRecords();
-  }, [accessToken]);
+    if (!accessToken) return;
+
+    fetchAdminBetterLugs(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
+  }, [accessToken, fetchAdminBetterLugs]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
     ...records,
@@ -1137,7 +1128,7 @@ export function HomeModulePage() {
             aria-label="Content sections"
           >
             {mockSections.map((section) => {
-              const sectionRecords = records[section.key] ?? [];
+              const sectionRecords = mergedRecords[section.key] ?? [];
               const isActive = section.key === activeTab;
               return (
                 <button
@@ -1260,9 +1251,6 @@ export function HomeModulePage() {
           sectionKey={activeTab}
           onClose={handleFormClose}
           returnFocusRef={newRecordButtonRef}
-          onSubmitted={
-            activeTab === "partner-logos" ? loadBetterLugsRecords : undefined
-          }
         />
       )}
 
@@ -1274,9 +1262,6 @@ export function HomeModulePage() {
           initialData={editingRecord}
           onClose={handleFormClose}
           returnFocusRef={editButtonRef}
-          onSubmitted={
-            activeTab === "partner-logos" ? loadBetterLugsRecords : undefined
-          }
         />
       )}
 
@@ -1286,9 +1271,6 @@ export function HomeModulePage() {
           record={deletingRecord}
           sectionKey={activeTab}
           onClose={handleDeleteClose}
-          onDeleted={
-            activeTab === "partner-logos" ? loadBetterLugsRecords : undefined
-          }
         />
       )}
     </motion.div>
