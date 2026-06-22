@@ -221,7 +221,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
     fadeOutColor,
     scaleOnHover = false,
     renderItem,
-    ariaLabel = "Partner logos",
+    ariaLabel = "Better LUGs logos",
     className,
     style,
   }) => {

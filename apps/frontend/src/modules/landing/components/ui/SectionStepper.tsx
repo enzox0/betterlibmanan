@@ -68,7 +68,7 @@ export function SectionStepper({ sections }: SectionStepperProps) {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 16 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed right-4 top-1/2 z-50 hidden -translate-y-1/2 flex-col items-end gap-3 lg:flex"
+          className="fixed right-4 top-[40dvh] z-50 hidden -translate-y-1/2 flex-col items-end gap-3 lg:flex"
         >
           {sections.map((section, index) => {
             const isActive = index === activeIndex;
