@@ -4,6 +4,7 @@ import { authRouter } from "@/modules/auth/auth.module";
 import { freedomWallRouter } from "@/modules/freedom-wall";
 import { accountsRouter } from "@/modules/accounts";
 import { auditRouter } from "@/modules/audit";
+import { betterLugsRouter } from "@/modules/better-lugs";
 
 /**
  * Central API router. Mount feature routers here as the backend grows so
@@ -30,6 +31,9 @@ apiRouter.use("/dpwh", dpwhProxyRouter);
 
 // Freedom Wall — anonymous public sticky notes
 apiRouter.use("/freedom-wall", freedomWallRouter);
+
+// Better LUGs — public listing plus admin CRUD + R2 uploads
+apiRouter.use("/better-lugs", betterLugsRouter);
 
 // Fallback for unmatched /api routes — keeps the SPA catch-all from
 // accidentally serving index.html for unknown API paths.
