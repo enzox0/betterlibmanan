@@ -38,7 +38,7 @@ const QuizSection = lazyLoad(
 
 const SECTIONS = [
   { id: "section-hero", label: "Home" },
-  { id: "section-partners", label: "Partners" },
+  { id: "section-partners", label: "Better LUGs" },
   { id: "section-barangay-map", label: "Barangay Map" },
   { id: "section-services", label: "Services" },
   { id: "section-at-a-glance", label: "At a Glance" },
