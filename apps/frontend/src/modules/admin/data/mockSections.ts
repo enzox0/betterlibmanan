@@ -125,7 +125,7 @@ export const mockSections: SectionSchema[] = [
   },
   {
     key: "partner-logos",
-    displayName: "Partner Logos",
+    displayName: "Better LUGs",
     supportsPreview: true,
     fields: [
       { key: "name", label: "Name", type: "text", required: true },
