@@ -4,9 +4,11 @@ import { LuX } from "react-icons/lu";
 import { mockSections } from "../../data/mockSections";
 import { useAdminStore } from "../../store/adminStore";
 import { useBetterLugsStore } from "../../store/betterLugsStore";
+import { useBarangayMapStore } from "../../store/barangayMapStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
+import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
 import type {
   ContentFormProps,
   ContentRecord,
@@ -93,11 +95,19 @@ export function ContentForm({
   const accessToken = useAdminStore((s) => s.accessToken);
   const createBetterLug = useBetterLugsStore((s) => s.createBetterLug);
   const updateBetterLug = useBetterLugsStore((s) => s.updateBetterLug);
+  const createBarangayMap = useBarangayMapStore((s) => s.createBarangayMap);
+  const updateBarangayMap = useBarangayMapStore((s) => s.updateBarangayMap);
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
   const supportsPreview = section?.supportsPreview ?? false;
   const isBetterLugsSection = sectionKey === "partner-logos";
+  const isBarangayMapSection = sectionKey === "barangay-map";
+  const managedImageFieldKey = isBetterLugsSection
+    ? "logo"
+    : isBarangayMapSection
+      ? "image"
+      : null;
 
   // Status field (always present)
   const [status, setStatus] = useState<ContentStatus>(
@@ -117,15 +127,17 @@ export function ContentForm({
   // Preview toggle
   const [showPreview, setShowPreview] = useState(false);
 
-  const initialLogoUrl = initialData?.fields.logo ?? "";
-  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
-  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(
-    initialLogoUrl || null,
+  const initialManagedImageUrl = managedImageFieldKey
+    ? (initialData?.fields[managedImageFieldKey] ?? "")
+    : "";
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
+    initialManagedImageUrl || null,
   );
-  const [logoChangeState, setLogoChangeState] = useState<
+  const [imageChangeState, setImageChangeState] = useState<
     "unchanged" | "selected" | "removed"
-  >(initialLogoUrl ? "unchanged" : "removed");
-  const [logoError, setLogoError] = useState<string | null>(null);
+  >(initialManagedImageUrl ? "unchanged" : "removed");
+  const [imageError, setImageError] = useState<string | null>(null);
 
   // Ref for first focusable element in the panel (used for focus-on-open)
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
@@ -192,36 +204,37 @@ export function ContentForm({
     return Object.keys(newErrors).length === 0;
   }
 
-  async function handleLogoFileChange(file: File) {
+  async function handleManagedImageFileChange(file: File) {
     if (!isValidImageFile(file)) {
-      setSelectedLogoFile(null);
-      setLogoError(
+      setSelectedImageFile(null);
+      setImageError(
         "File must be PNG, JPG, GIF, or WEBP and no larger than 5MB",
       );
       return;
     }
 
     const previewUrl = await readFileAsDataUrl(file);
-    setSelectedLogoFile(file);
-    setLogoPreviewUrl(previewUrl);
-    setLogoChangeState("selected");
-    setLogoError(null);
+    setSelectedImageFile(file);
+    setImagePreviewUrl(previewUrl);
+    setImageChangeState("selected");
+    setImageError(null);
     setSubmitError(null);
   }
 
-  function handleRemoveLogo() {
-    setSelectedLogoFile(null);
-    setLogoPreviewUrl(null);
-    setLogoChangeState("removed");
-    setLogoError(null);
-    setFieldValues((prev) => ({ ...prev, logo: "" }));
+  function handleRemoveManagedImage() {
+    if (!managedImageFieldKey) return;
+    setSelectedImageFile(null);
+    setImagePreviewUrl(null);
+    setImageChangeState("removed");
+    setImageError(null);
+    setFieldValues((prev) => ({ ...prev, [managedImageFieldKey]: "" }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!validate()) return;
-    if (logoError) return;
+    if (imageError) return;
 
     const titleFieldKey = getTitleFieldKey(fields);
     const title =
@@ -251,18 +264,18 @@ export function ContentForm({
           status,
         };
 
-        if (logoChangeState === "selected" && selectedLogoFile) {
+        if (imageChangeState === "selected" && selectedImageFile) {
           const uploaded = await uploadBetterLugImageRequest(
             {
-              filename: selectedLogoFile.name,
-              mimeType: selectedLogoFile.type,
-              data: await readFileAsDataUrl(selectedLogoFile),
+              filename: selectedImageFile.name,
+              mimeType: selectedImageFile.type,
+              data: await readFileAsDataUrl(selectedImageFile),
             },
             accessToken,
           );
           payload.logoUrl = uploaded.url;
           payload.logoKey = uploaded.key;
-        } else if (logoChangeState === "removed") {
+        } else if (imageChangeState === "removed") {
           payload.logoUrl = "";
           payload.logoKey = "";
         }
@@ -271,6 +284,54 @@ export function ContentForm({
           await createBetterLug(payload, accessToken);
         } else {
           await updateBetterLug(initialData!.id, payload, accessToken);
+        }
+      } else if (isBarangayMapSection) {
+        if (!accessToken) {
+          throw new Error(
+            "You must be signed in to manage barangay map records.",
+          );
+        }
+
+        const payload: {
+          name: string;
+          imageUrl?: string;
+          imageKey?: string;
+          description?: string;
+          touristAttractions?: string;
+          population?: string;
+          area?: string;
+          festivals?: string;
+          status: ContentStatus;
+        } = {
+          name: fieldValues.name?.trim() ?? title.trim(),
+          description: fieldValues.description?.trim() ?? "",
+          touristAttractions: fieldValues.touristAttractions?.trim() ?? "",
+          population: fieldValues.population?.trim() ?? "",
+          area: fieldValues.area?.trim() ?? "",
+          festivals: fieldValues.festivals?.trim() ?? "",
+          status,
+        };
+
+        if (imageChangeState === "selected" && selectedImageFile) {
+          const uploaded = await uploadBarangayMapImageRequest(
+            {
+              filename: selectedImageFile.name,
+              mimeType: selectedImageFile.type,
+              data: await readFileAsDataUrl(selectedImageFile),
+            },
+            accessToken,
+          );
+          payload.imageUrl = uploaded.url;
+          payload.imageKey = uploaded.key;
+        } else if (imageChangeState === "removed") {
+          payload.imageUrl = "";
+          payload.imageKey = "";
+        }
+
+        if (mode === "create") {
+          await createBarangayMap(payload, accessToken);
+        } else {
+          await updateBarangayMap(initialData!.id, payload, accessToken);
         }
       } else if (mode === "create") {
         addRecord(sectionKey, {
@@ -323,15 +384,13 @@ export function ContentForm({
           )}
         </label>
 
-        {field.type === "image" &&
-        isBetterLugsSection &&
-        field.key === "logo" ? (
+        {field.type === "image" && managedImageFieldKey === field.key ? (
           <div className="space-y-3">
-            {logoPreviewUrl ? (
+            {imagePreviewUrl ? (
               <div className="space-y-3">
                 <img
-                  src={logoPreviewUrl}
-                  alt="Better LUG logo preview"
+                  src={imagePreviewUrl}
+                  alt={`${field.label} preview`}
                   className="h-40 w-full rounded-xl border border-gray-200 bg-gray-50 object-contain p-3"
                 />
                 <div className="flex gap-2">
@@ -344,14 +403,14 @@ export function ContentForm({
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         if (file) {
-                          void handleLogoFileChange(file);
+                          void handleManagedImageFileChange(file);
                         }
                       }}
                     />
                   </label>
                   <button
                     type="button"
-                    onClick={handleRemoveLogo}
+                    onClick={handleRemoveManagedImage}
                     className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
                   >
                     Remove Image
@@ -373,15 +432,15 @@ export function ContentForm({
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) {
-                      void handleLogoFileChange(file);
+                      void handleManagedImageFileChange(file);
                     }
                   }}
                 />
               </label>
             )}
-            {logoError && (
+            {imageError && (
               <p role="alert" className="text-xs text-red-600">
-                {logoError}
+                {imageError}
               </p>
             )}
           </div>

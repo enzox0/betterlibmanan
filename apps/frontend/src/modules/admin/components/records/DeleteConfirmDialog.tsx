@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAdminStore } from "../../store/adminStore";
 import { useBetterLugsStore } from "../../store/betterLugsStore";
+import { useBarangayMapStore } from "../../store/barangayMapStore";
 import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
@@ -35,6 +36,7 @@ function DialogContent({
   const deleteRecord = useAdminStore((s) => s.deleteRecord);
   const accessToken = useAdminStore((s) => s.accessToken);
   const deleteBetterLug = useBetterLugsStore((s) => s.deleteBetterLug);
+  const deleteBarangayMap = useBarangayMapStore((s) => s.deleteBarangayMap);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -58,6 +60,9 @@ function DialogContent({
     if (sectionKey === "partner-logos") {
       if (!accessToken) return;
       await deleteBetterLug(record.id, accessToken);
+    } else if (sectionKey === "barangay-map") {
+      if (!accessToken) return;
+      await deleteBarangayMap(record.id, accessToken);
     } else {
       deleteRecord(sectionKey, record.id);
     }
