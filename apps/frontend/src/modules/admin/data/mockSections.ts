@@ -157,6 +157,40 @@ export const mockSections: SectionSchema[] = [
     ],
   },
   {
+    key: "barangay-map",
+    displayName: "Barangay Map",
+    supportsPreview: true,
+    fields: [
+      { key: "name", label: "Barangay Name", type: "text", required: true },
+      { key: "image", label: "Image", type: "image", required: false },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        required: false,
+      },
+      {
+        key: "touristAttractions",
+        label: "Tourist Attractions (comma-separated)",
+        type: "text",
+        required: false,
+      },
+      {
+        key: "population",
+        label: "Population",
+        type: "text",
+        required: false,
+      },
+      { key: "area", label: "Area", type: "text", required: false },
+      {
+        key: "festivals",
+        label: "Festivals (comma-separated)",
+        type: "text",
+        required: false,
+      },
+    ],
+  },
+  {
     // Freedom Wall is special — its data lives in its own MongoDB collection
     // and is fetched live (not via the ContentRecord store). Admins can only
     // delete notes; there is no create/edit form.
@@ -660,6 +694,68 @@ export const mockRecords: Record<string, ContentRecord[]> = {
       },
       createdAt: "2024-02-20T09:00:00.000Z",
       updatedAt: "2024-02-20T09:00:00.000Z",
+    },
+  ],
+  "barangay-map": [
+    {
+      id: "barangay-001",
+      sectionKey: "barangay-map",
+      title: "Aslong",
+      status: "published",
+      fields: {
+        name: "Aslong",
+        image:
+          "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop",
+        description:
+          "Known for its breathtaking rice terraces that offer stunning panoramic views, especially during harvest season.",
+        touristAttractions:
+          "Aslong Rice Terraces, Mountain View Deck, Organic Farm Tours",
+        population: "2,450",
+        area: "12.5 sq km",
+        festivals: "Harvest Festival, Anihan",
+      },
+      createdAt: "2024-01-10T08:00:00.000Z",
+      updatedAt: "2024-01-10T08:00:00.000Z",
+    },
+    {
+      id: "barangay-002",
+      sectionKey: "barangay-map",
+      title: "Awayan",
+      status: "published",
+      fields: {
+        name: "Awayan",
+        image:
+          "https://images.unsplash.com/photo-1501785888041-af3ef281b399?w=800&h=600&fit=crop",
+        description:
+          "Home to pristine river views and lush greenery, perfect for nature lovers and adventure seekers.",
+        touristAttractions:
+          "Awayan River, Waterfall Adventure, Camping Grounds",
+        population: "1,890",
+        area: "8.3 sq km",
+        festivals: "River Festival, Balsa Racing",
+      },
+      createdAt: "2024-01-10T08:05:00.000Z",
+      updatedAt: "2024-01-10T08:05:00.000Z",
+    },
+    {
+      id: "barangay-003",
+      sectionKey: "barangay-map",
+      title: "Bagacay",
+      status: "draft",
+      fields: {
+        name: "Bagacay",
+        image:
+          "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=600&fit=crop",
+        description:
+          "Famous for its natural springs with crystal-clear water believed to have healing properties.",
+        touristAttractions:
+          "Bagacay Natural Springs, Picnic Groves, Hiking Trails",
+        population: "3,120",
+        area: "15.2 sq km",
+        festivals: "Spring Festival, Wellness Day",
+      },
+      createdAt: "2024-03-05T10:00:00.000Z",
+      updatedAt: "2024-03-05T10:00:00.000Z",
     },
   ],
 };
