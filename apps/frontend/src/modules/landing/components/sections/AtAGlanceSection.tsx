@@ -1,38 +1,25 @@
-import { FaUsers, FaBuilding, FaAward, FaMapMarkedAlt } from "react-icons/fa";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/shared/ui";
+import { useAtAGlanceStore } from "@/modules/admin/store/atAGlanceStore";
+import { resolveIcon } from "@/modules/admin/components/records/ReactIconPicker";
 
 export function AtAGlanceSection({
-  isLoading = false,
+  isLoading: externalLoading = false,
 }: {
   isLoading?: boolean;
 }) {
-  const statistics = [
-    {
-      label: "Population",
-      value: "110,000+",
-      sub: "2024 Census",
-      icon: FaUsers,
-    },
-    {
-      label: "Barangays",
-      value: "75",
-      sub: "Administrative Units",
-      icon: FaBuilding,
-    },
-    {
-      label: "Income Class",
-      value: "1st Class",
-      sub: "Municipality",
-      icon: FaAward,
-    },
-    {
-      label: "Land Area",
-      value: "348.54 km²",
-      sub: "Total Municipal Area",
-      icon: FaMapMarkedAlt,
-    },
-  ];
+  const publicRecords = useAtAGlanceStore((s) => s.publicRecords);
+  const isPublicLoading = useAtAGlanceStore((s) => s.isPublicLoading);
+  const fetchPublicRecords = useAtAGlanceStore((s) => s.fetchPublicRecords);
+
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Fail silently — cached records will still be shown
+    });
+  }, [fetchPublicRecords]);
+
+  const isLoading = externalLoading || isPublicLoading;
 
   return (
     <section className="bg-white py-16">
@@ -88,31 +75,36 @@ export function AtAGlanceSection({
                     </div>
                   </div>
                 ))
-              : statistics.map((stat) => {
-                  const Icon = stat.icon;
-                  return (
-                    <div
-                      key={stat.label}
-                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-5 transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700">
-                        <Icon className="text-sm" />
-                      </div>
+              : publicRecords.length === 0
+                ? // Nothing published yet — render nothing rather than broken UI
+                  null
+                : publicRecords.map((record) => {
+                    const Icon = resolveIcon(record.fields.icon ?? "");
+                    return (
+                      <div
+                        key={record.id}
+                        className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-5 transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700">
+                          <Icon className="text-sm" />
+                        </div>
 
-                      <div>
-                        <div className="text-2xl font-bold text-neutral-900 lg:text-3xl">
-                          {stat.value}
-                        </div>
-                        <div className="mt-1 text-base font-semibold text-neutral-900">
-                          {stat.label}
-                        </div>
-                        <div className="mt-1 text-xs sm:text-sm text-neutral-500">
-                          {stat.sub}
+                        <div>
+                          <div className="text-2xl font-bold text-neutral-900 lg:text-3xl">
+                            {record.fields.value}
+                          </div>
+                          <div className="mt-1 text-base font-semibold text-neutral-900">
+                            {record.fields.label}
+                          </div>
+                          {record.fields.sub && (
+                            <div className="mt-1 text-xs sm:text-sm text-neutral-500">
+                              {record.fields.sub}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
           </div>
         </div>
       </motion.div>

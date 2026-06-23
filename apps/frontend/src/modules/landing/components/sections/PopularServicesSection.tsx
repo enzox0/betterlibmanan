@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from "react";
-import { FaThLarge } from "react-icons/fa";
 import * as LucideIcons from "react-icons/lu";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 import { usePopularServicesStore } from "@/modules/admin/store/popular-services.store";
+import { resolveIcon } from "@/modules/admin/components/records/ReactIconPicker";
 
 export function PopularServicesSection({
   isLoading = false,
@@ -23,25 +23,15 @@ export function PopularServicesSection({
     });
   }, [fetchPublicRecords]);
 
-  const getIconComponent = (iconName: string) => {
-    const pascalCaseName = iconName
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join("");
-    // @ts-ignore - dynamic access to Lucide icons
-    return LucideIcons[`Lu${pascalCaseName}`] || LucideIcons.LuFileText;
-  };
-
   const popularServices = useMemo(() => {
     const services = publicRecords.map((record) => ({
-      icon: getIconComponent(record.fields.icon || ""),
+      icon: resolveIcon(record.fields.icon || ""),
       title: record.fields.name || record.title,
       description: record.fields.description || "",
       featured: false,
-      path: "/services", // Default path
+      path: "/services",
     }));
 
-    // Add "View All Services" as the last item
     services.push({
       icon: LucideIcons.LuLayoutGrid,
       title: "View All Services",

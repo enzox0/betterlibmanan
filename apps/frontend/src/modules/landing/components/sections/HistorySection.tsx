@@ -1,132 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaChurch, FaSeedling, FaSchool } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
+import { useHistoryStore } from "@/modules/admin/store/historyStore";
 
 export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const historyTimeline = [
-    {
-      year: "Original Name",
-      event: 'The first name of town was "Piglabanan".',
-    },
-    {
-      year: "March 18, 1484",
-      event:
-        "Invasion of the Moros; those who killed were buried beside the Present Church.",
-    },
-    {
-      year: "February 1572",
-      event: "Construction of the First Church.",
-    },
-    {
-      year: "September 15, 1574",
-      event:
-        "Changing the town name from Piglabanan to Libmanan by fray Bartolome Cabello.",
-    },
-    {
-      year: "1586-1589",
-      event: "Construction of the Second Church of Libmanan.",
-    },
-    {
-      year: "1732",
-      event: "Start of the first town government of Libmanan.",
-    },
-    {
-      year: "1838",
-      event: "Construction of Catholic Cemetery In Barangay Puro Batia.",
-    },
-    {
-      year: "1903",
-      event: "Founding of the first public schools.",
-    },
-    {
-      year: "1915",
-      event: "Construction of the municipal cemetery In Barangay Puro Batia.",
-    },
-    {
-      year: "1921",
-      event: "Construction of the Rizal Monument.",
-    },
-    {
-      year: "1927",
-      event: "Passing of the MRR Co. in Libmanan.",
-    },
-    {
-      year: "1929",
-      event: "Construction of MRR Co. (Philippine National Railways) Bridge.",
-    },
-    {
-      year: "1930-31",
-      event: "Installation of the water system.",
-    },
-    {
-      year: "1933",
-      event: "Construction of first and second market pavilion.",
-    },
-    {
-      year: "1939-40",
-      event:
-        "Construction of a concrete municipal hall under Mayor Francisco Frondozo.",
-    },
-    {
-      year: "1941",
-      event: "Construction of the post office under Mayor Teodoro Dilanco.",
-    },
-    {
-      year: "March 3, 1951",
-      event: "Naming of Barangay Bagumbayan by Municipal Council.",
-    },
-    {
-      year: "1954-57",
-      event: "Construction of the municipal irrigation system.",
-    },
-    {
-      year: "1955",
-      event:
-        "Renaming the streets of the Poblacion and improvement of the Town Plaza.",
-    },
-    {
-      year: "1956",
-      event: "Construction of the 30-Door Market.",
-    },
-    {
-      year: "May 1957",
-      event: "Dredging of the Libmanan River.",
-    },
-    {
-      year: "1957",
-      event:
-        "Construction of a two-story building for the private Central School and also a public toilet.",
-    },
-    {
-      year: "March 1961",
-      event:
-        "Construction of the concrete Easter tower under Mayor Amadeo Castaneda.",
-    },
-    {
-      year: "1978",
-      event: "Construction of the Bulaong Bridge.",
-    },
-    {
-      year: "1993",
-      event: "Construction of the Libmanan Town Arc in Barangay Potot.",
-    },
-    {
-      year: "2015",
-      event:
-        "The Canonical coronation of the venerated statue of Our Lady of the Pillar who is the patroness of the Diocese of Libmanan.",
-    },
-    {
-      year: "September 2020",
-      event: "Redevelopment of Market in the Poblacion Area.",
-    },
-    {
-      year: "2021 to 22",
-      event:
-        "Developments and redevelopments of roads both in rural and urban areas.",
-    },
-  ];
+
+  const publicRecords = useHistoryStore((s) => s.publicRecords);
+  const isPublicLoading = useHistoryStore((s) => s.isPublicLoading);
+  const fetchPublicRecords = useHistoryStore((s) => s.fetchPublicRecords);
+
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Preserve the last known records
+    });
+  }, [fetchPublicRecords]);
+
+  // Map store records to the timeline shape; fall back to empty array
+  const historyTimeline = publicRecords.map((record) => ({
+    year: record.fields.year || record.title,
+    event: record.fields.content || "",
+  }));
 
   const historyHighlights = [
     {
@@ -164,7 +59,7 @@ export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center gap-3">
             <div>
-              {isLoading ? (
+              {isLoading || isPublicLoading ? (
                 <>
                   <Skeleton className="h-9 w-72 mb-2" />
                   <Skeleton className="h-5 w-80" />
@@ -183,7 +78,7 @@ export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-            {isLoading ? (
+            {isLoading || isPublicLoading ? (
               <>
                 <div className="space-y-4">
                   {Array.from({ length: 5 }).map((_, index) => (

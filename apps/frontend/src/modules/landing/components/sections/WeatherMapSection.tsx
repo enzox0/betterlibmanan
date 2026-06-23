@@ -52,9 +52,7 @@ function loadGoogleMaps(apiKey: string): Promise<GoogleNamespace> {
     }
 
     const script = document.createElement("script");
-    // `loading=async` is Google's recommended pattern and silences the
-    // "loaded directly without loading=async" performance warning.
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async`;
     script.async = true;
     script.defer = true;
     script.dataset.googleMapsLoader = "true";
