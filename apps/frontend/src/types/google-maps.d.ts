@@ -9,6 +9,9 @@ declare global {
           opts?: google.maps.MapOptions,
         ) => google.maps.Map;
         Data: new (opts?: { map?: google.maps.Map }) => google.maps.Data;
+        // Required when loading the JS API with `loading=async`. Resolves
+        // when the named library is ready and its constructors are usable.
+        importLibrary: (libraryName: string) => Promise<unknown>;
       };
     };
   }
