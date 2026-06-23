@@ -6,7 +6,8 @@ export type FieldType =
   | "image"
   | "url"
   | "date"
-  | "select";
+  | "select"
+  | "icon-picker";
 export type ContentStatus = "published" | "draft";
 
 export interface FieldDefinition {
