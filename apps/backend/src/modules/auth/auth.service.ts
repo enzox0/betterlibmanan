@@ -3,6 +3,12 @@ import crypto from "crypto";
 import { AdminModel, IAdmin, AdminRole } from "./admin.model";
 import { RefreshTokenModel } from "./refresh-token.model";
 import { logger } from "@/shared/logger";
+import {
+  uploadBase64ImageToR2,
+  deleteObjectFromR2,
+  type UploadBase64ImageInput,
+  type UploadedObject,
+} from "@/shared/storage";
 
 // ─── JWT configuration ────────────────────────────────────────────────────────
 
@@ -198,6 +204,8 @@ export interface UpdateMeInput {
   phone?: string;
   department?: string;
   bio?: string;
+  avatarUrl?: string;
+  avatarKey?: string;
 }
 
 /**
@@ -218,6 +226,8 @@ export async function updateMe(
     | "phone"
     | "department"
     | "bio"
+    | "avatarUrl"
+    | "avatarKey"
     | "lastLoginAt"
     | "passwordChangedAt"
     | "createdAt"
@@ -249,14 +259,48 @@ export async function updateMe(
   if (input.department !== undefined) admin.department = input.department;
   if (input.bio !== undefined) admin.bio = input.bio;
 
+  // Handle avatar changes
+  const previousAvatarKey = admin.avatarKey;
+  if (input.avatarKey !== undefined) {
+    admin.avatarKey = input.avatarKey;
+  }
+  if (input.avatarUrl !== undefined) {
+    admin.avatarUrl = input.avatarUrl;
+  }
+
+  // Delete old avatar if changed
+  const avatarChanged =
+    previousAvatarKey &&
+    input.avatarKey !== undefined &&
+    previousAvatarKey !== input.avatarKey;
+
   await admin.save();
 
+  if (avatarChanged) {
+    await deleteObjectFromR2(previousAvatarKey);
+  }
+
   return AdminModel.findById(adminId).select("-password").lean() as any;
+}
+
+export interface UploadAvatarInput {
+  filename: string;
+  mimeType: string;
+  data: string;
 }
 
 export interface ChangeMyPasswordInput {
   currentPassword: string;
   newPassword: string;
+}
+
+export async function uploadAvatar(
+  input: UploadAvatarInput,
+): Promise<UploadedObject> {
+  return uploadBase64ImageToR2({
+    ...input,
+    folder: "avatars",
+  });
 }
 
 /**

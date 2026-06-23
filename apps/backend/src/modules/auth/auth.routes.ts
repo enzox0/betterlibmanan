@@ -9,6 +9,7 @@ import {
   handleUpdateMe,
   handleChangeMyPassword,
   handleGetMyActivity,
+  handleUploadAvatar,
 } from "./auth.controller";
 import { requireAuth } from "./auth.middleware";
 
@@ -51,5 +52,6 @@ authRouter.post("/logout", requireAuth, handleLogout);
 authRouter.post("/logout-all", requireAuth, handleLogoutAll);
 authRouter.get("/me", requireAuth, handleMe);
 authRouter.patch("/me", requireAuth, handleUpdateMe);
+authRouter.post("/me/avatar", requireAuth, handleUploadAvatar);
 authRouter.post("/me/password", requireAuth, handleChangeMyPassword);
 authRouter.get("/me/activity", requireAuth, handleGetMyActivity);

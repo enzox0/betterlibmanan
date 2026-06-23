@@ -7,6 +7,7 @@ import {
   logoutAll,
   updateMe,
   changeMyPassword,
+  uploadAvatar,
 } from "./auth.service";
 import { AdminModel } from "./admin.model";
 import { logger } from "@/shared/logger";
@@ -261,6 +262,14 @@ const updateMeSchema = z.object({
   phone: z.string().max(32).trim().optional(),
   department: z.string().max(128).trim().optional(),
   bio: z.string().max(500).trim().optional(),
+  avatarUrl: z.string().trim().optional(),
+  avatarKey: z.string().trim().optional(),
+});
+
+const uploadAvatarSchema = z.object({
+  filename: z.string().min(1),
+  mimeType: z.string().min(1),
+  data: z.string().min(1),
 });
 
 const changePasswordSchema = z.object({
@@ -370,6 +379,56 @@ export async function handleChangeMyPassword(
     res
       .status(200)
       .json({ success: true, message: "Password updated successfully" });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * POST /api/auth/me/avatar
+ * Uploads a new avatar image for the authenticated admin.
+ * Requires: Bearer access token
+ */
+export async function handleUploadAvatar(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.admin) {
+      res.status(401).json({ success: false, message: "Not authenticated" });
+      return;
+    }
+
+    const parsed = uploadAvatarSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map((e) => e.message);
+      res.status(400).json({ success: false, message: errors[0], errors });
+      return;
+    }
+
+    const uploaded = await uploadAvatar(parsed.data);
+
+    // Audit
+    writeAuditLog(
+      {
+        admin: req.admin,
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"],
+      },
+      {
+        action: "UPDATE",
+        module: "MyAccount",
+        resourceId: req.admin.sub,
+        description: `${req.admin.displayName} uploaded a new avatar`,
+      },
+    );
+
+    res.status(200).json({ success: true, data: uploaded });
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ success: false, message: err.message });

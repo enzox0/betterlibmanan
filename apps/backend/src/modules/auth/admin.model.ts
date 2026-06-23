@@ -15,6 +15,8 @@ export interface IAdmin extends Document {
   phone?: string;
   department?: string;
   bio?: string;
+  avatarUrl?: string;
+  avatarKey?: string;
   passwordChangedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -79,6 +81,16 @@ const AdminSchema = new Schema<IAdmin>(
       type: String,
       trim: true,
       maxlength: 500,
+      default: "",
+    },
+    avatarUrl: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    avatarKey: {
+      type: String,
+      trim: true,
       default: "",
     },
     passwordChangedAt: {
