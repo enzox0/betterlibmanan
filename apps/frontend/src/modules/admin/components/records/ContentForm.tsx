@@ -6,8 +6,11 @@ import { useAdminStore } from "../../store/adminStore";
 import { useBetterLugsStore } from "../../store/betterLugsStore";
 import { useBarangayMapStore } from "../../store/barangayMapStore";
 import { usePopularServicesStore } from "../../store/popular-services.store";
+import { useAtAGlanceStore } from "../../store/atAGlanceStore";
+import { useHistoryStore } from "../../store/historyStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
+import { LucideIconPicker } from "./ReactIconPicker";
 import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
 import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
 import { uploadPopularServiceIcon } from "../../services/popular-services.api";
@@ -105,6 +108,10 @@ export function ContentForm({
   const updatePopularService = usePopularServicesStore(
     (s) => s.updatePopularService,
   );
+  const createAtAGlance = useAtAGlanceStore((s) => s.createAtAGlance);
+  const updateAtAGlance = useAtAGlanceStore((s) => s.updateAtAGlance);
+  const createHistory = useHistoryStore((s) => s.createHistory);
+  const updateHistory = useHistoryStore((s) => s.updateHistory);
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
@@ -112,6 +119,8 @@ export function ContentForm({
   const isBetterLugsSection = sectionKey === "partner-logos";
   const isBarangayMapSection = sectionKey === "barangay-map";
   const isPopularServicesSection = sectionKey === "popular-services";
+  const isAtAGlanceSection = sectionKey === "at-a-glance";
+  const isHistorySection = sectionKey === "history";
   const managedImageFieldKey = isBetterLugsSection
     ? "logo"
     : isBarangayMapSection
@@ -364,6 +373,54 @@ export function ContentForm({
         } else {
           await updatePopularService(initialData!.id, payload, accessToken);
         }
+      } else if (isAtAGlanceSection) {
+        if (!accessToken) {
+          throw new Error(
+            "You must be signed in to manage At a Glance records.",
+          );
+        }
+
+        const payload: {
+          label: string;
+          value: string;
+          icon?: string;
+          sub?: string;
+          status: ContentStatus;
+        } = {
+          label: fieldValues.label?.trim() ?? title.trim(),
+          value: fieldValues.value?.trim() ?? "",
+          icon: fieldValues.icon?.trim() ?? "",
+          sub: fieldValues.sub?.trim() ?? "",
+          status,
+        };
+
+        if (mode === "create") {
+          await createAtAGlance(payload, accessToken);
+        } else {
+          await updateAtAGlance(initialData!.id, payload, accessToken);
+        }
+      } else if (isHistorySection) {
+        if (!accessToken) {
+          throw new Error("You must be signed in to manage History records.");
+        }
+
+        const payload: {
+          title: string;
+          content?: string;
+          year?: string;
+          status: ContentStatus;
+        } = {
+          title: fieldValues.title?.trim() ?? title.trim(),
+          content: fieldValues.content?.trim() ?? "",
+          year: fieldValues.year?.trim() ?? "",
+          status,
+        };
+
+        if (mode === "create") {
+          await createHistory(payload, accessToken);
+        } else {
+          await updateHistory(initialData!.id, payload, accessToken);
+        }
       } else if (mode === "create") {
         addRecord(sectionKey, {
           title,
@@ -486,6 +543,12 @@ export function ContentForm({
             className={commonInputClass}
             aria-invalid={!!error}
             aria-describedby={error ? `${id}-error` : undefined}
+          />
+        ) : field.type === "icon-picker" ? (
+          <LucideIconPicker
+            value={value}
+            onChange={(name) => handleFieldChange(field.key, name)}
+            hasError={!!error}
           />
         ) : field.type === "select" ? (
           <select

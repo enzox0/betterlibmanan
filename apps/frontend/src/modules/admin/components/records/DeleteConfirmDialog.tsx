@@ -5,6 +5,8 @@ import { useAdminStore } from "../../store/adminStore";
 import { useBetterLugsStore } from "../../store/betterLugsStore";
 import { useBarangayMapStore } from "../../store/barangayMapStore";
 import { usePopularServicesStore } from "../../store/popular-services.store";
+import { useAtAGlanceStore } from "../../store/atAGlanceStore";
+import { useHistoryStore } from "../../store/historyStore";
 import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
@@ -41,6 +43,8 @@ function DialogContent({
   const deletePopularService = usePopularServicesStore(
     (s) => s.deletePopularService,
   );
+  const deleteAtAGlance = useAtAGlanceStore((s) => s.deleteAtAGlance);
+  const deleteHistory = useHistoryStore((s) => s.deleteHistory);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -70,6 +74,12 @@ function DialogContent({
     } else if (sectionKey === "popular-services") {
       if (!accessToken) return;
       await deletePopularService(record.id, accessToken);
+    } else if (sectionKey === "at-a-glance") {
+      if (!accessToken) return;
+      await deleteAtAGlance(record.id, accessToken);
+    } else if (sectionKey === "history") {
+      if (!accessToken) return;
+      await deleteHistory(record.id, accessToken);
     } else {
       deleteRecord(sectionKey, record.id);
     }
