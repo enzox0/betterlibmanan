@@ -1,12 +1,15 @@
 import axios from "axios";
+import { attachAdminUnauthorizedInterceptor } from "./admin-api-client";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
 
-const apiClient = axios.create({
-  baseURL: `${BASE_URL}/api/auth`,
-  headers: { "Content-Type": "application/json" },
-  withCredentials: false,
-});
+const apiClient = attachAdminUnauthorizedInterceptor(
+  axios.create({
+    baseURL: `${BASE_URL}/api/auth`,
+    headers: { "Content-Type": "application/json" },
+    withCredentials: false,
+  }),
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

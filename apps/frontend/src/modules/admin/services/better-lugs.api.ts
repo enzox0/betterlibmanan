@@ -1,12 +1,15 @@
 import axios from "axios";
 import type { ContentRecord, ContentStatus } from "../types/admin.types";
+import { attachAdminUnauthorizedInterceptor } from "./admin-api-client";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
 
-const apiClient = axios.create({
-  baseURL: `${BASE_URL}/api/better-lugs`,
-  headers: { "Content-Type": "application/json" },
-});
+const apiClient = attachAdminUnauthorizedInterceptor(
+  axios.create({
+    baseURL: `${BASE_URL}/api/better-lugs`,
+    headers: { "Content-Type": "application/json" },
+  }),
+);
 
 export interface BetterLugPayload {
   name: string;
