@@ -24,6 +24,8 @@ export interface AdminProfile {
   phone?: string;
   department?: string;
   bio?: string;
+  avatarUrl?: string;
+  avatarKey?: string;
   lastLoginAt?: string | null;
   passwordChangedAt?: string | null;
   createdAt?: string;
@@ -92,6 +94,19 @@ export interface UpdateMePayload {
   phone?: string;
   department?: string;
   bio?: string;
+  avatarUrl?: string;
+  avatarKey?: string;
+}
+
+export interface UploadAvatarPayload {
+  filename: string;
+  mimeType: string;
+  data: string;
+}
+
+export interface UploadedAvatar {
+  key: string;
+  url: string;
 }
 
 export interface ChangeMyPasswordPayload {
@@ -139,6 +154,19 @@ export async function getMyActivityRequest(
     success: boolean;
     data: ActivityLogEntry[];
   }>("/me/activity", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return data.data;
+}
+
+export async function uploadAvatarRequest(
+  payload: UploadAvatarPayload,
+  accessToken: string,
+): Promise<UploadedAvatar> {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    data: UploadedAvatar;
+  }>("/me/avatar", payload, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return data.data;
