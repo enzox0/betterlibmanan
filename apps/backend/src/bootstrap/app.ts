@@ -169,7 +169,7 @@ app.use(
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: isDevelopment ? 1000 : 100,
   message: { success: false, message: "Too many requests from this IP" },
   standardHeaders: true,
   legacyHeaders: false,
