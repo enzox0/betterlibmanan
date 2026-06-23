@@ -25,6 +25,7 @@ import {
   updateMeRequest,
   changeMyPasswordRequest,
   getMyActivityRequest,
+  uploadAvatarRequest,
   type ActivityLogEntry,
   type AdminProfile,
 } from "../services/auth.api";
@@ -106,6 +107,23 @@ function actionToIcon(action: string, module: string): string {
   if (module === "MyAccount" || action === "UPDATE") return "edit";
   if (action === "ACTIVATE") return "check";
   return "edit";
+}
+
+function isValidImageFile(file: File): boolean {
+  return (
+    ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(file.type) &&
+    file.size <= 5 * 1024 * 1024
+  );
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () =>
+      reject(new Error("Failed to read the selected image"));
+    reader.readAsDataURL(file);
+  });
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -217,10 +235,21 @@ function EditProfileModal({
     phone: profile.phone ?? "",
     department: profile.department ?? "",
     bio: profile.bio ?? "",
+    avatarUrl: profile.avatarUrl ?? "",
+    avatarKey: profile.avatarKey ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(
+    profile.avatarUrl || null
+  );
+  const [avatarChangeState, setAvatarChangeState] = useState<
+    "unchanged" | "selected" | "removed"
+  >(profile.avatarUrl ? "unchanged" : "removed");
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   function setField<K extends keyof typeof form>(key: K, val: string) {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -230,6 +259,31 @@ function EditProfileModal({
         delete n[key];
         return n;
       });
+  }
+
+  async function handleAvatarFileChange(file: File) {
+    if (!isValidImageFile(file)) {
+      setSelectedAvatarFile(null);
+      setAvatarError(
+        "File must be PNG, JPG, GIF, or WEBP and no larger than 5MB"
+      );
+      return;
+    }
+
+    const previewUrl = await readFileAsDataUrl(file);
+    setSelectedAvatarFile(file);
+    setAvatarPreviewUrl(previewUrl);
+    setAvatarChangeState("selected");
+    setAvatarError(null);
+    setApiError(null);
+  }
+
+  function handleRemoveAvatar() {
+    setSelectedAvatarFile(null);
+    setAvatarPreviewUrl(null);
+    setAvatarChangeState("removed");
+    setAvatarError(null);
+    setForm((prev) => ({ ...prev, avatarUrl: "", avatarKey: "" }));
   }
 
   function validate() {
@@ -245,9 +299,32 @@ function EditProfileModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+    if (avatarError) return;
+    
     setSubmitting(true);
     setApiError(null);
+    
     try {
+      let finalAvatarUrl = form.avatarUrl;
+      let finalAvatarKey = form.avatarKey;
+      
+      if (avatarChangeState === "selected" && selectedAvatarFile) {
+        setUploadingAvatar(true);
+        const uploaded = await uploadAvatarRequest(
+          {
+            filename: selectedAvatarFile.name,
+            mimeType: selectedAvatarFile.type,
+            data: await readFileAsDataUrl(selectedAvatarFile),
+          },
+          accessToken,
+        );
+        finalAvatarUrl = uploaded.url;
+        finalAvatarKey = uploaded.key;
+      } else if (avatarChangeState === "removed") {
+        finalAvatarUrl = "";
+        finalAvatarKey = "";
+      }
+      
       const updated = await updateMeRequest(
         {
           displayName: form.displayName.trim(),
@@ -255,6 +332,8 @@ function EditProfileModal({
           phone: form.phone.trim(),
           department: form.department.trim(),
           bio: form.bio.trim(),
+          avatarUrl: finalAvatarUrl,
+          avatarKey: finalAvatarKey,
         },
         accessToken,
       );
@@ -266,6 +345,7 @@ function EditProfileModal({
       );
     } finally {
       setSubmitting(false);
+      setUploadingAvatar(false);
     }
   }
 
@@ -339,6 +419,79 @@ function EditProfileModal({
                   {apiError}
                 </div>
               )}
+              
+              {/* Avatar Upload Section */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Profile Picture
+                </label>
+                {avatarPreviewUrl ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={avatarPreviewUrl}
+                        alt="Profile avatar preview"
+                        className="h-24 w-24 rounded-2xl border border-gray-200 bg-gray-50 object-cover"
+                      />
+                      <div className="flex gap-2">
+                        <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                          Replace
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/gif,image/webp"
+                            className="hidden"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) {
+                                void handleAvatarFileChange(file);
+                              }
+                            }}
+                            disabled={submitting || uploadingAvatar}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleRemoveAvatar}
+                          disabled={submitting || uploadingAvatar}
+                          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-6 text-center hover:border-blue-400 hover:bg-blue-50">
+                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                      <LuUser className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Click to upload a profile picture
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      PNG, JPG, GIF, or WEBP up to 5MB
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,image/webp"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) {
+                          void handleAvatarFileChange(file);
+                        }
+                      }}
+                      disabled={submitting || uploadingAvatar}
+                    />
+                  </label>
+                )}
+                {avatarError && (
+                  <p role="alert" className="mt-1 text-xs text-red-600">
+                    {avatarError}
+                  </p>
+                )}
+              </div>
+              
               <div>
                 <label
                   htmlFor="ep-name"
@@ -958,12 +1111,20 @@ export function MyAccountPage() {
         />
         <div className="px-6 pb-6">
           <div className="flex items-start justify-between gap-4 -mt-10">
-            <div
-              className={`h-20 w-20 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-2xl font-black shrink-0 ring-4 ring-white shadow-lg select-none`}
-              aria-hidden="true"
-            >
-              {getInitials(profile.displayName)}
-            </div>
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt="Profile Avatar"
+                className="h-20 w-20 rounded-2xl object-cover shrink-0 ring-4 ring-white shadow-lg"
+              />
+            ) : (
+              <div
+                className={`h-20 w-20 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-2xl font-black shrink-0 ring-4 ring-white shadow-lg select-none`}
+                aria-hidden="true"
+              >
+                {getInitials(profile.displayName)}
+              </div>
+            )}
             <button
               ref={editButtonRef}
               type="button"
