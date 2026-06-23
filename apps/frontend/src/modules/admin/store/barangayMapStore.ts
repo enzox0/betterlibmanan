@@ -66,6 +66,9 @@ function upsertRecord(
   return sortRecords(nextRecords);
 }
 
+let publicFetchPromise: Promise<ContentRecord[]> | null = null;
+let adminFetchPromise: Promise<ContentRecord[]> | null = null;
+
 export const useBarangayMapStore = create<BarangayMapState>()(
   persist(
     (set, get) => ({
@@ -89,43 +92,59 @@ export const useBarangayMapStore = create<BarangayMapState>()(
         }),
 
       fetchAdminRecords: async (accessToken) => {
-        set({ isAdminLoading: true, error: null });
-        try {
-          const records = await listAdminBarangayMapRequest(accessToken);
-          get().setAdminRecords(records);
-          return records;
-        } catch (error: any) {
-          set({
-            isAdminLoading: false,
-            error: getErrorMessage(
-              error,
-              "Failed to load barangay map records.",
-            ),
-          });
-          throw error;
-        } finally {
-          set({ isAdminLoading: false });
+        if (adminFetchPromise) {
+          return adminFetchPromise;
         }
+
+        set({ isAdminLoading: true, error: null });
+        adminFetchPromise = (async () => {
+          try {
+            const records = await listAdminBarangayMapRequest(accessToken);
+            get().setAdminRecords(records);
+            return records;
+          } catch (error: any) {
+            set({
+              isAdminLoading: false,
+              error: getErrorMessage(
+                error,
+                "Failed to load barangay map records.",
+              ),
+            });
+            throw error;
+          } finally {
+            set({ isAdminLoading: false });
+            adminFetchPromise = null;
+          }
+        })();
+        return adminFetchPromise;
       },
 
       fetchPublicRecords: async () => {
-        set({ isPublicLoading: true, error: null });
-        try {
-          const records = await listPublicBarangayMapRequest();
-          get().setPublicRecords(records);
-          return records;
-        } catch (error: any) {
-          set({
-            isPublicLoading: false,
-            error: getErrorMessage(
-              error,
-              "Failed to load barangay map records.",
-            ),
-          });
-          throw error;
-        } finally {
-          set({ isPublicLoading: false });
+        if (publicFetchPromise) {
+          return publicFetchPromise;
         }
+
+        set({ isPublicLoading: true, error: null });
+        publicFetchPromise = (async () => {
+          try {
+            const records = await listPublicBarangayMapRequest();
+            get().setPublicRecords(records);
+            return records;
+          } catch (error: any) {
+            set({
+              isPublicLoading: false,
+              error: getErrorMessage(
+                error,
+                "Failed to load barangay map records.",
+              ),
+            });
+            throw error;
+          } finally {
+            set({ isPublicLoading: false });
+            publicFetchPromise = null;
+          }
+        })();
+        return publicFetchPromise;
       },
 
       createBarangayMap: async (payload, accessToken) => {

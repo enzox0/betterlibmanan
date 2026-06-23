@@ -1,16 +1,16 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-  createBetterLugRequest,
-  deleteBetterLugRequest,
-  listAdminBetterLugsRequest,
-  listPublicBetterLugsRequest,
-  updateBetterLugRequest,
-  type BetterLugPayload,
-} from "../services/better-lugs.api";
+  createPopularService,
+  deletePopularService,
+  listAdminPopularServices,
+  listPublicPopularServices,
+  updatePopularService,
+  type PopularServicePayload,
+} from "../services/popular-services.api";
 import type { ContentRecord } from "../types/admin.types";
 
-interface BetterLugsState {
+interface PopularServicesState {
   adminRecords: ContentRecord[];
   publicRecords: ContentRecord[];
   isAdminLoading: boolean;
@@ -21,16 +21,16 @@ interface BetterLugsState {
   setPublicRecords: (records: ContentRecord[]) => void;
   fetchAdminRecords: (accessToken: string) => Promise<ContentRecord[]>;
   fetchPublicRecords: () => Promise<ContentRecord[]>;
-  createBetterLug: (
-    payload: BetterLugPayload,
+  createPopularService: (
+    payload: PopularServicePayload,
     accessToken: string,
   ) => Promise<ContentRecord>;
-  updateBetterLug: (
+  updatePopularService: (
     id: string,
-    payload: BetterLugPayload,
+    payload: PopularServicePayload,
     accessToken: string,
   ) => Promise<ContentRecord>;
-  deleteBetterLug: (id: string, accessToken: string) => Promise<void>;
+  deletePopularService: (id: string, accessToken: string) => Promise<void>;
 }
 
 function getErrorMessage(error: any, fallback: string): string {
@@ -69,7 +69,7 @@ function upsertRecord(
 let publicFetchPromise: Promise<ContentRecord[]> | null = null;
 let adminFetchPromise: Promise<ContentRecord[]> | null = null;
 
-export const useBetterLugsStore = create<BetterLugsState>()(
+export const usePopularServicesStore = create<PopularServicesState>()(
   persist(
     (set, get) => ({
       adminRecords: [],
@@ -99,13 +99,13 @@ export const useBetterLugsStore = create<BetterLugsState>()(
         set({ isAdminLoading: true, error: null });
         adminFetchPromise = (async () => {
           try {
-            const records = await listAdminBetterLugsRequest(accessToken);
+            const records = await listAdminPopularServices(accessToken);
             get().setAdminRecords(records);
             return records;
           } catch (error: any) {
             set({
               isAdminLoading: false,
-              error: getErrorMessage(error, "Failed to load Better LGUs."),
+              error: getErrorMessage(error, "Failed to load Popular Services."),
             });
             throw error;
           } finally {
@@ -124,13 +124,13 @@ export const useBetterLugsStore = create<BetterLugsState>()(
         set({ isPublicLoading: true, error: null });
         publicFetchPromise = (async () => {
           try {
-            const records = await listPublicBetterLugsRequest();
+            const records = await listPublicPopularServices();
             get().setPublicRecords(records);
             return records;
           } catch (error: any) {
             set({
               isPublicLoading: false,
-              error: getErrorMessage(error, "Failed to load Better LGUs."),
+              error: getErrorMessage(error, "Failed to load Popular Services."),
             });
             throw error;
           } finally {
@@ -141,10 +141,10 @@ export const useBetterLugsStore = create<BetterLugsState>()(
         return publicFetchPromise;
       },
 
-      createBetterLug: async (payload, accessToken) => {
+      createPopularService: async (payload, accessToken) => {
         set({ error: null });
         try {
-          const createdRecord = await createBetterLugRequest(
+          const createdRecord = await createPopularService(
             payload,
             accessToken,
           );
@@ -159,16 +159,16 @@ export const useBetterLugsStore = create<BetterLugsState>()(
           return createdRecord;
         } catch (error: any) {
           set({
-            error: getErrorMessage(error, "Failed to create Better LGU."),
+            error: getErrorMessage(error, "Failed to create Popular Service."),
           });
           throw error;
         }
       },
 
-      updateBetterLug: async (id, payload, accessToken) => {
+      updatePopularService: async (id, payload, accessToken) => {
         set({ error: null });
         try {
-          const updatedRecord = await updateBetterLugRequest(
+          const updatedRecord = await updatePopularService(
             id,
             payload,
             accessToken,
@@ -184,16 +184,16 @@ export const useBetterLugsStore = create<BetterLugsState>()(
           return updatedRecord;
         } catch (error: any) {
           set({
-            error: getErrorMessage(error, "Failed to update Better LGU."),
+            error: getErrorMessage(error, "Failed to update Popular Service."),
           });
           throw error;
         }
       },
 
-      deleteBetterLug: async (id, accessToken) => {
+      deletePopularService: async (id, accessToken) => {
         set({ error: null });
         try {
-          await deleteBetterLugRequest(id, accessToken);
+          await deletePopularService(id, accessToken);
           const nextAdminRecords = get().adminRecords.filter(
             (record) => record.id !== id,
           );
@@ -203,14 +203,14 @@ export const useBetterLugsStore = create<BetterLugsState>()(
           });
         } catch (error: any) {
           set({
-            error: getErrorMessage(error, "Failed to delete Better LGU."),
+            error: getErrorMessage(error, "Failed to delete Popular Service."),
           });
           throw error;
         }
       },
     }),
     {
-      name: "better-lugs-store",
+      name: "popular-services-store",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         adminRecords: state.adminRecords,

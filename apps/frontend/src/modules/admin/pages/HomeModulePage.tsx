@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import * as LucideIcons from "react-icons/lu";
 import {
   LuPencil,
   LuTrash2,
@@ -21,6 +22,7 @@ import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
 import { useBetterLugsStore } from "../store/betterLugsStore";
 import { useBarangayMapStore } from "../store/barangayMapStore";
+import { usePopularServicesStore } from "../store/popular-services.store";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
@@ -132,64 +134,6 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 // ─── Section-specific layouts ─────────────────────────────────────────────────
-
-/** Hero — banner-style cards showing title, subtitle, CTA */
-function HeroLayout({
-  records,
-  editRef,
-  onEdit,
-  onDelete,
-  onAdd,
-}: {
-  records: ContentRecord[];
-  editRef: React.RefObject<HTMLButtonElement>;
-  onEdit: (r: ContentRecord) => void;
-  onDelete: (r: ContentRecord) => void;
-  onAdd: () => void;
-}) {
-  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
-  return (
-    <div className="flex flex-col gap-3">
-      {records.map((record) => (
-        <div
-          key={record.id}
-          className="relative overflow-hidden rounded-xl border border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-5"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
-                <StatusBadge status={record.status} />
-                <span className="text-[10px] text-gray-400">
-                  {formatLastUpdated(record.updatedAt)}
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-gray-900 truncate">
-                {record.fields.title ?? record.title}
-              </h3>
-              {record.fields.subtitle && (
-                <p className="mt-1 text-sm text-gray-500 line-clamp-2">
-                  {record.fields.subtitle}
-                </p>
-              )}
-              {record.fields.ctaLabel && (
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-600/10 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200/60">
-                  <LuLink className="h-3 w-3" aria-hidden="true" />
-                  CTA: {record.fields.ctaLabel}
-                </div>
-              )}
-            </div>
-            <CardActions
-              record={record}
-              editRef={editRef}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /** Leadership — profile cards grid with avatar placeholder */
 function LeadershipLayout({
@@ -358,40 +302,55 @@ function PopularServicesLayout({
   onAdd: () => void;
 }) {
   if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+
+  const getIconComponent = (iconName: string) => {
+    const pascalCaseName = iconName
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("");
+    // @ts-ignore - dynamic access to Lucide icons
+    return LucideIcons[`Lu${pascalCaseName}`] || LucideIcons.LuWrench;
+  };
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {records.map((record) => (
-        <div
-          key={record.id}
-          className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3"
-        >
-          <div className="flex items-start gap-3">
-            {/* Icon placeholder */}
-            <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-violet-50 to-blue-100 border border-blue-100 flex items-center justify-center">
-              <LuWrench className="h-5 w-5 text-blue-400" aria-hidden="true" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">
-                {record.fields.name ?? record.title}
-              </p>
-              {record.fields.description && (
-                <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                  {record.fields.description}
+      {records.map((record) => {
+        const IconComponent = getIconComponent(record.fields.icon || "");
+        return (
+          <div
+            key={record.id}
+            className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-violet-50 to-blue-100 border border-blue-100 flex items-center justify-center">
+                <IconComponent
+                  className="h-5 w-5 text-blue-400"
+                  aria-hidden="true"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900 truncate">
+                  {record.fields.name ?? record.title}
                 </p>
-              )}
+                {record.fields.description && (
+                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                    {record.fields.description}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+              <StatusBadge status={record.status} />
+              <CardActions
+                record={record}
+                editRef={editRef}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
             </div>
           </div>
-          <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-            <StatusBadge status={record.status} />
-            <CardActions
-              record={record}
-              editRef={editRef}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1034,8 +993,6 @@ function SectionContent({
 }) {
   const props = { records, editRef, onEdit, onDelete, onAdd };
   switch (sectionKey) {
-    case "hero":
-      return <HeroLayout {...props} />;
     case "leadership":
       return <LeadershipLayout {...props} />;
     case "latest-updates":
@@ -1074,6 +1031,10 @@ export function HomeModulePage() {
   const fetchAdminBetterLugs = useBetterLugsStore((s) => s.fetchAdminRecords);
   const barangayMapRecords = useBarangayMapStore((s) => s.adminRecords);
   const fetchAdminBarangayMap = useBarangayMapStore((s) => s.fetchAdminRecords);
+  const popularServicesRecords = usePopularServicesStore((s) => s.adminRecords);
+  const fetchAdminPopularServices = usePopularServicesStore(
+    (s) => s.fetchAdminRecords,
+  );
   const [activeTab, setActiveTab] = useState<string>(
     mockSections[0]?.key ?? "",
   );
@@ -1099,12 +1060,21 @@ export function HomeModulePage() {
     fetchAdminBarangayMap(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
-  }, [accessToken, fetchAdminBarangayMap, fetchAdminBetterLugs]);
+    fetchAdminPopularServices(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
+  }, [
+    accessToken,
+    fetchAdminBarangayMap,
+    fetchAdminBetterLugs,
+    fetchAdminPopularServices,
+  ]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
     ...records,
     "partner-logos": betterLugsRecords,
     "barangay-map": barangayMapRecords,
+    "popular-services": popularServicesRecords,
   };
 
   const allRecords = Object.values(mergedRecords).flat();
@@ -1124,7 +1094,9 @@ export function HomeModulePage() {
   const activeRecords =
     activeTab === "partner-logos"
       ? betterLugsRecords
-      : (mergedRecords[activeTab] ?? []);
+      : activeTab === "popular-services"
+        ? popularServicesRecords
+        : (mergedRecords[activeTab] ?? []);
   const activePublished = activeRecords.filter(
     (r) => r.status === "published",
   ).length;
