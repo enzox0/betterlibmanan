@@ -111,8 +111,9 @@ function actionToIcon(action: string, module: string): string {
 
 function isValidImageFile(file: File): boolean {
   return (
-    ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(file.type) &&
-    file.size <= 5 * 1024 * 1024
+    ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(
+      file.type,
+    ) && file.size <= 5 * 1024 * 1024
   );
 }
 
@@ -241,9 +242,11 @@ function EditProfileModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
+    null,
+  );
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(
-    profile.avatarUrl || null
+    profile.avatarUrl || null,
   );
   const [avatarChangeState, setAvatarChangeState] = useState<
     "unchanged" | "selected" | "removed"
@@ -265,7 +268,7 @@ function EditProfileModal({
     if (!isValidImageFile(file)) {
       setSelectedAvatarFile(null);
       setAvatarError(
-        "File must be PNG, JPG, GIF, or WEBP and no larger than 5MB"
+        "File must be PNG, JPG, GIF, or WEBP and no larger than 5MB",
       );
       return;
     }
@@ -300,14 +303,14 @@ function EditProfileModal({
     e.preventDefault();
     if (!validate()) return;
     if (avatarError) return;
-    
+
     setSubmitting(true);
     setApiError(null);
-    
+
     try {
       let finalAvatarUrl = form.avatarUrl;
       let finalAvatarKey = form.avatarKey;
-      
+
       if (avatarChangeState === "selected" && selectedAvatarFile) {
         setUploadingAvatar(true);
         const uploaded = await uploadAvatarRequest(
@@ -324,7 +327,7 @@ function EditProfileModal({
         finalAvatarUrl = "";
         finalAvatarKey = "";
       }
-      
+
       const updated = await updateMeRequest(
         {
           displayName: form.displayName.trim(),
@@ -419,7 +422,7 @@ function EditProfileModal({
                   {apiError}
                 </div>
               )}
-              
+
               {/* Avatar Upload Section */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
@@ -491,7 +494,7 @@ function EditProfileModal({
                   </p>
                 )}
               </div>
-              
+
               <div>
                 <label
                   htmlFor="ep-name"

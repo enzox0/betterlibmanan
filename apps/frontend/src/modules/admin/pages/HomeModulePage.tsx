@@ -20,6 +20,7 @@ import {
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
 import { useBetterLugsStore } from "../store/betterLugsStore";
+import { useBarangayMapStore } from "../store/barangayMapStore";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
@@ -944,6 +945,74 @@ function EmergencyContactsLayout({
   );
 }
 
+/** Barangay Map — barangay cards with details */
+function BarangayMapLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {records.map((record) => (
+        <div
+          key={record.id}
+          className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3"
+        >
+          {record.fields.image ? (
+            <img
+              src={record.fields.image}
+              alt={record.fields.name ?? record.title}
+              className="h-32 w-full rounded-lg border border-gray-100 bg-white object-cover"
+            />
+          ) : (
+            <div className="h-32 w-full rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <LuImage className="h-8 w-8 text-gray-300" aria-hidden="true" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 truncate">
+              {record.fields.name ?? record.title}
+            </p>
+            {record.fields.description && (
+              <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                {record.fields.description}
+              </p>
+            )}
+            {record.fields.population && (
+              <p className="mt-1 text-xs text-gray-500">
+                Population: {record.fields.population}
+              </p>
+            )}
+            {record.fields.area && (
+              <p className="mt-1 text-xs text-gray-500">
+                Area: {record.fields.area}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+            <StatusBadge status={record.status} />
+            <CardActions
+              record={record}
+              editRef={editRef}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Layout router ─────────────────────────────────────────────────────────────
 
 function SectionContent({
@@ -987,6 +1056,8 @@ function SectionContent({
       return <BetterLugsLayout {...props} />;
     case "emergency-contacts":
       return <EmergencyContactsLayout {...props} />;
+    case "barangay-map":
+      return <BarangayMapLayout {...props} />;
     case "freedom-wall":
       return <FreedomWallLayout onCountChange={onFreedomWallCountChange} />;
     default:
@@ -1001,6 +1072,8 @@ export function HomeModulePage() {
   const accessToken = useAdminStore((s) => s.accessToken);
   const betterLugsRecords = useBetterLugsStore((s) => s.adminRecords);
   const fetchAdminBetterLugs = useBetterLugsStore((s) => s.fetchAdminRecords);
+  const barangayMapRecords = useBarangayMapStore((s) => s.adminRecords);
+  const fetchAdminBarangayMap = useBarangayMapStore((s) => s.fetchAdminRecords);
   const [activeTab, setActiveTab] = useState<string>(
     mockSections[0]?.key ?? "",
   );
@@ -1023,11 +1096,15 @@ export function HomeModulePage() {
     fetchAdminBetterLugs(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
-  }, [accessToken, fetchAdminBetterLugs]);
+    fetchAdminBarangayMap(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
+  }, [accessToken, fetchAdminBarangayMap, fetchAdminBetterLugs]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
     ...records,
     "partner-logos": betterLugsRecords,
+    "barangay-map": barangayMapRecords,
   };
 
   const allRecords = Object.values(mergedRecords).flat();
