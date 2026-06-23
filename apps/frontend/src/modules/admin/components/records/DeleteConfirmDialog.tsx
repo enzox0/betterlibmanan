@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAdminStore } from "../../store/adminStore";
 import { useBetterLugsStore } from "../../store/betterLugsStore";
 import { useBarangayMapStore } from "../../store/barangayMapStore";
+import { usePopularServicesStore } from "../../store/popular-services.store";
 import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
@@ -37,6 +38,9 @@ function DialogContent({
   const accessToken = useAdminStore((s) => s.accessToken);
   const deleteBetterLug = useBetterLugsStore((s) => s.deleteBetterLug);
   const deleteBarangayMap = useBarangayMapStore((s) => s.deleteBarangayMap);
+  const deletePopularService = usePopularServicesStore(
+    (s) => s.deletePopularService,
+  );
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -63,6 +67,9 @@ function DialogContent({
     } else if (sectionKey === "barangay-map") {
       if (!accessToken) return;
       await deleteBarangayMap(record.id, accessToken);
+    } else if (sectionKey === "popular-services") {
+      if (!accessToken) return;
+      await deletePopularService(record.id, accessToken);
     } else {
       deleteRecord(sectionKey, record.id);
     }

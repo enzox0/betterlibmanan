@@ -5,10 +5,12 @@ import { mockSections } from "../../data/mockSections";
 import { useAdminStore } from "../../store/adminStore";
 import { useBetterLugsStore } from "../../store/betterLugsStore";
 import { useBarangayMapStore } from "../../store/barangayMapStore";
+import { usePopularServicesStore } from "../../store/popular-services.store";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
 import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
+import { uploadPopularServiceIcon } from "../../services/popular-services.api";
 import type {
   ContentFormProps,
   ContentRecord,
@@ -97,12 +99,19 @@ export function ContentForm({
   const updateBetterLug = useBetterLugsStore((s) => s.updateBetterLug);
   const createBarangayMap = useBarangayMapStore((s) => s.createBarangayMap);
   const updateBarangayMap = useBarangayMapStore((s) => s.updateBarangayMap);
+  const createPopularService = usePopularServicesStore(
+    (s) => s.createPopularService,
+  );
+  const updatePopularService = usePopularServicesStore(
+    (s) => s.updatePopularService,
+  );
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
   const supportsPreview = section?.supportsPreview ?? false;
   const isBetterLugsSection = sectionKey === "partner-logos";
   const isBarangayMapSection = sectionKey === "barangay-map";
+  const isPopularServicesSection = sectionKey === "popular-services";
   const managedImageFieldKey = isBetterLugsSection
     ? "logo"
     : isBarangayMapSection
@@ -332,6 +341,28 @@ export function ContentForm({
           await createBarangayMap(payload, accessToken);
         } else {
           await updateBarangayMap(initialData!.id, payload, accessToken);
+        }
+      } else if (isPopularServicesSection) {
+        if (!accessToken) {
+          throw new Error("You must be signed in to manage popular services.");
+        }
+
+        const payload: {
+          name: string;
+          icon?: string;
+          description?: string;
+          status: ContentStatus;
+        } = {
+          name: fieldValues.name?.trim() ?? title.trim(),
+          icon: fieldValues.icon?.trim() ?? "",
+          description: fieldValues.description?.trim() ?? "",
+          status,
+        };
+
+        if (mode === "create") {
+          await createPopularService(payload, accessToken);
+        } else {
+          await updatePopularService(initialData!.id, payload, accessToken);
         }
       } else if (mode === "create") {
         addRecord(sectionKey, {
