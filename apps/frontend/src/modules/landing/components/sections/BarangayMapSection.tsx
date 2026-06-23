@@ -9,6 +9,7 @@ import {
   LuCalendar,
 } from "react-icons/lu";
 import { Skeleton } from "@/shared/ui";
+import { useBarangayMapStore } from "@/modules/admin/store/barangayMapStore";
 
 // Barangay data with detailed info
 type BarangayData = {
@@ -20,81 +21,34 @@ type BarangayData = {
   festivals: string[];
 };
 
-const barangayData: Record<string, BarangayData> = {
-  Aslong: {
-    image:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop",
-    description:
-      "Known for its breathtaking rice terraces that offer stunning panoramic views, especially during harvest season.",
-    touristAttractions: [
-      "Aslong Rice Terraces",
-      "Mountain View Deck",
-      "Organic Farm Tours",
-    ],
-    population: "2,450",
-    area: "12.5 sq km",
-    festivals: ["Harvest Festival", "Anihan"],
-  },
-  Awayan: {
-    image:
-      "https://images.unsplash.com/photo-1501785888041-af3ef281b399?w=800&h=600&fit=crop",
-    description:
-      "Home to pristine river views and lush greenery, perfect for nature lovers and adventure seekers.",
-    touristAttractions: [
-      "Awayan River",
-      "Waterfall Adventure",
-      "Camping Grounds",
-    ],
-    population: "1,890",
-    area: "8.3 sq km",
-    festivals: ["River Festival", "Balsa Racing"],
-  },
-  Bagacay: {
-    image:
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=600&fit=crop",
-    description:
-      "Famous for its natural springs with crystal-clear water believed to have healing properties.",
-    touristAttractions: [
-      "Bagacay Natural Springs",
-      "Picnic Groves",
-      "Hiking Trails",
-    ],
-    population: "3,120",
-    area: "15.2 sq km",
-    festivals: ["Spring Festival", "Wellness Day"],
-  },
-  Poblacion: {
-    image:
-      "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&h=600&fit=crop",
-    description:
-      "The heart of Libmanan, featuring historic landmarks, bustling markets, and vibrant community life.",
-    touristAttractions: ["Town Plaza", "Historic Church", "Public Market"],
-    population: "8,750",
-    area: "5.8 sq km",
-    festivals: ["Town Fiesta", "Christmas Parade"],
-  },
-  Palong: {
-    image:
-      "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=600&fit=crop",
-    description:
-      "Coastal barangay with beautiful beaches, fresh seafood, and a rich fishing culture.",
-    touristAttractions: ["Palong Beach", "Fish Port", "Seafood Restaurants"],
-    population: "4,230",
-    area: "10.1 sq km",
-    festivals: ["Fishermen Festival", "Sea Day"],
-  },
+const defaultBarangayData: BarangayData = {
+  image: "/betterlibmanan.png",
+  description:
+    "This barangay does not have published details yet. Check back after the admin adds its profile.",
+  touristAttractions: ["Details coming soon"],
+  population: "N/A",
+  area: "N/A",
+  festivals: ["To be announced"],
 };
 
-const defaultBarangayData: BarangayData = {
-  image:
-    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=600&fit=crop",
-  description:
-    "A wonderful barangay with friendly people and beautiful scenery.",
-  touristAttractions: ["Local Attractions", "Community Spots"],
-  population: "1,000",
-  area: "5.0 sq km",
-  festivals: ["Community Festival"],
-};
+function normalizeBarangayKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+// Build an SVG-safe id from a barangay name (no spaces or special chars).
+// Required because url(#id) references break when the id contains spaces
+// (e.g. "Duang Niog" -> "Duang_Niog"), causing tiles to render with no fill.
+function getPatternId(name: string, prefix: string = "img"): string {
+  const safe = name.replace(/[^a-zA-Z0-9_-]/g, "_");
+  return `${prefix}-${safe}`;
+}
+
+function parseList(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
 // GeoJSON types
 type Coordinate = [number, number];
@@ -122,6 +76,9 @@ export function BarangayMapSection({
 }: {
   isLoading?: boolean;
 }) {
+  const publicRecords = useBarangayMapStore((s) => s.publicRecords);
+  const isPublicLoading = useBarangayMapStore((s) => s.isPublicLoading);
+  const fetchPublicRecords = useBarangayMapStore((s) => s.fetchPublicRecords);
   const [geoJson, setGeoJson] = useState<FeatureCollection | null>(null);
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
@@ -137,6 +94,12 @@ export function BarangayMapSection({
   );
   const svgWidth = 800;
   const svgHeight = 450;
+
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Keep the section usable with cached records and fallbacks.
+    });
+  }, [fetchPublicRecords]);
 
   // Handle mouse move
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -170,6 +133,38 @@ export function BarangayMapSection({
       .then((data) => setGeoJson(data))
       .catch((err) => console.error("Error loading GeoJSON:", err));
   }, []);
+
+  const barangayData = useMemo<Record<string, BarangayData>>(
+    () =>
+      Object.fromEntries(
+        publicRecords.map((record) => [
+          normalizeBarangayKey(record.fields.name ?? record.title),
+          (() => {
+            const touristAttractions = parseList(
+              record.fields.touristAttractions,
+            );
+            const festivals = parseList(record.fields.festivals);
+            return {
+              image: record.fields.image || defaultBarangayData.image,
+              description:
+                record.fields.description || defaultBarangayData.description,
+              touristAttractions:
+                touristAttractions.length > 0
+                  ? touristAttractions
+                  : defaultBarangayData.touristAttractions,
+              population:
+                record.fields.population || defaultBarangayData.population,
+              area: record.fields.area || defaultBarangayData.area,
+              festivals:
+                festivals.length > 0
+                  ? festivals
+                  : defaultBarangayData.festivals,
+            };
+          })(),
+        ]),
+      ),
+    [publicRecords],
+  );
 
   // Auto-hover effect - randomly cycle through barangays when not interacting
   useEffect(() => {
@@ -295,7 +290,7 @@ export function BarangayMapSection({
 
   // Get barangay data
   const getBarangayData = (name: string) =>
-    barangayData[name] || defaultBarangayData;
+    barangayData[normalizeBarangayKey(name)] || defaultBarangayData;
   const hoveredData = hoveredBarangay ? getBarangayData(hoveredBarangay) : null;
   const autoHoveredData = autoHoveredBarangay
     ? getBarangayData(autoHoveredBarangay)
@@ -356,7 +351,7 @@ export function BarangayMapSection({
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
-            {isLoading ? (
+            {isLoading || isPublicLoading ? (
               <>
                 <Skeleton className="h-9 w-72 mb-2" />
                 <Skeleton className="h-5 w-80" />
@@ -393,10 +388,15 @@ export function BarangayMapSection({
                       {geoJson.features.map((feature) => (
                         <pattern
                           key={`pattern-${feature.properties.adm4_en}`}
-                          id={`img-${feature.properties.adm4_en}`}
+                          id={getPatternId(feature.properties.adm4_en)}
+                          patternUnits="objectBoundingBox"
                           patternContentUnits="objectBoundingBox"
                           width="1"
                           height="1"
+                          x="0"
+                          y="0"
+                          viewBox="0 0 1 1"
+                          preserveAspectRatio="xMidYMid slice"
                         >
                           <image
                             href={
@@ -405,6 +405,10 @@ export function BarangayMapSection({
                             preserveAspectRatio="xMidYMid slice"
                             width="1"
                             height="1"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "/betterlibmanan.png";
+                            }}
                           />
                         </pattern>
                       ))}
@@ -435,9 +439,9 @@ export function BarangayMapSection({
                           )}
                           fill={
                             isSelected
-                              ? `url(#img-${barangayName})`
+                              ? `url(#${getPatternId(barangayName)})`
                               : isHovered
-                                ? `url(#img-${barangayName})`
+                                ? `url(#${getPatternId(barangayName)})`
                                 : "#93c5fd"
                           }
                           fillOpacity={isSelected ? 1 : isHovered ? 1 : 0.4}
@@ -502,6 +506,10 @@ export function BarangayMapSection({
                       }
                       alt={hoveredBarangay || autoHoveredBarangay!}
                       className="h-24 w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "/betterlibmanan.png";
+                      }}
                     />
                   </div>
                   <h3 className="text-sm font-bold text-neutral-900">
@@ -543,16 +551,25 @@ export function BarangayMapSection({
               >
                 <defs>
                   <pattern
-                    id={`selected-img-${selectedBarangay}`}
+                    id={getPatternId(selectedBarangay, "selected-img")}
+                    patternUnits="objectBoundingBox"
                     patternContentUnits="objectBoundingBox"
                     width="1"
                     height="1"
+                    x="0"
+                    y="0"
+                    viewBox="0 0 1 1"
+                    preserveAspectRatio="xMidYMid slice"
                   >
                     <image
                       href={selectedData.image}
                       preserveAspectRatio="xMidYMid slice"
                       width="1"
                       height="1"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "/betterlibmanan.png";
+                      }}
                     />
                   </pattern>
                 </defs>
@@ -563,7 +580,7 @@ export function BarangayMapSection({
                     modalSvgWidth,
                     modalSvgHeight,
                   )}
-                  fill={`url(#selected-img-${selectedBarangay})`}
+                  fill={`url(#${getPatternId(selectedBarangay, "selected-img")})`}
                   fillOpacity={1}
                   stroke="#374151"
                   strokeWidth={4}
@@ -594,6 +611,9 @@ export function BarangayMapSection({
                   src={selectedData.image}
                   alt={selectedBarangay}
                   className="w-full h-64 object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/betterlibmanan.png";
+                  }}
                 />
                 {/* Overlay for better readability of close button */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
