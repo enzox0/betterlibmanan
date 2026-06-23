@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import * as LucideIcons from "react-icons/lu";
 import {
   LuPencil,
   LuTrash2,
@@ -15,19 +14,23 @@ import {
   LuEye,
   LuChevronRight,
   LuUser,
-  LuLink,
-  LuCheck,
+  LuUpload,
 } from "react-icons/lu";
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
 import { useBetterLugsStore } from "../store/betterLugsStore";
 import { useBarangayMapStore } from "../store/barangayMapStore";
 import { usePopularServicesStore } from "../store/popular-services.store";
+import { useAtAGlanceStore } from "../store/atAGlanceStore";
+import { useHistoryStore } from "../store/historyStore";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
 import { DeleteConfirmDialog } from "../components/records/DeleteConfirmDialog";
 import { FreedomWallLayout } from "../components/records/FreedomWallLayout";
+import { resolveIcon } from "../components/records/ReactIconPicker";
+import { UploadJsonDialog } from "../components/records/UploadJsonDialog";
+import type { JsonHistoryItem } from "../components/records/UploadJsonDialog";
 
 const MONTH_NAMES = [
   "Jan",
@@ -303,19 +306,10 @@ function PopularServicesLayout({
 }) {
   if (records.length === 0) return <EmptyState onAdd={onAdd} />;
 
-  const getIconComponent = (iconName: string) => {
-    const pascalCaseName = iconName
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join("");
-    // @ts-ignore - dynamic access to Lucide icons
-    return LucideIcons[`Lu${pascalCaseName}`] || LucideIcons.LuWrench;
-  };
-
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {records.map((record) => {
-        const IconComponent = getIconComponent(record.fields.icon || "");
+        const IconComponent = resolveIcon(record.fields.icon || "");
         return (
           <div
             key={record.id}
@@ -454,7 +448,12 @@ function AtAGlanceLayout({
           {/* Icon chip */}
           {record.fields.icon && (
             <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center mb-1">
-              <LuUser className="h-4 w-4 text-blue-500" aria-hidden="true" />
+              {(() => {
+                const Icon = resolveIcon(record.fields.icon);
+                return (
+                  <Icon className="h-4 w-4 text-blue-500" aria-hidden="true" />
+                );
+              })()}
             </div>
           )}
           <p className="text-2xl font-black text-gray-900 leading-none">
@@ -471,72 +470,6 @@ function AtAGlanceLayout({
               onEdit={onEdit}
               onDelete={onDelete}
             />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Weather & Map — embed preview cards */
-function WeatherMapLayout({
-  records,
-  editRef,
-  onEdit,
-  onDelete,
-  onAdd,
-}: {
-  records: ContentRecord[];
-  editRef: React.RefObject<HTMLButtonElement>;
-  onEdit: (r: ContentRecord) => void;
-  onDelete: (r: ContentRecord) => void;
-  onAdd: () => void;
-}) {
-  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {records.map((record) => (
-        <div
-          key={record.id}
-          className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden"
-        >
-          {/* Embed preview area */}
-          <div className="h-32 bg-gradient-to-br from-sky-50 to-blue-100 border-b border-gray-100 flex items-center justify-center relative">
-            <LuMapPin className="h-10 w-10 text-sky-300" aria-hidden="true" />
-            {record.fields.embedUrl && (
-              <a
-                href={record.fields.embedUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 text-[10px] font-semibold text-blue-600 backdrop-blur-sm border border-blue-100 hover:bg-white transition-colors"
-              >
-                Open URL
-                <LuExternalLink className="h-3 w-3" aria-hidden="true" />
-              </a>
-            )}
-          </div>
-          <div className="p-4 flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="text-sm font-bold text-gray-900 truncate">
-                  {record.title}
-                </h3>
-                {record.fields.description && (
-                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                    {record.fields.description}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-1">
-              <StatusBadge status={record.status} />
-              <CardActions
-                record={record}
-                editRef={editRef}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            </div>
           </div>
         </div>
       ))}
@@ -1003,8 +936,6 @@ function SectionContent({
       return <HistoryLayout {...props} />;
     case "at-a-glance":
       return <AtAGlanceLayout {...props} />;
-    case "weather-map":
-      return <WeatherMapLayout {...props} />;
     case "contact":
       return <ContactLayout {...props} />;
     case "quiz":
@@ -1035,6 +966,11 @@ export function HomeModulePage() {
   const fetchAdminPopularServices = usePopularServicesStore(
     (s) => s.fetchAdminRecords,
   );
+  const atAGlanceRecords = useAtAGlanceStore((s) => s.adminRecords);
+  const fetchAdminAtAGlance = useAtAGlanceStore((s) => s.fetchAdminRecords);
+  const historyRecords = useHistoryStore((s) => s.adminRecords);
+  const fetchAdminHistory = useHistoryStore((s) => s.fetchAdminRecords);
+  const bulkImportHistory = useHistoryStore((s) => s.bulkImportHistory);
   const [activeTab, setActiveTab] = useState<string>(
     mockSections[0]?.key ?? "",
   );
@@ -1048,8 +984,10 @@ export function HomeModulePage() {
     null,
   );
   const [freedomWallCount, setFreedomWallCount] = useState<number | null>(null);
+  const [uploadJsonOpen, setUploadJsonOpen] = useState(false);
   const newRecordButtonRef = useRef<HTMLButtonElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
+  const uploadJsonButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -1063,11 +1001,19 @@ export function HomeModulePage() {
     fetchAdminPopularServices(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
+    fetchAdminAtAGlance(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
+    fetchAdminHistory(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
   }, [
     accessToken,
     fetchAdminBarangayMap,
     fetchAdminBetterLugs,
     fetchAdminPopularServices,
+    fetchAdminAtAGlance,
+    fetchAdminHistory,
   ]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
@@ -1075,6 +1021,8 @@ export function HomeModulePage() {
     "partner-logos": betterLugsRecords,
     "barangay-map": barangayMapRecords,
     "popular-services": popularServicesRecords,
+    "at-a-glance": atAGlanceRecords,
+    history: historyRecords,
   };
 
   const allRecords = Object.values(mergedRecords).flat();
@@ -1096,7 +1044,11 @@ export function HomeModulePage() {
       ? betterLugsRecords
       : activeTab === "popular-services"
         ? popularServicesRecords
-        : (mergedRecords[activeTab] ?? []);
+        : activeTab === "at-a-glance"
+          ? atAGlanceRecords
+          : activeTab === "history"
+            ? historyRecords
+            : (mergedRecords[activeTab] ?? []);
   const activePublished = activeRecords.filter(
     (r) => r.status === "published",
   ).length;
@@ -1268,15 +1220,28 @@ export function HomeModulePage() {
             </div>
 
             {activeTab !== "freedom-wall" && (
-              <button
-                ref={newRecordButtonRef}
-                type="button"
-                onClick={handleNewRecord}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all self-start sm:self-auto"
-              >
-                <LuPlus className="h-4 w-4" aria-hidden="true" />
-                New Record
-              </button>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {activeTab === "history" && (
+                  <button
+                    ref={uploadJsonButtonRef}
+                    type="button"
+                    onClick={() => setUploadJsonOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-all"
+                  >
+                    <LuUpload className="h-4 w-4" aria-hidden="true" />
+                    Upload JSON
+                  </button>
+                )}
+                <button
+                  ref={newRecordButtonRef}
+                  type="button"
+                  onClick={handleNewRecord}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+                >
+                  <LuPlus className="h-4 w-4" aria-hidden="true" />
+                  New Record
+                </button>
+              </div>
             )}
           </div>
 
@@ -1320,6 +1285,18 @@ export function HomeModulePage() {
           record={deletingRecord}
           sectionKey={activeTab}
           onClose={handleDeleteClose}
+        />
+      )}
+
+      {/* UploadJsonDialog — history section only */}
+      {uploadJsonOpen && (
+        <UploadJsonDialog
+          onClose={() => setUploadJsonOpen(false)}
+          returnFocusRef={uploadJsonButtonRef}
+          onImport={async (items: JsonHistoryItem[]) => {
+            if (!accessToken) throw new Error("Not authenticated.");
+            return bulkImportHistory(items, accessToken);
+          }}
         />
       )}
     </motion.div>
