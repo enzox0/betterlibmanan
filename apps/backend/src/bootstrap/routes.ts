@@ -7,6 +7,9 @@ import { auditRouter } from "@/modules/audit";
 import { betterLugsRouter } from "@/modules/better-lugs";
 import { barangayMapRouter } from "@/modules/barangay-map";
 import { popularServicesRouter } from "@/modules/popular-services";
+import { atAGlanceRouter } from "@/modules/at-a-glance";
+import { historyRouter } from "@/modules/history";
+import { latestUpdatesRouter } from "@/modules/latest-updates";
 
 /**
  * Central API router. Mount feature routers here as the backend grows so
@@ -42,6 +45,15 @@ apiRouter.use("/barangay-map", barangayMapRouter);
 
 // Popular Services — public listing plus admin CRUD + R2 uploads
 apiRouter.use("/popular-services", popularServicesRouter);
+
+// At a Glance — public listing plus admin CRUD
+apiRouter.use("/at-a-glance", atAGlanceRouter);
+
+// History — public listing plus admin CRUD
+apiRouter.use("/history", historyRouter);
+
+// Latest Updates — public listing plus admin CRUD
+apiRouter.use("/latest-updates", latestUpdatesRouter);
 
 // Fallback for unmatched /api routes — keeps the SPA catch-all from
 // accidentally serving index.html for unknown API paths.
