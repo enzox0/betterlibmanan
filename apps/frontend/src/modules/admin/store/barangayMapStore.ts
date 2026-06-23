@@ -1,0 +1,217 @@
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import {
+  createBarangayMapRequest,
+  deleteBarangayMapRequest,
+  listAdminBarangayMapRequest,
+  listPublicBarangayMapRequest,
+  updateBarangayMapRequest,
+  type BarangayMapPayload,
+} from "../services/barangay-map.api";
+import type { ContentRecord } from "../types/admin.types";
+
+interface BarangayMapState {
+  adminRecords: ContentRecord[];
+  publicRecords: ContentRecord[];
+  isAdminLoading: boolean;
+  isPublicLoading: boolean;
+  error: string | null;
+  clearError: () => void;
+  setAdminRecords: (records: ContentRecord[]) => void;
+  setPublicRecords: (records: ContentRecord[]) => void;
+  fetchAdminRecords: (accessToken: string) => Promise<ContentRecord[]>;
+  fetchPublicRecords: () => Promise<ContentRecord[]>;
+  createBarangayMap: (
+    payload: BarangayMapPayload,
+    accessToken: string,
+  ) => Promise<ContentRecord>;
+  updateBarangayMap: (
+    id: string,
+    payload: BarangayMapPayload,
+    accessToken: string,
+  ) => Promise<ContentRecord>;
+  deleteBarangayMap: (id: string, accessToken: string) => Promise<void>;
+}
+
+function getErrorMessage(error: any, fallback: string): string {
+  return error?.response?.data?.message || error?.message || fallback;
+}
+
+function sortRecords(records: ContentRecord[]): ContentRecord[] {
+  return [...records].sort((a, b) => {
+    const updatedDiff =
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    if (updatedDiff !== 0) return updatedDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
+function derivePublishedRecords(records: ContentRecord[]): ContentRecord[] {
+  return sortRecords(records.filter((record) => record.status === "published"));
+}
+
+function upsertRecord(
+  records: ContentRecord[],
+  nextRecord: ContentRecord,
+): ContentRecord[] {
+  const existingIndex = records.findIndex(
+    (record) => record.id === nextRecord.id,
+  );
+  if (existingIndex === -1) {
+    return sortRecords([...records, nextRecord]);
+  }
+
+  const nextRecords = [...records];
+  nextRecords[existingIndex] = nextRecord;
+  return sortRecords(nextRecords);
+}
+
+export const useBarangayMapStore = create<BarangayMapState>()(
+  persist(
+    (set, get) => ({
+      adminRecords: [],
+      publicRecords: [],
+      isAdminLoading: false,
+      isPublicLoading: false,
+      error: null,
+
+      clearError: () => set({ error: null }),
+
+      setAdminRecords: (records) =>
+        set({
+          adminRecords: sortRecords(records),
+          publicRecords: derivePublishedRecords(records),
+        }),
+
+      setPublicRecords: (records) =>
+        set({
+          publicRecords: sortRecords(records),
+        }),
+
+      fetchAdminRecords: async (accessToken) => {
+        set({ isAdminLoading: true, error: null });
+        try {
+          const records = await listAdminBarangayMapRequest(accessToken);
+          get().setAdminRecords(records);
+          return records;
+        } catch (error: any) {
+          set({
+            isAdminLoading: false,
+            error: getErrorMessage(
+              error,
+              "Failed to load barangay map records.",
+            ),
+          });
+          throw error;
+        } finally {
+          set({ isAdminLoading: false });
+        }
+      },
+
+      fetchPublicRecords: async () => {
+        set({ isPublicLoading: true, error: null });
+        try {
+          const records = await listPublicBarangayMapRequest();
+          get().setPublicRecords(records);
+          return records;
+        } catch (error: any) {
+          set({
+            isPublicLoading: false,
+            error: getErrorMessage(
+              error,
+              "Failed to load barangay map records.",
+            ),
+          });
+          throw error;
+        } finally {
+          set({ isPublicLoading: false });
+        }
+      },
+
+      createBarangayMap: async (payload, accessToken) => {
+        set({ error: null });
+        try {
+          const createdRecord = await createBarangayMapRequest(
+            payload,
+            accessToken,
+          );
+          const nextAdminRecords = upsertRecord(
+            get().adminRecords,
+            createdRecord,
+          );
+          set({
+            adminRecords: nextAdminRecords,
+            publicRecords: derivePublishedRecords(nextAdminRecords),
+          });
+          return createdRecord;
+        } catch (error: any) {
+          set({
+            error: getErrorMessage(
+              error,
+              "Failed to create barangay map record.",
+            ),
+          });
+          throw error;
+        }
+      },
+
+      updateBarangayMap: async (id, payload, accessToken) => {
+        set({ error: null });
+        try {
+          const updatedRecord = await updateBarangayMapRequest(
+            id,
+            payload,
+            accessToken,
+          );
+          const nextAdminRecords = upsertRecord(
+            get().adminRecords,
+            updatedRecord,
+          );
+          set({
+            adminRecords: nextAdminRecords,
+            publicRecords: derivePublishedRecords(nextAdminRecords),
+          });
+          return updatedRecord;
+        } catch (error: any) {
+          set({
+            error: getErrorMessage(
+              error,
+              "Failed to update barangay map record.",
+            ),
+          });
+          throw error;
+        }
+      },
+
+      deleteBarangayMap: async (id, accessToken) => {
+        set({ error: null });
+        try {
+          await deleteBarangayMapRequest(id, accessToken);
+          const nextAdminRecords = get().adminRecords.filter(
+            (record) => record.id !== id,
+          );
+          set({
+            adminRecords: nextAdminRecords,
+            publicRecords: derivePublishedRecords(nextAdminRecords),
+          });
+        } catch (error: any) {
+          set({
+            error: getErrorMessage(
+              error,
+              "Failed to delete barangay map record.",
+            ),
+          });
+          throw error;
+        }
+      },
+    }),
+    {
+      name: "barangay-map-store",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        adminRecords: state.adminRecords,
+        publicRecords: state.publicRecords,
+      }),
+    },
+  ),
+);
