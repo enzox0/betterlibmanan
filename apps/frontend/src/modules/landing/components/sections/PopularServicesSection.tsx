@@ -1,64 +1,57 @@
-import {
-  FaFileAlt,
-  FaBriefcase,
-  FaMoneyBill,
-  FaUsers,
-  FaHeartbeat,
-  FaThLarge,
-} from "react-icons/fa";
+import { useEffect, useMemo } from "react";
+import { FaThLarge } from "react-icons/fa";
+import * as LucideIcons from "react-icons/lu";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
+import { usePopularServicesStore } from "@/modules/admin/store/popular-services.store";
 
 export function PopularServicesSection({
   isLoading = false,
 }: {
   isLoading?: boolean;
 }) {
-  const popularServices = [
-    {
-      icon: FaFileAlt,
-      title: "Certificates",
-      description: "Birth, marriage, death certificates",
+  const publicRecords = usePopularServicesStore((s) => s.publicRecords);
+  const fetchPublicRecords = usePopularServicesStore(
+    (s) => s.fetchPublicRecords,
+  );
+  const isStoreLoading = usePopularServicesStore((s) => s.isPublicLoading);
+
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Preserve the last known records
+    });
+  }, [fetchPublicRecords]);
+
+  const getIconComponent = (iconName: string) => {
+    const pascalCaseName = iconName
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("");
+    // @ts-ignore - dynamic access to Lucide icons
+    return LucideIcons[`Lu${pascalCaseName}`] || LucideIcons.LuFileText;
+  };
+
+  const popularServices = useMemo(() => {
+    const services = publicRecords.map((record) => ({
+      icon: getIconComponent(record.fields.icon || ""),
+      title: record.fields.name || record.title,
+      description: record.fields.description || "",
       featured: false,
-      path: "/services/certificates",
-    },
-    {
-      icon: FaBriefcase,
-      title: "Business Permits",
-      description: "New permits and renewals",
-      featured: false,
-      path: "/services/business",
-    },
-    {
-      icon: FaMoneyBill,
-      title: "Tax Payments",
-      description: "Property and business taxes",
-      featured: false,
-      path: "/services/tax-payments",
-    },
-    {
-      icon: FaUsers,
-      title: "Social Services",
-      description: "Senior citizen & PWD services",
-      featured: false,
-      path: "/services/social-services",
-    },
-    {
-      icon: FaHeartbeat,
-      title: "Health Services",
-      description: "Medical assistance & programs",
-      featured: false,
-      path: "/services/health",
-    },
-    {
-      icon: FaThLarge,
+      path: "/services", // Default path
+    }));
+
+    // Add "View All Services" as the last item
+    services.push({
+      icon: LucideIcons.LuLayoutGrid,
       title: "View All Services",
       description: "Browse complete directory",
       featured: true,
       path: "/services",
-    },
-  ];
+    });
+
+    return services;
+  }, [publicRecords]);
 
   return (
     <section className="bg-neutral-100 py-16">
@@ -70,7 +63,7 @@ export function PopularServicesSection({
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            {isLoading ? (
+            {isLoading || isStoreLoading ? (
               <>
                 <Skeleton className="h-9 w-52 mb-2" />
                 <Skeleton className="h-5 w-72" />
@@ -88,7 +81,7 @@ export function PopularServicesSection({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {isLoading
+            {isLoading || isStoreLoading
               ? Array.from({ length: 6 }).map((_, index) => (
                   <SkeletonCard key={index}>
                     <div className="flex items-center gap-3">

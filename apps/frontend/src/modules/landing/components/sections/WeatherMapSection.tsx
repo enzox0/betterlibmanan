@@ -1,7 +1,73 @@
 import { FaCloud, FaTint, FaWind } from "react-icons/fa";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
+
+// Module-level singleton loader: ensures the Google Maps JS API script is
+// only injected once per page, regardless of how many components mount it
+// or how many times React Strict Mode double-invokes effects in dev.
+type GoogleNamespace = NonNullable<typeof window.google>;
+let googleMapsLoader: Promise<GoogleNamespace> | null = null;
+
+function loadGoogleMaps(apiKey: string): Promise<GoogleNamespace> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Google Maps requires a browser"));
+  }
+  if (window.google?.maps) {
+    return Promise.resolve(window.google);
+  }
+  if (googleMapsLoader) {
+    return googleMapsLoader;
+  }
+
+  googleMapsLoader = new Promise<GoogleNamespace>((resolve, reject) => {
+    const handleReady = async () => {
+      if (!window.google?.maps) {
+        reject(new Error("Google Maps loaded without google global"));
+        return;
+      }
+      try {
+        // With `loading=async`, the core library is fetched lazily by the
+        // bootstrap loader. We must wait on importLibrary before the Map
+        // and Data constructors are actually available.
+        if (typeof window.google.maps.importLibrary === "function") {
+          await window.google.maps.importLibrary("maps");
+        }
+        resolve(window.google);
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    };
+
+    // If a script tag was already added (e.g. by HMR), reuse it.
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[data-google-maps-loader="true"]',
+    );
+    if (existing) {
+      existing.addEventListener("load", handleReady);
+      existing.addEventListener("error", () =>
+        reject(new Error("Failed to load Google Maps")),
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    // `loading=async` is Google's recommended pattern and silences the
+    // "loaded directly without loading=async" performance warning.
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.googleMapsLoader = "true";
+    script.onload = handleReady;
+    script.onerror = () => {
+      googleMapsLoader = null; // allow retry on next mount
+      reject(new Error("Failed to load Google Maps"));
+    };
+    document.head.appendChild(script);
+  });
+
+  return googleMapsLoader;
+}
 
 export function WeatherMapSection({
   isLoading = false,
@@ -9,40 +75,53 @@ export function WeatherMapSection({
   isLoading?: boolean;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
+  const [geoJson, setGeoJson] = useState<any>(null);
 
   useEffect(() => {
+    // Load GeoJSON for barangay boundaries
+    fetch("/geojson/bgysubmuns-municity-501718000.0.01.json")
+      .then((res) => res.json())
+      .then((data) => setGeoJson(data))
+      .catch((err) => console.error("Error loading GeoJSON:", err));
+  }, []);
+
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!apiKey || apiKey === "your_api_key_here") return;
+
     // Coordinates for Libmanan, Camarines Sur
     const libmananCoords = { lat: 13.6969, lng: 123.1849 };
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    let cancelled = false;
 
-    if (!apiKey || apiKey === "your_api_key_here") {
-      return;
-    }
+    loadGoogleMaps(apiKey)
+      .then((google) => {
+        if (cancelled || !mapRef.current) return;
 
-    // Load Google Maps API script if not already loaded
-    if (!window.google?.maps) {
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => initMap(libmananCoords);
-      document.head.appendChild(script);
-    } else {
-      initMap(libmananCoords);
-    }
-
-    function initMap(coords: { lat: number; lng: number }) {
-      if (mapRef.current && window.google?.maps) {
-        new window.google.maps.Map(mapRef.current, {
-          center: coords,
+        const map = new google.maps.Map(mapRef.current, {
+          center: libmananCoords,
           zoom: 14,
           mapTypeControl: true,
           streetViewControl: false,
           fullscreenControl: true,
         });
-      }
-    }
-  }, []);
+
+        if (geoJson) {
+          const dataLayer = new google.maps.Data({ map });
+          dataLayer.addGeoJson(geoJson);
+          dataLayer.setStyle({
+            fillColor: "#93c5fd",
+            fillOpacity: 0.4,
+            strokeColor: "#1e40af",
+            strokeWeight: 1,
+          });
+        }
+      })
+      .catch((err) => console.error("Google Maps init failed:", err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [geoJson]);
 
   return (
     <section className="bg-neutral-100 py-16">
