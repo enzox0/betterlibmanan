@@ -8,6 +8,7 @@ import {
 } from "@/app/components/SplashScreen";
 import { ToastProvider } from "@/context/ToastContext";
 import { useNetworkStatus } from "@/shared/hooks";
+import { SessionExpiredModal } from "@/modules/admin/components/auth/SessionExpiredModal";
 
 export function App() {
   // If splash already ran this session, skip it entirely and mount the router right away.
@@ -30,6 +31,7 @@ export function App() {
         isChecking={isChecking}
         onRetry={retryCheck}
       />
+      <SessionExpiredModal />
     </ToastProvider>
   );
 }
