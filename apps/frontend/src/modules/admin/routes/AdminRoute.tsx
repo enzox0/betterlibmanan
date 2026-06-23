@@ -12,13 +12,19 @@ import { useAdminStore } from "../store/adminStore";
  *   - If nothing is available, redirect to /admin/login.
  */
 export function AdminRoute() {
-  const { isAuthenticated, accessToken, refreshToken, refreshTokens } =
-    useAdminStore((s) => ({
-      isAuthenticated: s.isAuthenticated,
-      accessToken: s.accessToken,
-      refreshToken: s.refreshToken,
-      refreshTokens: s.refreshTokens,
-    }));
+  const {
+    isAuthenticated,
+    accessToken,
+    refreshToken,
+    refreshTokens,
+    sessionExpiredModalOpen,
+  } = useAdminStore((s) => ({
+    isAuthenticated: s.isAuthenticated,
+    accessToken: s.accessToken,
+    refreshToken: s.refreshToken,
+    refreshTokens: s.refreshTokens,
+    sessionExpiredModalOpen: s.sessionExpiredModalOpen,
+  }));
 
   const [checking, setChecking] = useState(!isAuthenticated && !!refreshToken);
 
@@ -55,6 +61,10 @@ export function AdminRoute() {
         </svg>
       </div>
     );
+  }
+
+  if (sessionExpiredModalOpen) {
+    return null;
   }
 
   if (!isAuthenticated || !accessToken) {
