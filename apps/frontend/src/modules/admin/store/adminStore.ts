@@ -27,6 +27,7 @@ export interface AdminAuthState {
   login: (payload: LoginPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshTokens: () => Promise<boolean>;
+  expireSession: () => void;
   clearAuthError: () => void;
   /** Update the cached admin profile in the store after a self-service update */
   setAdmin: (admin: AdminProfile) => void;
@@ -35,6 +36,11 @@ export interface AdminAuthState {
   loginModalOpen: boolean;
   openLoginModal: () => void;
   closeLoginModal: () => void;
+
+  // Session expired modal
+  sessionExpiredModalOpen: boolean;
+  openSessionExpiredModal: () => void;
+  closeSessionExpiredModal: () => void;
 }
 
 // ─── Store shape ──────────────────────────────────────────────────────────────
@@ -54,9 +60,23 @@ export const useAdminStore = create<AdminStore>()(
       isAuthLoading: false,
       authError: null,
       loginModalOpen: false,
+      sessionExpiredModalOpen: false,
 
       openLoginModal: () => set({ loginModalOpen: true }),
       closeLoginModal: () => set({ loginModalOpen: false }),
+      openSessionExpiredModal: () => set({ sessionExpiredModalOpen: true }),
+      closeSessionExpiredModal: () => set({ sessionExpiredModalOpen: false }),
+      expireSession: () =>
+        set({
+          isAuthenticated: false,
+          accessToken: null,
+          refreshToken: null,
+          admin: null,
+          isAuthLoading: false,
+          authError: null,
+          loginModalOpen: false,
+          sessionExpiredModalOpen: true,
+        }),
       clearAuthError: () => set({ authError: null }),
 
       setAdmin: (admin: AdminProfile) => set({ admin }),
@@ -71,6 +91,7 @@ export const useAdminStore = create<AdminStore>()(
             refreshToken: tokens.refreshToken,
             admin: tokens.admin,
             loginModalOpen: false,
+            sessionExpiredModalOpen: false,
             isAuthLoading: false,
             authError: null,
           });
@@ -101,6 +122,7 @@ export const useAdminStore = create<AdminStore>()(
           refreshToken: null,
           admin: null,
           authError: null,
+          sessionExpiredModalOpen: false,
         });
       },
 
@@ -118,13 +140,8 @@ export const useAdminStore = create<AdminStore>()(
           });
           return true;
         } catch {
-          // Refresh failed — clear session
-          set({
-            isAuthenticated: false,
-            accessToken: null,
-            refreshToken: null,
-            admin: null,
-          });
+          // Refresh failed — clear session and show the expiry modal.
+          get().expireSession();
           return false;
         }
       },
