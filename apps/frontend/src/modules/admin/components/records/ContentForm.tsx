@@ -8,6 +8,7 @@ import { useBarangayMapStore } from "../../store/barangayMapStore";
 import { usePopularServicesStore } from "../../store/popular-services.store";
 import { useAtAGlanceStore } from "../../store/atAGlanceStore";
 import { useHistoryStore } from "../../store/historyStore";
+import { useLatestUpdatesStore } from "../../store/latestUpdatesStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { LucideIconPicker } from "./ReactIconPicker";
@@ -112,6 +113,8 @@ export function ContentForm({
   const updateAtAGlance = useAtAGlanceStore((s) => s.updateAtAGlance);
   const createHistory = useHistoryStore((s) => s.createHistory);
   const updateHistory = useHistoryStore((s) => s.updateHistory);
+  const createLatestUpdate = useLatestUpdatesStore((s) => s.createLatestUpdate);
+  const updateLatestUpdate = useLatestUpdatesStore((s) => s.updateLatestUpdate);
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
@@ -121,6 +124,7 @@ export function ContentForm({
   const isPopularServicesSection = sectionKey === "popular-services";
   const isAtAGlanceSection = sectionKey === "at-a-glance";
   const isHistorySection = sectionKey === "history";
+  const isLatestUpdatesSection = sectionKey === "latest-updates";
   const managedImageFieldKey = isBetterLugsSection
     ? "logo"
     : isBarangayMapSection
@@ -420,6 +424,30 @@ export function ContentForm({
           await createHistory(payload, accessToken);
         } else {
           await updateHistory(initialData!.id, payload, accessToken);
+        }
+      } else if (isLatestUpdatesSection) {
+        if (!accessToken) {
+          throw new Error(
+            "You must be signed in to manage Latest Updates records.",
+          );
+        }
+
+        const payload: {
+          title: string;
+          date?: string;
+          summary?: string;
+          status: ContentStatus;
+        } = {
+          title: fieldValues.title?.trim() ?? title.trim(),
+          date: fieldValues.date?.trim() ?? "",
+          summary: fieldValues.summary?.trim() ?? "",
+          status,
+        };
+
+        if (mode === "create") {
+          await createLatestUpdate(payload, accessToken);
+        } else {
+          await updateLatestUpdate(initialData!.id, payload, accessToken);
         }
       } else if (mode === "create") {
         addRecord(sectionKey, {
