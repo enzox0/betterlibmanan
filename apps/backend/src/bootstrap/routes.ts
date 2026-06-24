@@ -10,6 +10,10 @@ import { popularServicesRouter } from "@/modules/popular-services";
 import { atAGlanceRouter } from "@/modules/at-a-glance";
 import { historyRouter } from "@/modules/history";
 import { latestUpdatesRouter } from "@/modules/latest-updates";
+import { leadershipRouter } from "@/modules/leadership";
+import { contactRouter } from "@/modules/contact";
+import { quizRouter } from "@/modules/quiz";
+import { emergencyContactsRouter } from "@/modules/emergency-contacts";
 
 /**
  * Central API router. Mount feature routers here as the backend grows so
@@ -54,6 +58,18 @@ apiRouter.use("/history", historyRouter);
 
 // Latest Updates — public listing plus admin CRUD
 apiRouter.use("/latest-updates", latestUpdatesRouter);
+
+// Leadership — public listing plus admin CRUD + R2 avatar uploads
+apiRouter.use("/leadership", leadershipRouter);
+
+// Contact — public listing plus admin CRUD
+apiRouter.use("/contact", contactRouter);
+
+// Quiz — public listing plus admin CRUD
+apiRouter.use("/quiz", quizRouter);
+
+// Emergency Contacts — public listing plus admin CRUD
+apiRouter.use("/emergency-contacts", emergencyContactsRouter);
 
 // Fallback for unmatched /api routes — keeps the SPA catch-all from
 // accidentally serving index.html for unknown API paths.
