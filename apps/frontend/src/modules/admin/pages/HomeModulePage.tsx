@@ -23,6 +23,7 @@ import { useBarangayMapStore } from "../store/barangayMapStore";
 import { usePopularServicesStore } from "../store/popular-services.store";
 import { useAtAGlanceStore } from "../store/atAGlanceStore";
 import { useHistoryStore } from "../store/historyStore";
+import { useLatestUpdatesStore } from "../store/latestUpdatesStore";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
@@ -971,6 +972,10 @@ export function HomeModulePage() {
   const historyRecords = useHistoryStore((s) => s.adminRecords);
   const fetchAdminHistory = useHistoryStore((s) => s.fetchAdminRecords);
   const bulkImportHistory = useHistoryStore((s) => s.bulkImportHistory);
+  const latestUpdatesRecords = useLatestUpdatesStore((s) => s.adminRecords);
+  const fetchAdminLatestUpdates = useLatestUpdatesStore(
+    (s) => s.fetchAdminRecords,
+  );
   const [activeTab, setActiveTab] = useState<string>(
     mockSections[0]?.key ?? "",
   );
@@ -1007,6 +1012,9 @@ export function HomeModulePage() {
     fetchAdminHistory(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
+    fetchAdminLatestUpdates(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
   }, [
     accessToken,
     fetchAdminBarangayMap,
@@ -1014,6 +1022,7 @@ export function HomeModulePage() {
     fetchAdminPopularServices,
     fetchAdminAtAGlance,
     fetchAdminHistory,
+    fetchAdminLatestUpdates,
   ]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
@@ -1023,6 +1032,7 @@ export function HomeModulePage() {
     "popular-services": popularServicesRecords,
     "at-a-glance": atAGlanceRecords,
     history: historyRecords,
+    "latest-updates": latestUpdatesRecords,
   };
 
   const allRecords = Object.values(mergedRecords).flat();
