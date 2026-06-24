@@ -1,36 +1,48 @@
+import { useEffect } from "react";
 import { FaCalendarAlt } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
+import { useLatestUpdatesStore } from "@/modules/admin/store/latestUpdatesStore";
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function formatDisplayDate(isoDate: string): string {
+  if (!isoDate) return "—";
+  // isoDate is YYYY-MM-DD
+  const [year, month, day] = isoDate.split("-");
+  const monthName = MONTH_NAMES[parseInt(month, 10) - 1] ?? "";
+  return `${monthName} ${parseInt(day, 10)}, ${year}`;
+}
 
 export function LatestUpdatesSection({
   isLoading = false,
 }: {
   isLoading?: boolean;
 }) {
-  const placeholderUpdates: {
-    title: string;
-    excerpt: string;
-    date: string;
-    image?: string;
-  }[] = [
-    {
-      title: "Municipal Council Meeting",
-      excerpt:
-        "Join us for the upcoming municipal council meeting to discuss important matters.",
-      date: "June 15, 2024",
-    },
-    {
-      title: "New Health Program Launch",
-      excerpt:
-        "Introducing a new community health initiative for residents of Libmanan.",
-      date: "June 10, 2024",
-    },
-    {
-      title: "Road Infrastructure Project",
-      excerpt: "Major road improvement projects underway in key barangays.",
-      date: "June 5, 2024",
-    },
-  ];
+  const publicRecords = useLatestUpdatesStore((s) => s.publicRecords);
+  const isPublicLoading = useLatestUpdatesStore((s) => s.isPublicLoading);
+  const fetchPublicRecords = useLatestUpdatesStore((s) => s.fetchPublicRecords);
+
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Preserve the last known records
+    });
+  }, [fetchPublicRecords]);
+
+  const loading = isLoading || isPublicLoading;
 
   return (
     <section className="py-16 bg-neutral-100">
@@ -42,7 +54,7 @@ export function LatestUpdatesSection({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            {isLoading ? (
+            {loading ? (
               <>
                 <Skeleton className="h-9 w-48 mb-2" />
                 <Skeleton className="h-5 w-80" />
@@ -58,45 +70,58 @@ export function LatestUpdatesSection({
               </>
             )}
           </div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading
-              ? Array.from({ length: 3 }).map((_, index) => (
-                  <SkeletonCard key={index} className="overflow-hidden p-0">
-                    <Skeleton className="h-48 w-full" />
-                    <div className="p-6 space-y-4">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-6 w-full" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4" />
-                    </div>
-                  </SkeletonCard>
-                ))
-              : placeholderUpdates.map((update, index) => (
-                  <div
-                    key={index}
-                    className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
-                  >
-                    <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
-                      <img
-                        src={update.image ?? "/betterlibmanan.png"}
-                        alt={update.title}
-                        className="h-full w-full object-cover grayscale"
-                      />
-                    </div>
-                    <div className="p-4 sm:p-6">
-                      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
-                        <FaCalendarAlt />
-                        <span>{update.date}</span>
-                      </div>
-                      <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">
-                        {update.title}
-                      </h3>
-                      <p className="text-sm text-neutral-600 line-clamp-2 sm:line-clamp-none">
-                        {update.excerpt}
-                      </p>
-                    </div>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <SkeletonCard key={index} className="overflow-hidden p-0">
+                  <Skeleton className="h-48 w-full" />
+                  <div className="p-6 space-y-4">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
                   </div>
-                ))}
+                </SkeletonCard>
+              ))
+            ) : publicRecords.length === 0 ? (
+              <p className="col-span-full text-sm text-neutral-400 italic">
+                No updates available yet.
+              </p>
+            ) : (
+              publicRecords.map((record) => (
+                <div
+                  key={record.id}
+                  className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
+                >
+                  {/* Banner image — fall back to the default brand image */}
+                  <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
+                    <img
+                      src="/betterlibmanan.png"
+                      alt={record.title}
+                      className="h-full w-full object-cover grayscale"
+                    />
+                  </div>
+
+                  <div className="p-4 sm:p-6">
+                    {record.fields.date && (
+                      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
+                        <FaCalendarAlt aria-hidden="true" />
+                        <span>{formatDisplayDate(record.fields.date)}</span>
+                      </div>
+                    )}
+                    <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">
+                      {record.title}
+                    </h3>
+                    {record.fields.summary && (
+                      <p className="text-sm text-neutral-600 line-clamp-2 sm:line-clamp-none">
+                        {record.fields.summary}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </motion.div>
