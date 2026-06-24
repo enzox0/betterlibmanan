@@ -4,13 +4,11 @@ import {
   LuPencil,
   LuTrash2,
   LuFileText,
-  LuExternalLink,
   LuPlus,
   LuImage,
   LuPhone,
   LuMail,
   LuMapPin,
-  LuWrench,
   LuEye,
   LuChevronRight,
   LuUser,
@@ -24,14 +22,24 @@ import { usePopularServicesStore } from "../store/popular-services.store";
 import { useAtAGlanceStore } from "../store/atAGlanceStore";
 import { useHistoryStore } from "../store/historyStore";
 import { useLatestUpdatesStore } from "../store/latestUpdatesStore";
+import { useLeadershipStore } from "../store/leadershipStore";
+import { useContactStore } from "../store/contactStore";
+import { useQuizStore } from "../store/quizStore";
+import { useEmergencyContactsStore } from "../store/emergencyContactsStore";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
 import { DeleteConfirmDialog } from "../components/records/DeleteConfirmDialog";
 import { FreedomWallLayout } from "../components/records/FreedomWallLayout";
 import { resolveIcon } from "../components/records/ReactIconPicker";
-import { UploadJsonDialog } from "../components/records/UploadJsonDialog";
-import type { JsonHistoryItem } from "../components/records/UploadJsonDialog";
+import {
+  UploadJsonDialog,
+  parseAndValidateQuiz,
+} from "../components/records/UploadJsonDialog";
+import type {
+  JsonHistoryItem,
+  JsonQuizItem,
+} from "../components/records/UploadJsonDialog";
 
 const MONTH_NAMES = [
   "Jan",
@@ -620,9 +628,48 @@ function QuizLayout({
                   className="overflow-hidden"
                 >
                   <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/60">
-                    <p className="text-xs text-gray-600 leading-relaxed">
-                      {record.fields.answer ?? "—"}
-                    </p>
+                    {/* Options list */}
+                    {(() => {
+                      const options: string[] = Array.isArray(
+                        record.fields.options,
+                      )
+                        ? (record.fields.options as string[])
+                        : [];
+                      const correctIdx = parseInt(
+                        String(record.fields.correctIndex ?? "0"),
+                        10,
+                      );
+                      return options.length > 0 ? (
+                        <ol className="space-y-1 mb-3">
+                          {options.map((opt, i) => (
+                            <li
+                              key={i}
+                              className={[
+                                "text-xs rounded-md px-2 py-1 flex items-center gap-2",
+                                i === correctIdx
+                                  ? "bg-emerald-50 text-emerald-700 font-semibold"
+                                  : "text-gray-600",
+                              ].join(" ")}
+                            >
+                              <span className="font-bold">
+                                {String.fromCharCode(65 + i)}.
+                              </span>
+                              {opt}
+                              {i === correctIdx && (
+                                <span className="ml-auto text-[10px] bg-emerald-100 text-emerald-700 rounded px-1">
+                                  ✓ Correct
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ol>
+                      ) : null;
+                    })()}
+                    {record.fields.explanation && (
+                      <p className="text-xs text-gray-500 italic leading-relaxed">
+                        {record.fields.explanation}
+                      </p>
+                    )}
                     <div className="flex items-center justify-end mt-3">
                       <CardActions
                         record={record}
@@ -705,42 +752,6 @@ function BetterLugsLayout({
   );
 }
 
-const EMERGENCY_ICON_META: Record<
-  string,
-  { label: string; color: string; svg: React.ReactNode }
-> = {
-  shield: {
-    label: "Police",
-    color: "bg-blue-50 text-blue-600",
-    svg: <LuUser className="h-4 w-4" aria-hidden="true" />,
-  },
-  hospital: {
-    label: "MSWDO",
-    color: "bg-green-50 text-green-600",
-    svg: <LuWrench className="h-4 w-4" aria-hidden="true" />,
-  },
-  fire: {
-    label: "Fire",
-    color: "bg-red-50 text-red-600",
-    svg: <LuPhone className="h-4 w-4" aria-hidden="true" />,
-  },
-  building: {
-    label: "DILG",
-    color: "bg-gray-100 text-gray-600",
-    svg: <LuFileText className="h-4 w-4" aria-hidden="true" />,
-  },
-  warning: {
-    label: "MDRRMO",
-    color: "bg-amber-50 text-amber-600",
-    svg: <LuEye className="h-4 w-4" aria-hidden="true" />,
-  },
-  broadcast: {
-    label: "R2TMC",
-    color: "bg-purple-50 text-purple-600",
-    svg: <LuPhone className="h-4 w-4" aria-hidden="true" />,
-  },
-};
-
 /** Emergency Contacts — marquee-preview list matching the TopUtilityBar */
 function EmergencyContactsLayout({
   records,
@@ -779,15 +790,16 @@ function EmergencyContactsLayout({
             `}</style>
             <div className="em-marquee-track whitespace-nowrap">
               {[...published, ...published].map((record, idx) => {
-                const meta =
-                  EMERGENCY_ICON_META[record.fields.icon ?? "shield"] ??
-                  EMERGENCY_ICON_META.shield;
+                const Icon = resolveIcon(record.fields.icon ?? "");
                 return (
                   <span
                     key={`${record.id}-${idx}`}
                     className="inline-flex items-center gap-2 mx-6 sm:mx-12 text-[11px] sm:text-xs font-medium text-white"
                   >
-                    <span className="opacity-70 shrink-0">{meta.svg}</span>
+                    <Icon
+                      className="h-3 w-3 opacity-70 shrink-0"
+                      aria-hidden="true"
+                    />
                     {record.fields.name}: {record.fields.number}
                   </span>
                 );
@@ -799,17 +811,14 @@ function EmergencyContactsLayout({
 
       {/* Editable rows */}
       {records.map((record) => {
-        const icon = record.fields.icon ?? "shield";
-        const meta = EMERGENCY_ICON_META[icon] ?? EMERGENCY_ICON_META.shield;
+        const Icon = resolveIcon(record.fields.icon ?? "");
         return (
           <div
             key={record.id}
             className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm"
           >
-            <div
-              className={`flex-shrink-0 h-9 w-9 rounded-lg flex items-center justify-center ${meta.color}`}
-            >
-              {meta.svg}
+            <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+              <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-gray-900 truncate">
@@ -976,6 +985,19 @@ export function HomeModulePage() {
   const fetchAdminLatestUpdates = useLatestUpdatesStore(
     (s) => s.fetchAdminRecords,
   );
+  const leadershipRecords = useLeadershipStore((s) => s.adminRecords);
+  const fetchAdminLeadership = useLeadershipStore((s) => s.fetchAdminRecords);
+  const contactRecords = useContactStore((s) => s.adminRecords);
+  const fetchAdminContact = useContactStore((s) => s.fetchAdminRecords);
+  const quizRecords = useQuizStore((s) => s.adminRecords);
+  const fetchAdminQuiz = useQuizStore((s) => s.fetchAdminRecords);
+  const bulkImportQuiz = useQuizStore((s) => s.bulkImportQuiz);
+  const emergencyContactsRecords = useEmergencyContactsStore(
+    (s) => s.adminRecords,
+  );
+  const fetchAdminEmergencyContacts = useEmergencyContactsStore(
+    (s) => s.fetchAdminRecords,
+  );
   const [activeTab, setActiveTab] = useState<string>(
     mockSections[0]?.key ?? "",
   );
@@ -990,9 +1012,11 @@ export function HomeModulePage() {
   );
   const [freedomWallCount, setFreedomWallCount] = useState<number | null>(null);
   const [uploadJsonOpen, setUploadJsonOpen] = useState(false);
+  const [uploadQuizJsonOpen, setUploadQuizJsonOpen] = useState(false);
   const newRecordButtonRef = useRef<HTMLButtonElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const uploadJsonButtonRef = useRef<HTMLButtonElement>(null);
+  const uploadQuizJsonButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -1015,6 +1039,18 @@ export function HomeModulePage() {
     fetchAdminLatestUpdates(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
+    fetchAdminLeadership(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
+    fetchAdminContact(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
+    fetchAdminQuiz(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
+    fetchAdminEmergencyContacts(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
   }, [
     accessToken,
     fetchAdminBarangayMap,
@@ -1023,6 +1059,10 @@ export function HomeModulePage() {
     fetchAdminAtAGlance,
     fetchAdminHistory,
     fetchAdminLatestUpdates,
+    fetchAdminLeadership,
+    fetchAdminContact,
+    fetchAdminQuiz,
+    fetchAdminEmergencyContacts,
   ]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
@@ -1033,6 +1073,10 @@ export function HomeModulePage() {
     "at-a-glance": atAGlanceRecords,
     history: historyRecords,
     "latest-updates": latestUpdatesRecords,
+    leadership: leadershipRecords,
+    contact: contactRecords,
+    quiz: quizRecords,
+    "emergency-contacts": emergencyContactsRecords,
   };
 
   const allRecords = Object.values(mergedRecords).flat();
@@ -1058,7 +1102,17 @@ export function HomeModulePage() {
           ? atAGlanceRecords
           : activeTab === "history"
             ? historyRecords
-            : (mergedRecords[activeTab] ?? []);
+            : activeTab === "latest-updates"
+              ? latestUpdatesRecords
+              : activeTab === "leadership"
+                ? leadershipRecords
+                : activeTab === "contact"
+                  ? contactRecords
+                  : activeTab === "quiz"
+                    ? quizRecords
+                    : activeTab === "emergency-contacts"
+                      ? emergencyContactsRecords
+                      : (mergedRecords[activeTab] ?? []);
   const activePublished = activeRecords.filter(
     (r) => r.status === "published",
   ).length;
@@ -1242,6 +1296,17 @@ export function HomeModulePage() {
                     Upload JSON
                   </button>
                 )}
+                {activeTab === "quiz" && (
+                  <button
+                    ref={uploadQuizJsonButtonRef}
+                    type="button"
+                    onClick={() => setUploadQuizJsonOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-all"
+                  >
+                    <LuUpload className="h-4 w-4" aria-hidden="true" />
+                    Upload JSON
+                  </button>
+                )}
                 <button
                   ref={newRecordButtonRef}
                   type="button"
@@ -1298,14 +1363,48 @@ export function HomeModulePage() {
         />
       )}
 
-      {/* UploadJsonDialog — history section only */}
+      {/* UploadJsonDialog — history section */}
       {uploadJsonOpen && (
         <UploadJsonDialog
           onClose={() => setUploadJsonOpen(false)}
           returnFocusRef={uploadJsonButtonRef}
-          onImport={async (items: JsonHistoryItem[]) => {
+          sectionLabel="History"
+          onImport={async (items) => {
             if (!accessToken) throw new Error("Not authenticated.");
-            return bulkImportHistory(items, accessToken);
+            return bulkImportHistory(items as JsonHistoryItem[], accessToken);
+          }}
+        />
+      )}
+
+      {/* UploadJsonDialog — quiz section */}
+      {uploadQuizJsonOpen && (
+        <UploadJsonDialog
+          onClose={() => setUploadQuizJsonOpen(false)}
+          returnFocusRef={uploadQuizJsonButtonRef}
+          sectionLabel="Quiz"
+          validateItems={parseAndValidateQuiz}
+          exampleJson={JSON.stringify(
+            [
+              {
+                question: "What province is Libmanan in?",
+                options: [
+                  "Albay",
+                  "Camarines Norte",
+                  "Camarines Sur",
+                  "Sorsogon",
+                ],
+                correctIndex: 2,
+                explanation: "Libmanan is in Camarines Sur.",
+                category: "Geography",
+                status: "published",
+              },
+            ],
+            null,
+            2,
+          )}
+          onImport={async (items) => {
+            if (!accessToken) throw new Error("Not authenticated.");
+            return bulkImportQuiz(items as JsonQuizItem[], accessToken);
           }}
         />
       )}
