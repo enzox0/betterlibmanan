@@ -8,6 +8,10 @@ import { usePopularServicesStore } from "../../store/popular-services.store";
 import { useAtAGlanceStore } from "../../store/atAGlanceStore";
 import { useHistoryStore } from "../../store/historyStore";
 import { useLatestUpdatesStore } from "../../store/latestUpdatesStore";
+import { useLeadershipStore } from "../../store/leadershipStore";
+import { useContactStore } from "../../store/contactStore";
+import { useQuizStore } from "../../store/quizStore";
+import { useEmergencyContactsStore } from "../../store/emergencyContactsStore";
 import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
@@ -47,6 +51,12 @@ function DialogContent({
   const deleteAtAGlance = useAtAGlanceStore((s) => s.deleteAtAGlance);
   const deleteHistory = useHistoryStore((s) => s.deleteHistory);
   const deleteLatestUpdate = useLatestUpdatesStore((s) => s.deleteLatestUpdate);
+  const deleteLeadership = useLeadershipStore((s) => s.deleteLeadership);
+  const deleteContact = useContactStore((s) => s.deleteContact);
+  const deleteQuiz = useQuizStore((s) => s.deleteQuiz);
+  const deleteEmergencyContact = useEmergencyContactsStore(
+    (s) => s.deleteEmergencyContact,
+  );
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -85,6 +95,18 @@ function DialogContent({
     } else if (sectionKey === "latest-updates") {
       if (!accessToken) return;
       await deleteLatestUpdate(record.id, accessToken);
+    } else if (sectionKey === "leadership") {
+      if (!accessToken) return;
+      await deleteLeadership(record.id, accessToken);
+    } else if (sectionKey === "contact") {
+      if (!accessToken) return;
+      await deleteContact(record.id, accessToken);
+    } else if (sectionKey === "quiz") {
+      if (!accessToken) return;
+      await deleteQuiz(record.id, accessToken);
+    } else if (sectionKey === "emergency-contacts") {
+      if (!accessToken) return;
+      await deleteEmergencyContact(record.id, accessToken);
     } else {
       deleteRecord(sectionKey, record.id);
     }

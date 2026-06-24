@@ -16,9 +16,26 @@ export interface JsonHistoryItem {
   status?: "published" | "draft";
 }
 
+export interface JsonQuizItem {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+  category?: string;
+  status?: "published" | "draft";
+}
+
 interface UploadJsonDialogProps {
   onClose: () => void;
-  onImport: (items: JsonHistoryItem[]) => Promise<{ imported: number }>;
+  /** Label shown in the dialog header description */
+  sectionLabel?: string;
+  /** Example JSON shown in the "Expected format" hint */
+  exampleJson?: string;
+  /** Custom validation function — defaults to history item validation */
+  validateItems?: (raw: unknown) => JsonHistoryItem[] | JsonQuizItem[];
+  onImport: (
+    items: JsonHistoryItem[] | JsonQuizItem[],
+  ) => Promise<{ imported: number }>;
   returnFocusRef?: React.RefObject<HTMLElement>;
 }
 
@@ -84,16 +101,90 @@ function parseAndValidate(raw: unknown): JsonHistoryItem[] {
   return items;
 }
 
+function parseAndValidateQuiz(raw: unknown): JsonQuizItem[] {
+  if (!Array.isArray(raw)) {
+    throw new Error("JSON must be an array of objects.");
+  }
+  if (raw.length === 0) {
+    throw new Error("The array is empty — nothing to import.");
+  }
+  if (raw.length > 500) {
+    throw new Error(
+      `Too many items (${raw.length}). Maximum is 500 per import.`,
+    );
+  }
+
+  const items: JsonQuizItem[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i];
+    if (typeof item !== "object" || item === null) {
+      throw new Error(`Item at index ${i} is not an object.`);
+    }
+    const obj = item as Record<string, unknown>;
+
+    if (typeof obj.question !== "string" || obj.question.trim() === "") {
+      throw new Error(
+        `Item at index ${i} is missing a "question" string field.`,
+      );
+    }
+    if (
+      !Array.isArray(obj.options) ||
+      (obj.options as unknown[]).length < 2 ||
+      !(obj.options as unknown[]).every((o) => typeof o === "string")
+    ) {
+      throw new Error(
+        `Item at index ${i} must have an "options" array of at least 2 strings.`,
+      );
+    }
+    if (
+      typeof obj.correctIndex !== "number" ||
+      !Number.isInteger(obj.correctIndex) ||
+      obj.correctIndex < 0 ||
+      obj.correctIndex >= (obj.options as unknown[]).length
+    ) {
+      throw new Error(
+        `Item at index ${i} has an invalid "correctIndex" — must be an integer within the options range.`,
+      );
+    }
+    if (
+      obj.status !== undefined &&
+      obj.status !== "published" &&
+      obj.status !== "draft"
+    ) {
+      throw new Error(
+        `Item at index ${i} has an invalid "status" value. Use "published" or "draft".`,
+      );
+    }
+
+    items.push({
+      question: (obj.question as string).trim(),
+      options: (obj.options as string[]).map((o) => o.trim()),
+      correctIndex: obj.correctIndex as number,
+      explanation:
+        typeof obj.explanation === "string"
+          ? obj.explanation.trim()
+          : undefined,
+      category:
+        typeof obj.category === "string" ? obj.category.trim() : undefined,
+      status: (obj.status as "published" | "draft") ?? undefined,
+    });
+  }
+  return items;
+}
+
 function DialogContent({
   onClose,
   onImport,
   returnFocusRef,
+  sectionLabel = "history timeline entries",
+  exampleJson,
+  validateItems,
 }: UploadJsonDialogProps) {
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [parsedItems, setParsedItems] = useState<JsonHistoryItem[] | null>(
-    null,
-  );
+  const [parsedItems, setParsedItems] = useState<
+    JsonHistoryItem[] | JsonQuizItem[] | null
+  >(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -152,7 +243,9 @@ function DialogContent({
     reader.onload = (e) => {
       try {
         const raw = JSON.parse(String(e.target?.result ?? ""));
-        const items = parseAndValidate(raw);
+        const items = validateItems
+          ? validateItems(raw)
+          : parseAndValidate(raw);
         setParsedItems(items);
       } catch (err: any) {
         setParseError(err.message ?? "Invalid JSON file.");
@@ -195,7 +288,7 @@ function DialogContent({
     }
   }
 
-  const EXAMPLE_JSON = JSON.stringify(
+  const DEFAULT_EXAMPLE_JSON = JSON.stringify(
     [
       {
         title: "Founding of Libmanan",
@@ -212,6 +305,8 @@ function DialogContent({
     null,
     2,
   );
+
+  const EXAMPLE_JSON = exampleJson ?? DEFAULT_EXAMPLE_JSON;
 
   return (
     <motion.div
@@ -264,7 +359,7 @@ function DialogContent({
                 Upload JSON Records
               </h2>
               <p className="text-xs text-gray-400">
-                Import history timeline entries from a JSON file
+                Import {sectionLabel} from a JSON file
               </p>
             </div>
           </div>
@@ -296,7 +391,7 @@ function DialogContent({
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
                   {importedCount} record{importedCount !== 1 ? "s" : ""} added
-                  to the History section.
+                  to the {sectionLabel} section.
                 </p>
               </div>
               <div className="flex gap-3 mt-2">
@@ -405,14 +500,28 @@ function DialogContent({
                     </p>
                   </div>
                   <ul className="space-y-0.5 max-h-32 overflow-y-auto">
-                    {parsedItems.slice(0, 8).map((item, i) => (
-                      <li key={i} className="text-xs text-green-700 truncate">
-                        <span className="font-medium">
-                          {item.year ? `[${item.year}]` : "[—]"}
-                        </span>{" "}
-                        {item.title}
-                      </li>
-                    ))}
+                    {parsedItems.slice(0, 8).map((item, i) => {
+                      const histItem = item as JsonHistoryItem;
+                      const quizItem = item as JsonQuizItem;
+                      const label = quizItem.question
+                        ? quizItem.question
+                        : histItem.title;
+                      const badge = quizItem.question
+                        ? quizItem.category
+                          ? `[${quizItem.category}]`
+                          : null
+                        : histItem.year
+                          ? `[${histItem.year}]`
+                          : "[—]";
+                      return (
+                        <li key={i} className="text-xs text-green-700 truncate">
+                          {badge && (
+                            <span className="font-medium">{badge} </span>
+                          )}
+                          {label}
+                        </li>
+                      );
+                    })}
                     {parsedItems.length > 8 && (
                       <li className="text-xs text-green-600 italic">
                         …and {parsedItems.length - 8} more
@@ -461,6 +570,8 @@ function DialogContent({
     </motion.div>
   );
 }
+
+export { parseAndValidateQuiz };
 
 export function UploadJsonDialog(props: UploadJsonDialogProps) {
   return ReactDOM.createPortal(

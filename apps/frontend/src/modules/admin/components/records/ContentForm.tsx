@@ -9,12 +9,17 @@ import { usePopularServicesStore } from "../../store/popular-services.store";
 import { useAtAGlanceStore } from "../../store/atAGlanceStore";
 import { useHistoryStore } from "../../store/historyStore";
 import { useLatestUpdatesStore } from "../../store/latestUpdatesStore";
+import { useLeadershipStore } from "../../store/leadershipStore";
+import { useContactStore } from "../../store/contactStore";
+import { useQuizStore } from "../../store/quizStore";
+import { useEmergencyContactsStore } from "../../store/emergencyContactsStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { LucideIconPicker } from "./ReactIconPicker";
 import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
 import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
 import { uploadPopularServiceIcon } from "../../services/popular-services.api";
+import { uploadLeadershipAvatarRequest } from "../../services/leadership.api";
 import type {
   ContentFormProps,
   ContentRecord,
@@ -115,6 +120,18 @@ export function ContentForm({
   const updateHistory = useHistoryStore((s) => s.updateHistory);
   const createLatestUpdate = useLatestUpdatesStore((s) => s.createLatestUpdate);
   const updateLatestUpdate = useLatestUpdatesStore((s) => s.updateLatestUpdate);
+  const createLeadership = useLeadershipStore((s) => s.createLeadership);
+  const updateLeadership = useLeadershipStore((s) => s.updateLeadership);
+  const createContact = useContactStore((s) => s.createContact);
+  const updateContact = useContactStore((s) => s.updateContact);
+  const createQuiz = useQuizStore((s) => s.createQuiz);
+  const updateQuiz = useQuizStore((s) => s.updateQuiz);
+  const createEmergencyContact = useEmergencyContactsStore(
+    (s) => s.createEmergencyContact,
+  );
+  const updateEmergencyContact = useEmergencyContactsStore(
+    (s) => s.updateEmergencyContact,
+  );
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
@@ -125,11 +142,17 @@ export function ContentForm({
   const isAtAGlanceSection = sectionKey === "at-a-glance";
   const isHistorySection = sectionKey === "history";
   const isLatestUpdatesSection = sectionKey === "latest-updates";
+  const isLeadershipSection = sectionKey === "leadership";
+  const isContactSection = sectionKey === "contact";
+  const isQuizSection = sectionKey === "quiz";
+  const isEmergencyContactsSection = sectionKey === "emergency-contacts";
   const managedImageFieldKey = isBetterLugsSection
     ? "logo"
     : isBarangayMapSection
       ? "image"
-      : null;
+      : isLeadershipSection
+        ? "avatar"
+        : null;
 
   // Status field (always present)
   const [status, setStatus] = useState<ContentStatus>(
@@ -137,9 +160,29 @@ export function ContentForm({
   );
 
   // Field values (excludes image fields — handled by ImageUploadPlaceholder internally)
-  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
-    buildInitialValues(fields, initialData),
-  );
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
+    const base = buildInitialValues(fields, initialData);
+    // For the quiz section, expand the options array (stored in fields.options) into
+    // individual option0…option3 keys that the form fields expect.
+    if (sectionKey === "quiz" && initialData) {
+      const raw = initialData.fields.options;
+      let options: string[] = [];
+      if (Array.isArray(raw)) {
+        options = raw as string[];
+      } else if (typeof raw === "string") {
+        try {
+          const parsed = JSON.parse(raw);
+          options = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          options = [];
+        }
+      }
+      options.forEach((opt, i) => {
+        base[`option${i}`] = opt;
+      });
+    }
+    return base;
+  });
 
   // Validation errors keyed by field key; 'status' key reserved for the status field
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -448,6 +491,127 @@ export function ContentForm({
           await createLatestUpdate(payload, accessToken);
         } else {
           await updateLatestUpdate(initialData!.id, payload, accessToken);
+        }
+      } else if (isLeadershipSection) {
+        if (!accessToken) {
+          throw new Error(
+            "You must be signed in to manage Leadership records.",
+          );
+        }
+
+        const payload: {
+          name: string;
+          position?: string;
+          email?: string;
+          phone?: string;
+          avatarUrl?: string;
+          avatarKey?: string;
+          status: ContentStatus;
+        } = {
+          name: fieldValues.name?.trim() ?? title.trim(),
+          position: fieldValues.position?.trim() ?? "",
+          email: fieldValues.email?.trim() ?? "",
+          phone: fieldValues.phone?.trim() ?? "",
+          status,
+        };
+
+        if (imageChangeState === "selected" && selectedImageFile) {
+          const uploaded = await uploadLeadershipAvatarRequest(
+            {
+              filename: selectedImageFile.name,
+              mimeType: selectedImageFile.type,
+              data: await readFileAsDataUrl(selectedImageFile),
+            },
+            accessToken,
+          );
+          payload.avatarUrl = uploaded.url;
+          payload.avatarKey = uploaded.key;
+        } else if (imageChangeState === "removed") {
+          payload.avatarUrl = "";
+          payload.avatarKey = "";
+        }
+
+        if (mode === "create") {
+          await createLeadership(payload, accessToken);
+        } else {
+          await updateLeadership(initialData!.id, payload, accessToken);
+        }
+      } else if (isContactSection) {
+        if (!accessToken) {
+          throw new Error("You must be signed in to manage Contact records.");
+        }
+
+        const payload: {
+          label: string;
+          value: string;
+          type?: "phone" | "email" | "address" | "fax";
+          status: ContentStatus;
+        } = {
+          label: fieldValues.label?.trim() ?? title.trim(),
+          value: fieldValues.value?.trim() ?? "",
+          type:
+            (fieldValues.type?.trim() as
+              | "phone"
+              | "email"
+              | "address"
+              | "fax") || "phone",
+          status,
+        };
+
+        if (mode === "create") {
+          await createContact(payload, accessToken);
+        } else {
+          await updateContact(initialData!.id, payload, accessToken);
+        }
+      } else if (isQuizSection) {
+        if (!accessToken) {
+          throw new Error("You must be signed in to manage Quiz records.");
+        }
+
+        // Collect non-empty options in order (option0–option3)
+        const options = (["option0", "option1", "option2", "option3"] as const)
+          .map((key) => fieldValues[key]?.trim() ?? "")
+          .filter((v) => v !== "");
+
+        const correctIndex = parseInt(fieldValues.correctIndex ?? "0", 10);
+
+        const payload = {
+          question: fieldValues.question?.trim() ?? title.trim(),
+          options,
+          correctIndex: isNaN(correctIndex) ? 0 : correctIndex,
+          explanation: fieldValues.explanation?.trim() ?? "",
+          category: fieldValues.category?.trim() ?? "",
+          status,
+        };
+
+        if (mode === "create") {
+          await createQuiz(payload, accessToken);
+        } else {
+          await updateQuiz(initialData!.id, payload, accessToken);
+        }
+      } else if (isEmergencyContactsSection) {
+        if (!accessToken) {
+          throw new Error(
+            "You must be signed in to manage Emergency Contact records.",
+          );
+        }
+
+        const payload: {
+          name: string;
+          number: string;
+          icon?: string;
+          status: ContentStatus;
+        } = {
+          name: fieldValues.name?.trim() ?? title.trim(),
+          number: fieldValues.number?.trim() ?? "",
+          icon: fieldValues.icon?.trim() || "",
+          status,
+        };
+
+        if (mode === "create") {
+          await createEmergencyContact(payload, accessToken);
+        } else {
+          await updateEmergencyContact(initialData!.id, payload, accessToken);
         }
       } else if (mode === "create") {
         addRecord(sectionKey, {

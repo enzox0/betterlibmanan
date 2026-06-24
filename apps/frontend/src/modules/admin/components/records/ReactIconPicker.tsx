@@ -339,6 +339,11 @@ export const ICONS: IconEntry[] = [
   },
   { id: "fa:FaFireAlt", label: "fire / hazard", category: "Safety" },
   {
+    id: "fa:FaBroadcastTower",
+    label: "broadcast tower / radio / R2TMC",
+    category: "Safety",
+  },
+  {
     id: "fa:FaExclamationTriangle",
     label: "warning / disaster",
     category: "Safety",
