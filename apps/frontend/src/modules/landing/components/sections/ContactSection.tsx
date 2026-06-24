@@ -1,31 +1,39 @@
-import { FaPhone, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
+import { useEffect } from "react";
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFax } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
+import { useContactStore } from "@/modules/admin/store/contactStore";
+import type { IconType } from "react-icons";
+
+const TYPE_ICON: Record<string, IconType> = {
+  phone: FaPhone,
+  email: FaEnvelope,
+  address: FaMapMarkerAlt,
+  fax: FaFax,
+};
+
+function buildHref(type: string, value: string): string {
+  if (type === "phone" || type === "fax") {
+    return `tel:${value.replace(/\s/g, "")}`;
+  }
+  if (type === "email") {
+    return `mailto:${value}`;
+  }
+  return "#";
+}
 
 export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
-  const contactInfo = [
-    {
-      icon: FaPhone,
-      title: "Phone",
-      value: "(054) 123-4567",
-      href: "tel:(054)123-4567",
-      description: "Mon-Fri: 8:00 AM - 5:00 PM",
-    },
-    {
-      icon: FaEnvelope,
-      title: "Email",
-      value: "lgulibmanan@gmail.com",
-      href: "mailto:lgulibmanan@gmail.com",
-      description: "We'll respond within 24 hours",
-    },
-    {
-      icon: FaMapMarkerAlt,
-      title: "Address",
-      value: "Municipal Hall, Libmanan, Camarines Sur 4418",
-      href: "#",
-      description: "Visit us during office hours",
-    },
-  ];
+  const publicRecords = useContactStore((s) => s.publicRecords);
+  const isPublicLoading = useContactStore((s) => s.isPublicLoading);
+  const fetchPublicRecords = useContactStore((s) => s.fetchPublicRecords);
+
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Preserve the last known records
+    });
+  }, [fetchPublicRecords]);
+
+  const showSkeleton = isLoading || isPublicLoading;
 
   return (
     <section className="bg-neutral-100 py-16">
@@ -37,7 +45,7 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            {isLoading ? (
+            {showSkeleton ? (
               <>
                 <Skeleton className="h-9 w-64 mb-2" />
                 <Skeleton className="h-5 w-72" />
@@ -55,7 +63,7 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {isLoading
+            {showSkeleton
               ? Array.from({ length: 3 }).map((_, index) => (
                   <SkeletonCard key={index}>
                     <Skeleton className="h-11 w-11 rounded-xl mb-4" />
@@ -64,12 +72,14 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
                     <Skeleton className="h-4 w-52" />
                   </SkeletonCard>
                 ))
-              : contactInfo.map((info) => {
-                  const Icon = info.icon;
+              : publicRecords.map((record) => {
+                  const type = record.fields.type ?? "phone";
+                  const Icon = TYPE_ICON[type] ?? FaPhone;
+                  const href = buildHref(type, record.fields.value ?? "");
                   return (
                     <a
-                      key={info.title}
-                      href={info.href}
+                      key={record.id}
+                      href={href}
                       className="rounded-2xl border border-neutral-200 bg-white p-6 transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
                     >
                       <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-100 text-neutral-700">
@@ -77,13 +87,10 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
                       </div>
 
                       <h3 className="text-base font-semibold text-neutral-900">
-                        {info.title}
+                        {record.fields.label ?? record.title}
                       </h3>
                       <p className="mt-3 text-sm font-medium text-neutral-900">
-                        {info.value}
-                      </p>
-                      <p className="mt-2 text-sm text-neutral-500">
-                        {info.description}
+                        {record.fields.value}
                       </p>
                     </a>
                   );

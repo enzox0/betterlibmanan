@@ -1,26 +1,33 @@
+import { useEffect } from "react";
 import { FaEnvelope, FaPhone, FaUserTie } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
+import { useLeadershipStore } from "@/modules/admin/store/leadershipStore";
 
 export function LeadershipSection({
   isLoading = false,
 }: {
   isLoading?: boolean;
 }) {
-  const officials = [
-    {
-      position: "Municipal Mayor",
-      name: "Hon. Edelson M. Marfil",
-      email: "mayor@libmanan.gov.ph",
-      phone: "(054) 123-4567",
-    },
-    {
-      position: "Municipal Vice Mayor",
-      name: "Hon. Ariel Oriño",
-      email: "vicemayor@libmanan.gov.ph",
-      phone: "(054) 123-4568",
-    },
-  ];
+  const publicRecords = useLeadershipStore((s) => s.publicRecords);
+  const isPublicLoading = useLeadershipStore((s) => s.isPublicLoading);
+  const fetchPublicRecords = useLeadershipStore((s) => s.fetchPublicRecords);
+
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Preserve the last known records
+    });
+  }, [fetchPublicRecords]);
+
+  const officials = publicRecords.map((record) => ({
+    position: record.fields.position || "",
+    name: record.fields.name || record.title,
+    email: record.fields.email || "",
+    phone: record.fields.phone || "",
+    avatar: record.fields.avatar || "",
+  }));
+
+  const showSkeleton = isLoading || isPublicLoading;
 
   return (
     <section className="bg-white py-16">
@@ -33,7 +40,7 @@ export function LeadershipSection({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              {isLoading ? (
+              {showSkeleton ? (
                 <>
                   <Skeleton className="h-9 w-56 mb-2" />
                   <Skeleton className="h-5 w-64" />
@@ -50,7 +57,7 @@ export function LeadershipSection({
               )}
             </div>
 
-            {!isLoading && (
+            {!showSkeleton && officials.length > 0 && (
               <button className="inline-flex items-center gap-2 text-sm font-medium text-neutral-700 transition-colors hover:text-neutral-900">
                 <span>→</span>
                 View All Officials
@@ -59,7 +66,7 @@ export function LeadershipSection({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {isLoading
+            {showSkeleton
               ? Array.from({ length: 2 }).map((_, index) => (
                   <SkeletonCard key={index} className="text-center p-8">
                     <div className="mb-5 flex justify-center">
@@ -77,7 +84,7 @@ export function LeadershipSection({
                 ))
               : officials.map((official) => (
                   <div
-                    key={official.position}
+                    key={official.name}
                     className="rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
                   >
                     <div className="mb-5 flex justify-center">
@@ -87,9 +94,17 @@ export function LeadershipSection({
                     </div>
 
                     <div className="mb-4 flex justify-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
-                        <FaUserTie size={18} />
-                      </div>
+                      {official.avatar ? (
+                        <img
+                          src={official.avatar}
+                          alt={official.name}
+                          className="h-12 w-12 rounded-full object-cover border border-neutral-200"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
+                          <FaUserTie size={18} />
+                        </div>
+                      )}
                     </div>
 
                     <h3 className="text-xl font-bold text-neutral-900">
@@ -97,20 +112,24 @@ export function LeadershipSection({
                     </h3>
 
                     <div className="mt-5 space-y-3">
-                      <a
-                        href={`mailto:${official.email}`}
-                        className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
-                      >
-                        <FaEnvelope size={12} />
-                        <span>{official.email}</span>
-                      </a>
-                      <a
-                        href={`tel:${official.phone}`}
-                        className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
-                      >
-                        <FaPhone size={12} />
-                        <span>{official.phone}</span>
-                      </a>
+                      {official.email && (
+                        <a
+                          href={`mailto:${official.email}`}
+                          className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+                        >
+                          <FaEnvelope size={12} />
+                          <span>{official.email}</span>
+                        </a>
+                      )}
+                      {official.phone && (
+                        <a
+                          href={`tel:${official.phone}`}
+                          className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+                        >
+                          <FaPhone size={12} />
+                          <span>{official.phone}</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
