@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -14,20 +14,71 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import { quizQuestions, CATEGORY_COLORS } from "../data/quizData";
+import { useQuizStore } from "../../admin/store/quizStore";
+import type { ContentRecord } from "../../admin/types/admin.types";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 type Phase = "intro" | "quiz" | "result";
 
+interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  category: string;
+}
+
 interface Answer {
-  questionId: number;
+  questionId: string;
   selectedIndex: number;
   correct: boolean;
 }
 
+/* ─── Category colours ───────────────────────────────────────────────────── */
+const CATEGORY_COLORS: Record<string, string> = {
+  History: "bg-amber-100 text-amber-700 border-amber-200",
+  Geography: "bg-blue-100 text-blue-700 border-blue-200",
+  Culture: "bg-purple-100 text-purple-700 border-purple-200",
+  Government: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Nature: "bg-teal-100 text-teal-700 border-teal-200",
+};
+
+const DEFAULT_CATEGORY_COLOR = "bg-gray-100 text-gray-700 border-gray-200";
+
+function getCategoryColor(category: string): string {
+  return CATEGORY_COLORS[category] ?? DEFAULT_CATEGORY_COLOR;
+}
+
+/* ─── Map ContentRecord → QuizQuestion ──────────────────────────────────── */
+function toQuizQuestion(record: ContentRecord): QuizQuestion {
+  // options may be stored as a JSON array string or an actual array
+  let options: string[] = [];
+  const raw = record.fields.options;
+  if (Array.isArray(raw)) {
+    options = raw as string[];
+  } else if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      options = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      options = [];
+    }
+  }
+
+  return {
+    id: record.id,
+    question: record.fields.question ?? record.title,
+    options,
+    correctIndex: parseInt(String(record.fields.correctIndex ?? "0"), 10),
+    explanation: record.fields.explanation ?? "",
+    category: record.fields.category ?? "",
+  };
+}
+
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 function getResultTier(score: number, total: number) {
-  const pct = (score / total) * 100;
+  const pct = total === 0 ? 0 : (score / total) * 100;
   if (pct === 100) return { label: "Perfect Score!", color: "text-yellow-500" };
   if (pct >= 80) return { label: "Excellent!", color: "text-emerald-600" };
   if (pct >= 60) return { label: "Good Job!", color: "text-blue-600" };
@@ -37,12 +88,23 @@ function getResultTier(score: number, total: number) {
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
 export function QuizPage() {
+  const publicRecords = useQuizStore((s) => s.publicRecords);
+  const isLoading = useQuizStore((s) => s.isPublicLoading);
+  const fetchPublicRecords = useQuizStore((s) => s.fetchPublicRecords);
+
   const [phase, setPhase] = useState<Phase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
 
+  useEffect(() => {
+    fetchPublicRecords().catch(() => {
+      // Fall back silently — cached records remain available
+    });
+  }, [fetchPublicRecords]);
+
+  const quizQuestions: QuizQuestion[] = publicRecords.map(toQuizQuestion);
   const total = quizQuestions.length;
   const current = quizQuestions[currentIndex];
   const score = answers.filter((a) => a.correct).length;
@@ -63,7 +125,7 @@ export function QuizPage() {
   };
 
   const next = useCallback(() => {
-    if (selectedOption === null) return;
+    if (selectedOption === null || !current) return;
 
     const answer: Answer = {
       questionId: current.id,
@@ -98,17 +160,17 @@ export function QuizPage() {
         ? "border-neutral-900 bg-neutral-900 text-white shadow-md"
         : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50";
     }
-    if (index === current.correctIndex) {
+    if (index === current?.correctIndex) {
       return "border-emerald-500 bg-emerald-50 text-emerald-800";
     }
-    if (index === selectedOption && selectedOption !== current.correctIndex) {
+    if (index === selectedOption && selectedOption !== current?.correctIndex) {
       return "border-red-400 bg-red-50 text-red-800";
     }
     return "border-neutral-200 bg-white text-neutral-400";
   };
 
   const getOptionIcon = (index: number) => {
-    if (!revealed) return null;
+    if (!revealed || !current) return null;
     if (index === current.correctIndex)
       return <FaCheckCircle className="text-emerald-500 shrink-0" />;
     if (index === selectedOption)
@@ -117,6 +179,11 @@ export function QuizPage() {
   };
 
   const tier = phase === "result" ? getResultTier(score, total) : null;
+
+  /* ── Unique categories for the intro card ────────────────────────────── */
+  const categories = Array.from(
+    new Set(quizQuestions.map((q) => q.category).filter(Boolean)),
+  );
 
   /* ── Render ──────────────────────────────────────────────────────────── */
   return (
@@ -200,14 +267,17 @@ export function QuizPage() {
                   </h2>
                   <p className="mt-2 text-sm text-neutral-500 leading-relaxed">
                     Explore your knowledge of Libmanan's heritage, cultural
-                    identity, geography, and local landmarks through {total}{" "}
-                    interactive questions.
+                    identity, geography, and local landmarks through{" "}
+                    {isLoading ? "…" : total} interactive questions.
                   </p>
 
                   {/* Quiz meta chips */}
                   <div className="mt-5 flex flex-wrap gap-2">
                     {[
-                      { label: `${total} Questions`, icon: FaLightbulb },
+                      {
+                        label: `${isLoading ? "…" : total} Questions`,
+                        icon: FaLightbulb,
+                      },
                       { label: "Multiple Choice", icon: FaCheckCircle },
                       { label: "Instant Feedback", icon: FaStar },
                     ].map(({ label, icon: Icon }) => (
@@ -222,39 +292,46 @@ export function QuizPage() {
                   </div>
 
                   {/* Category breakdown */}
-                  <div className="mt-6">
-                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-                      Topics covered
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {(
-                        Object.keys(CATEGORY_COLORS) as Array<
-                          keyof typeof CATEGORY_COLORS
-                        >
-                      ).map((cat) => (
-                        <span
-                          key={cat}
-                          className={`px-3 py-1 rounded-full border text-xs font-semibold ${CATEGORY_COLORS[cat]}`}
-                        >
-                          {cat}
-                        </span>
-                      ))}
+                  {categories.length > 0 && (
+                    <div className="mt-6">
+                      <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+                        Topics covered
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {categories.map((cat) => (
+                          <span
+                            key={cat}
+                            className={`px-3 py-1 rounded-full border text-xs font-semibold ${getCategoryColor(cat)}`}
+                          >
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <button
                     onClick={startQuiz}
-                    className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 px-6 py-3.5 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors"
+                    disabled={isLoading || total === 0}
+                    className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 px-6 py-3.5 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <FaPlay size={11} />
-                    Start Quiz
+                    {isLoading ? (
+                      "Loading questions…"
+                    ) : total === 0 ? (
+                      "No questions available"
+                    ) : (
+                      <>
+                        <FaPlay size={11} />
+                        Start Quiz
+                      </>
+                    )}
                   </button>
                 </div>
               </motion.div>
             )}
 
             {/* ── QUIZ ──────────────────────────────────────────────────────── */}
-            {phase === "quiz" && (
+            {phase === "quiz" && current && (
               <motion.div
                 key={`question-${currentIndex}`}
                 initial={{ opacity: 0, x: 24 }}
@@ -267,11 +344,15 @@ export function QuizPage() {
                 <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-6 sm:p-8">
                   {/* Category + question number */}
                   <div className="flex items-center justify-between mb-5">
-                    <span
-                      className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold ${CATEGORY_COLORS[current.category]}`}
-                    >
-                      {current.category}
-                    </span>
+                    {current.category ? (
+                      <span
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold ${getCategoryColor(current.category)}`}
+                      >
+                        {current.category}
+                      </span>
+                    ) : (
+                      <span />
+                    )}
                     <span className="text-xs text-neutral-400">
                       {currentIndex + 1} / {total}
                     </span>
@@ -351,9 +432,11 @@ export function QuizPage() {
                               ? "Correct!"
                               : "Not quite."}
                           </p>
-                          <p className="text-sm text-neutral-600 leading-relaxed">
-                            {current.explanation}
-                          </p>
+                          {current.explanation && (
+                            <p className="text-sm text-neutral-600 leading-relaxed">
+                              {current.explanation}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -414,7 +497,9 @@ export function QuizPage() {
                     <motion.div
                       className="h-full rounded-full bg-neutral-900"
                       initial={{ width: 0 }}
-                      animate={{ width: `${(score / total) * 100}%` }}
+                      animate={{
+                        width: `${total === 0 ? 0 : (score / total) * 100}%`,
+                      }}
                       transition={{
                         duration: 0.8,
                         delay: 0.2,
@@ -423,7 +508,8 @@ export function QuizPage() {
                     />
                   </div>
                   <p className="mt-2 text-xs text-neutral-400">
-                    {Math.round((score / total) * 100)}% correct
+                    {total === 0 ? 0 : Math.round((score / total) * 100)}%
+                    correct
                   </p>
 
                   {/* Actions */}
@@ -481,7 +567,9 @@ export function QuizPage() {
                                 <span className="font-medium text-neutral-700">
                                   Your answer:{" "}
                                 </span>
-                                {ans ? q.options[ans.selectedIndex] : "—"}
+                                {ans
+                                  ? (q.options[ans.selectedIndex] ?? "—")
+                                  : "—"}
                               </span>
                               {!correct && (
                                 <span className="text-xs text-emerald-600 font-medium">
