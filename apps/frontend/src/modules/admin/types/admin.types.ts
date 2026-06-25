@@ -7,7 +7,8 @@ export type FieldType =
   | "url"
   | "date"
   | "select"
-  | "icon-picker";
+  | "icon-picker"
+  | "number";
 export type ContentStatus = "published" | "draft";
 
 export interface FieldDefinition {
@@ -23,7 +24,7 @@ export interface ContentRecord {
   sectionKey: string;
   title: string; // always present, used for table "Title/Name" column
   status: ContentStatus;
-  fields: Record<string, string>; // keyed by FieldDefinition.key
+  fields: Record<string, any>; // keyed by FieldDefinition.key - supports string, number, arrays, etc.
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }
