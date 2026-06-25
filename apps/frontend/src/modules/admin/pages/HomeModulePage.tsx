@@ -26,11 +26,13 @@ import { useLeadershipStore } from "../store/leadershipStore";
 import { useContactStore } from "../store/contactStore";
 import { useQuizStore } from "../store/quizStore";
 import { useEmergencyContactsStore } from "../store/emergencyContactsStore";
+import { useMarqueeImagesStore } from "../store/marqueeImagesStore";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
 import { DeleteConfirmDialog } from "../components/records/DeleteConfirmDialog";
 import { FreedomWallLayout } from "../components/records/FreedomWallLayout";
+import { MarqueeImagesLayout } from "../components/records/MarqueeImagesLayout";
 import { resolveIcon } from "../components/records/ReactIconPicker";
 import {
   UploadJsonDialog,
@@ -956,6 +958,8 @@ function SectionContent({
       return <EmergencyContactsLayout {...props} />;
     case "barangay-map":
       return <BarangayMapLayout {...props} />;
+    case "marquee-images":
+      return <MarqueeImagesLayout {...props} />;
     case "freedom-wall":
       return <FreedomWallLayout onCountChange={onFreedomWallCountChange} />;
     default:
@@ -996,6 +1000,10 @@ export function HomeModulePage() {
     (s) => s.adminRecords,
   );
   const fetchAdminEmergencyContacts = useEmergencyContactsStore(
+    (s) => s.fetchAdminRecords,
+  );
+  const marqueeImagesRecords = useMarqueeImagesStore((s) => s.adminRecords);
+  const fetchAdminMarqueeImages = useMarqueeImagesStore(
     (s) => s.fetchAdminRecords,
   );
   const [activeTab, setActiveTab] = useState<string>(
@@ -1051,6 +1059,9 @@ export function HomeModulePage() {
     fetchAdminEmergencyContacts(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
+    fetchAdminMarqueeImages(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
   }, [
     accessToken,
     fetchAdminBarangayMap,
@@ -1063,6 +1074,7 @@ export function HomeModulePage() {
     fetchAdminContact,
     fetchAdminQuiz,
     fetchAdminEmergencyContacts,
+    fetchAdminMarqueeImages,
   ]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
@@ -1077,6 +1089,7 @@ export function HomeModulePage() {
     contact: contactRecords,
     quiz: quizRecords,
     "emergency-contacts": emergencyContactsRecords,
+    "marquee-images": marqueeImagesRecords,
   };
 
   const allRecords = Object.values(mergedRecords).flat();
@@ -1112,7 +1125,9 @@ export function HomeModulePage() {
                     ? quizRecords
                     : activeTab === "emergency-contacts"
                       ? emergencyContactsRecords
-                      : (mergedRecords[activeTab] ?? []);
+                      : activeTab === "marquee-images"
+                        ? marqueeImagesRecords
+                        : (mergedRecords[activeTab] ?? []);
   const activePublished = activeRecords.filter(
     (r) => r.status === "published",
   ).length;
