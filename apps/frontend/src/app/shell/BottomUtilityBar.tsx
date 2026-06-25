@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   FaDollarSign,
   FaEuroSign,
@@ -56,11 +57,28 @@ const LiveClock = memo(function LiveClock() {
 });
 
 export function BottomUtilityBar() {
+  const location = useLocation();
   const [currencyRates, setCurrencyRates] = useState<CurrencyRates | null>(
     null,
   );
   const [temperature, setTemperature] = useState<number | null>(null);
   const [currentCurrencyIndex, setCurrentCurrencyIndex] = useState(0);
+  const [isInHero, setIsInHero] = useState(false);
+
+  const isHomePage = location.pathname === "/";
+
+  useEffect(() => {
+    if (!isHomePage) {
+      setIsInHero(false);
+      return;
+    }
+
+    const heroThreshold = window.innerHeight * 0.75;
+    const handleScroll = () => setIsInHero(window.scrollY < heroThreshold);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isHomePage]);
 
   const LATITUDE = 13.6956;
   const LONGITUDE = 123.1236;
@@ -133,7 +151,10 @@ export function BottomUtilityBar() {
 
   return (
     <div className="bg-blue-900 text-white py-1.5 sm:py-2 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div
+        className="mx-auto px-4 sm:px-6 lg:px-8 transition-[max-width] duration-500 ease-in-out"
+        style={{ maxWidth: isInHero ? "100%" : "80rem" }}
+      >
         {/* Desktop: static row */}
         <div className="hidden sm:flex justify-end items-center gap-6 text-xs">
           <div className="flex items-center gap-2 h-6 overflow-hidden">

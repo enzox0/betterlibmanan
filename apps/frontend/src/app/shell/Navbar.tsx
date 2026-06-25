@@ -1,13 +1,37 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
 
 export function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showLangModal, setShowLangModal] = useState(false);
+  const [isInHero, setIsInHero] = useState(false);
   const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Expand navbar to full width only when on the homepage and within the hero viewport
+  const isHomePage = location.pathname === "/";
+
+  useEffect(() => {
+    if (!isHomePage) {
+      setIsInHero(false);
+      return;
+    }
+
+    const heroThreshold = window.innerHeight * 0.75;
+
+    const handleScroll = () => {
+      setIsInHero(window.scrollY < heroThreshold);
+    };
+
+    // Set initial state
+    handleScroll();
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isHomePage]);
 
   const navItems = [
     { name: "Home", path: "/" },
@@ -131,89 +155,100 @@ export function Navbar() {
       )}
 
       <header className="bg-white shadow-sm sticky top-0 z-[999999]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div
+          className="mx-auto px-4 sm:px-6 lg:px-8 transition-[max-width,padding] duration-500 ease-in-out"
+          style={{
+            maxWidth: isInHero ? "100%" : "80rem",
+          }}
+        >
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center">
+            {/* Logo + Nav — grouped so nav slides left with logo in hero mode */}
+            <div className="flex items-center gap-4 xl:gap-6 min-w-0">
+              <Link to="/" className="flex items-center shrink-0">
                 <img
                   src="/betterlibmanan-extended-logo.png"
                   alt="Better Libmanan Logo"
                   className="h-12 sm:h-16"
                 />
               </Link>
-            </div>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6">
-              {navItems.map((item) => (
-                <div
-                  key={item.name}
-                  className="relative"
-                  onMouseEnter={() =>
-                    item.hasDropdown && handleDropdownMouseEnter(item.name)
-                  }
-                  onMouseLeave={() =>
-                    item.hasDropdown && handleDropdownMouseLeave()
-                  }
-                >
-                  {item.hasDropdown ? (
-                    item.dropdownOnly ? (
-                      <span
-                        onMouseEnter={() => handleDropdownMouseEnter(item.name)}
-                        className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-default select-none"
-                      >
-                        {item.name}
-                        <FaChevronDown
-                          className={`text-xs transition-transform ${activeDropdown === item.name ? "rotate-180" : ""}`}
-                        />
-                      </span>
+              {/* Desktop Navigation */}
+              <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6">
+                {navItems.map((item) => (
+                  <div
+                    key={item.name}
+                    className="relative"
+                    onMouseEnter={() =>
+                      item.hasDropdown && handleDropdownMouseEnter(item.name)
+                    }
+                    onMouseLeave={() =>
+                      item.hasDropdown && handleDropdownMouseLeave()
+                    }
+                  >
+                    {item.hasDropdown ? (
+                      item.dropdownOnly ? (
+                        <span
+                          onMouseEnter={() =>
+                            handleDropdownMouseEnter(item.name)
+                          }
+                          className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-default select-none"
+                        >
+                          {item.name}
+                          <FaChevronDown
+                            className={`text-xs transition-transform ${activeDropdown === item.name ? "rotate-180" : ""}`}
+                          />
+                        </span>
+                      ) : (
+                        <Link
+                          to={item.path}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(item.path);
+                          }}
+                          onMouseEnter={() =>
+                            handleDropdownMouseEnter(item.name)
+                          }
+                          className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-pointer"
+                        >
+                          {item.name}
+                          <FaChevronDown
+                            className={`text-xs transition-transform ${activeDropdown === item.name ? "rotate-180" : ""}`}
+                          />
+                        </Link>
+                      )
                     ) : (
                       <Link
                         to={item.path}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate(item.path);
-                        }}
-                        onMouseEnter={() => handleDropdownMouseEnter(item.name)}
-                        className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm flex items-center gap-1 cursor-pointer"
+                        className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm"
                       >
                         {item.name}
-                        <FaChevronDown
-                          className={`text-xs transition-transform ${activeDropdown === item.name ? "rotate-180" : ""}`}
-                        />
                       </Link>
-                    )
-                  ) : (
-                    <Link
-                      to={item.path}
-                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm"
-                    >
-                      {item.name}
-                    </Link>
-                  )}
+                    )}
 
-                  {/* Dropdown Menu */}
-                  {item.hasDropdown && activeDropdown === item.name && (
-                    <div
-                      className="absolute top-full left-0 mt-0 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 pt-2"
-                      onMouseEnter={() => handleDropdownMouseEnter(item.name)}
-                      onMouseLeave={handleDropdownMouseLeave}
-                    >
-                      {item.dropdownItems?.map((dropdownItem) => (
-                        <Link
-                          key={dropdownItem.name}
-                          to={dropdownItem.path}
-                          className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                          onClick={() => setActiveDropdown(null)}
-                        >
-                          {dropdownItem.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </nav>
+                    {/* Dropdown Menu */}
+                    {item.hasDropdown && activeDropdown === item.name && (
+                      <div
+                        className="absolute top-full left-0 mt-0 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 pt-2"
+                        onMouseEnter={() => handleDropdownMouseEnter(item.name)}
+                        onMouseLeave={handleDropdownMouseLeave}
+                      >
+                        {item.dropdownItems?.map((dropdownItem) => (
+                          <Link
+                            key={dropdownItem.name}
+                            to={dropdownItem.path}
+                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                            onClick={() => setActiveDropdown(null)}
+                          >
+                            {dropdownItem.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </nav>
+            </div>
+            {/* end logo+nav group */}
 
             {/* Desktop Language Buttons */}
             <div className="hidden lg:flex items-center gap-2">
