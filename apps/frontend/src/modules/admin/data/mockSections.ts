@@ -179,6 +179,28 @@ export const mockSections: SectionSchema[] = [
     ],
   },
   {
+    key: "marquee-images",
+    displayName: "Hero Marquee",
+    supportsPreview: true,
+    fields: [
+      { key: "alt", label: "Alt Text", type: "text", required: true },
+      { key: "imageUrl", label: "Image", type: "image", required: true },
+      {
+        key: "rowNumber",
+        label: "Admin Row (for organization only)",
+        type: "select",
+        required: true,
+        options: ["1", "2", "3"],
+      },
+      {
+        key: "order",
+        label: "Admin Order (for organization only)",
+        type: "number",
+        required: true,
+      },
+    ],
+  },
+  {
     // Freedom Wall is special — its data lives in its own MongoDB collection
     // and is fetched live (not via the ContentRecord store). Admins can only
     // delete notes; there is no create/edit form.
