@@ -12,6 +12,21 @@ export default {
         "safe-left": "env(safe-area-inset-left)",
         "safe-right": "env(safe-area-inset-right)",
       },
+      keyframes: {
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "marquee-reverse": {
+          "0%": { transform: "translateX(-50%)" },
+          "100%": { transform: "translateX(0%)" },
+        },
+      },
+      animation: {
+        "marquee-slow": "marquee 40s linear infinite",
+        "marquee-medium": "marquee-reverse 28s linear infinite",
+        "marquee-fast": "marquee 20s linear infinite",
+      },
     },
   },
   plugins: [],
