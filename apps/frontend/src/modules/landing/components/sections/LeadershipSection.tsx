@@ -85,51 +85,69 @@ export function LeadershipSection({
               : officials.map((official) => (
                   <div
                     key={official.name}
-                    className="rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
+                    className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
                   >
-                    <div className="mb-5 flex justify-center">
-                      <span className="inline-flex items-center rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white">
-                        {official.position}
-                      </span>
-                    </div>
+                    {/* Background image — bottom layer */}
+                    {official.avatar && (
+                      <img
+                        src={official.avatar}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-y-0 right-0 h-full w-1/2 object-cover object-top"
+                      />
+                    )}
 
-                    <div className="mb-4 flex justify-center">
-                      {official.avatar ? (
-                        <img
-                          src={official.avatar}
-                          alt={official.name}
-                          className="h-12 w-12 rounded-full object-cover border border-neutral-200"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
-                          <FaUserTie size={18} />
+                    {/* Fading overlay — middle layer (left opaque → right transparent) */}
+                    {official.avatar && (
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            "linear-gradient(to right, white 55%, rgba(255,255,255,0.95) 65%, rgba(255,255,255,0.6) 78%, transparent 100%)",
+                        }}
+                      />
+                    )}
+
+                    {/* Panel content — top layer */}
+                    <div className="relative z-10 p-8">
+                      <div className="mb-4">
+                        <span className="inline-flex items-center rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white">
+                          {official.position}
+                        </span>
+                      </div>
+
+                      {!official.avatar && (
+                        <div className="mb-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
+                            <FaUserTie size={18} />
+                          </div>
                         </div>
                       )}
-                    </div>
 
-                    <h3 className="text-xl font-bold text-neutral-900">
-                      {official.name}
-                    </h3>
+                      <h3 className="text-xl font-bold text-neutral-900">
+                        {official.name}
+                      </h3>
 
-                    <div className="mt-5 space-y-3">
-                      {official.email && (
-                        <a
-                          href={`mailto:${official.email}`}
-                          className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
-                        >
-                          <FaEnvelope size={12} />
-                          <span>{official.email}</span>
-                        </a>
-                      )}
-                      {official.phone && (
-                        <a
-                          href={`tel:${official.phone}`}
-                          className="flex items-center justify-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
-                        >
-                          <FaPhone size={12} />
-                          <span>{official.phone}</span>
-                        </a>
-                      )}
+                      <div className="mt-5 space-y-3">
+                        {official.email && (
+                          <a
+                            href={`mailto:${official.email}`}
+                            className="flex items-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+                          >
+                            <FaEnvelope size={12} />
+                            <span>{official.email}</span>
+                          </a>
+                        )}
+                        {official.phone && (
+                          <a
+                            href={`tel:${official.phone}`}
+                            className="flex items-center gap-2 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+                          >
+                            <FaPhone size={12} />
+                            <span>{official.phone}</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
