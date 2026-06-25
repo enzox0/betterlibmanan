@@ -13,6 +13,7 @@ import { useLeadershipStore } from "../../store/leadershipStore";
 import { useContactStore } from "../../store/contactStore";
 import { useQuizStore } from "../../store/quizStore";
 import { useEmergencyContactsStore } from "../../store/emergencyContactsStore";
+import { useMarqueeImagesStore } from "../../store/marqueeImagesStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { LucideIconPicker } from "./ReactIconPicker";
@@ -20,6 +21,7 @@ import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
 import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
 import { uploadPopularServiceIcon } from "../../services/popular-services.api";
 import { uploadLeadershipAvatarRequest } from "../../services/leadership.api";
+import { uploadMarqueeImageFileRequest } from "../../services/marquee-images.api";
 import type {
   ContentFormProps,
   ContentRecord,
@@ -56,7 +58,8 @@ function buildInitialValues(
 ): Record<string, string> {
   const values: Record<string, string> = {};
   for (const field of fields) {
-    values[field.key] = initialData?.fields[field.key] ?? "";
+    const raw = initialData?.fields[field.key];
+    values[field.key] = raw !== undefined && raw !== null ? String(raw) : "";
   }
   return values;
 }
@@ -132,6 +135,8 @@ export function ContentForm({
   const updateEmergencyContact = useEmergencyContactsStore(
     (s) => s.updateEmergencyContact,
   );
+  const createMarqueeImage = useMarqueeImagesStore((s) => s.createMarqueeImage);
+  const updateMarqueeImage = useMarqueeImagesStore((s) => s.updateMarqueeImage);
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
@@ -146,13 +151,16 @@ export function ContentForm({
   const isContactSection = sectionKey === "contact";
   const isQuizSection = sectionKey === "quiz";
   const isEmergencyContactsSection = sectionKey === "emergency-contacts";
+  const isMarqueeImagesSection = sectionKey === "marquee-images";
   const managedImageFieldKey = isBetterLugsSection
     ? "logo"
     : isBarangayMapSection
       ? "image"
       : isLeadershipSection
         ? "avatar"
-        : null;
+        : isMarqueeImagesSection
+          ? "imageUrl"
+          : null;
 
   // Status field (always present)
   const [status, setStatus] = useState<ContentStatus>(
@@ -613,6 +621,55 @@ export function ContentForm({
         } else {
           await updateEmergencyContact(initialData!.id, payload, accessToken);
         }
+      } else if (isMarqueeImagesSection) {
+        if (!accessToken) {
+          throw new Error("You must be signed in to manage marquee images.");
+        }
+
+        if (!selectedImageFile && mode === "create" && !fieldValues.imageUrl) {
+          setImageError("Please upload an image.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const payload: {
+          alt: string;
+          imageUrl?: string;
+          imageKey?: string;
+          rowNumber: number;
+          order: number;
+          status: ContentStatus;
+        } = {
+          alt: fieldValues.alt?.trim() ?? title.trim(),
+          rowNumber: parseInt(fieldValues.rowNumber ?? "1", 10) || 1,
+          order: parseInt(fieldValues.order ?? "0", 10) || 0,
+          status,
+        };
+
+        if (imageChangeState === "selected" && selectedImageFile) {
+          // New image uploaded — upload to R2 and include new url/key
+          const uploaded = await uploadMarqueeImageFileRequest(
+            {
+              filename: selectedImageFile.name,
+              mimeType: selectedImageFile.type,
+              data: await readFileAsDataUrl(selectedImageFile),
+            },
+            accessToken,
+          );
+          payload.imageUrl = uploaded.url;
+          payload.imageKey = uploaded.key;
+        } else if (imageChangeState === "removed") {
+          // Explicitly cleared
+          payload.imageUrl = "";
+          payload.imageKey = "";
+        }
+        // imageChangeState === "unchanged" → omit both fields so the server keeps existing values
+
+        if (mode === "create") {
+          await createMarqueeImage(payload, accessToken);
+        } else {
+          await updateMarqueeImage(initialData!.id, payload, accessToken);
+        }
       } else if (mode === "create") {
         addRecord(sectionKey, {
           title,
@@ -766,7 +823,9 @@ export function ContentForm({
                 ? "url"
                 : field.type === "date"
                   ? "date"
-                  : "text"
+                  : field.type === "number"
+                    ? "number"
+                    : "text"
             }
             value={value}
             onChange={(e) => handleFieldChange(field.key, e.target.value)}
