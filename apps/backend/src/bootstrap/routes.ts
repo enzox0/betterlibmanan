@@ -14,6 +14,7 @@ import { leadershipRouter } from "@/modules/leadership";
 import { contactRouter } from "@/modules/contact";
 import { quizRouter } from "@/modules/quiz";
 import { emergencyContactsRouter } from "@/modules/emergency-contacts";
+import { marqueeImagesRouter } from "@/modules/marquee-images";
 
 /**
  * Central API router. Mount feature routers here as the backend grows so
@@ -70,6 +71,9 @@ apiRouter.use("/quiz", quizRouter);
 
 // Emergency Contacts — public listing plus admin CRUD
 apiRouter.use("/emergency-contacts", emergencyContactsRouter);
+
+// Marquee Images — public listing plus admin CRUD + R2 uploads + reorder
+apiRouter.use("/marquee-images", marqueeImagesRouter);
 
 // Fallback for unmatched /api routes — keeps the SPA catch-all from
 // accidentally serving index.html for unknown API paths.
