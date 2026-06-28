@@ -7,6 +7,7 @@ import {
   FaThermometerHalf,
   FaCalendarAlt,
   FaClock,
+  FaFacebook,
 } from "react-icons/fa";
 
 interface CurrencyRates {
@@ -132,7 +133,16 @@ export function BottomUtilityBar() {
 
   // Static marquee items — clock lives in LiveClock so it never remounts the marquee
   const MarqueeItems = () => (
-    <div className="flex items-center gap-8 text-xs pr-8">
+    <div className="flex items-center gap-8 text-xs">
+      <a
+        href="#"
+        className="flex items-center gap-2 whitespace-nowrap hover:text-blue-200 transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FaFacebook size={12} />
+        <span>BetterLibmanan Facebook</span>
+      </a>
       <div className="flex items-center gap-2 whitespace-nowrap">
         <CurrencyIcon size={12} />
         <span>
@@ -152,33 +162,44 @@ export function BottomUtilityBar() {
   return (
     <div className="bg-blue-900 text-white py-1.5 sm:py-2 overflow-hidden">
       <div
-        className="mx-auto px-4 sm:px-6 lg:px-8 transition-[max-width] duration-500 ease-in-out"
+        className="mx-auto px-0 sm:px-6 lg:px-8 transition-[max-width] duration-500 ease-in-out"
         style={{ maxWidth: isInHero ? "100%" : "80rem" }}
       >
         {/* Desktop: static row */}
-        <div className="hidden sm:flex justify-end items-center gap-6 text-xs">
-          <div className="flex items-center gap-2 h-6 overflow-hidden">
-            <div
-              key={currentCurrencyIndex}
-              className="flex items-center gap-2 animate-slide-up"
-            >
-              <CurrencyIcon size={12} />
-              <span>
-                {currentCurrency.label} {currencyValue}
-              </span>
+        <div className="hidden sm:flex justify-between items-center gap-6 text-xs">
+          <a
+            href="#"
+            className="flex items-center gap-2 hover:text-blue-200 transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <FaFacebook size={12} />
+            <span>BetterLibmanan Facebook</span>
+          </a>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 h-6 overflow-hidden">
+              <div
+                key={currentCurrencyIndex}
+                className="flex items-center gap-2 animate-slide-up"
+              >
+                <CurrencyIcon size={12} />
+                <span>
+                  {currentCurrency.label} {currencyValue}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <FaThermometerHalf size={12} />
-            <span>Libmanan Camarines Sur {tempLabel}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <LiveClock />
+            <div className="flex items-center gap-2">
+              <FaThermometerHalf size={12} />
+              <span>Libmanan Camarines Sur {tempLabel}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <LiveClock />
+            </div>
           </div>
         </div>
 
         {/* Mobile: seamless marquee using CSS animation on a stable element */}
-        <div className="sm:hidden overflow-hidden">
+        <div className="sm:hidden overflow-hidden pl-2">
           <div className="marquee-track">
             <MarqueeItems />
             {/* Exact duplicate for seamless loop */}
@@ -202,11 +223,18 @@ export function BottomUtilityBar() {
           to   { transform: translateX(-50%); }
         }
         .marquee-track {
-          display: inline-flex;
+          display: flex;
           white-space: nowrap;
-          animation: marqueeScroll 22s linear infinite;
+          animation: marqueeScroll 30s linear infinite;
           /* will-change keeps the animation on the GPU — prevents repaint glitch */
           will-change: transform;
+          /* Add padding to prevent edge cutting */
+          padding-left: 0;
+        }
+        .marquee-track > div {
+          /* Ensure both copies are identical and full width */
+          flex-shrink: 0;
+          padding-right: 4rem;
         }
       `}</style>
     </div>
