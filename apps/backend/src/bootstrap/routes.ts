@@ -15,6 +15,7 @@ import { contactRouter } from "@/modules/contact";
 import { quizRouter } from "@/modules/quiz";
 import { emergencyContactsRouter } from "@/modules/emergency-contacts";
 import { marqueeImagesRouter } from "@/modules/marquee-images";
+import { municipalHallRouter } from "@/modules/municipal-hall";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -75,6 +76,9 @@ apiRouter.use("/emergency-contacts", emergencyContactsRouter);
 
 // Marquee Images — public listing plus admin CRUD + R2 uploads + reorder
 apiRouter.use("/marquee-images", marqueeImagesRouter);
+
+// Municipal Hall — single-record content for the WeatherMapSection info panel
+apiRouter.use("/municipal-hall", municipalHallRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
