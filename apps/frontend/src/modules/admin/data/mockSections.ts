@@ -201,6 +201,47 @@ export const mockSections: SectionSchema[] = [
     ],
   },
   {
+    key: "municipal-hall",
+    displayName: "Municipal Hall",
+    supportsPreview: false,
+    fields: [
+      { key: "title", label: "Title", type: "text", required: true },
+      { key: "imageUrl", label: "Image", type: "image", required: false },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        required: false,
+      },
+      { key: "address", label: "Address", type: "text", required: false },
+      { key: "province", label: "Province", type: "text", required: false },
+      {
+        key: "barangays",
+        label: "Number of Barangays",
+        type: "text",
+        required: false,
+      },
+      {
+        key: "founded",
+        label: "Year Founded",
+        type: "text",
+        required: false,
+      },
+      {
+        key: "officeHoursWeekday",
+        label: "Office Hours (Weekday)",
+        type: "text",
+        required: false,
+      },
+      {
+        key: "officeHoursWeekend",
+        label: "Office Hours (Weekend)",
+        type: "text",
+        required: false,
+      },
+    ],
+  },
+  {
     // Freedom Wall is special — its data lives in its own MongoDB collection
     // and is fetched live (not via the ContentRecord store). Admins can only
     // delete notes; there is no create/edit form.
