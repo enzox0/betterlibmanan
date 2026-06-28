@@ -1,6 +1,10 @@
 import dns from "dns";
-// Override DNS servers to bypass local resolver issues
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
+import { promises as dnsPromises } from "dns";
+
+dns.setServers(["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]);
+dnsPromises.setServers(["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]);
+
+dns.setDefaultResultOrder("ipv4first");
 
 import path from "path";
 import dotenv from "dotenv";
@@ -10,7 +14,6 @@ import { app } from "@/bootstrap/app";
 import { logger } from "@/shared/logger";
 import { connectDB } from "@/infrastructure/database";
 
-// CRITICAL: Use PORT from environment (required for Render)
 const PORT = parseInt(process.env.PORT || "5000", 10);
 
 async function main() {
@@ -22,12 +25,11 @@ async function main() {
     logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
     logger.info(`Port: ${PORT}`);
     logger.info(`Node Version: ${process.version}`);
+    logger.info(`DNS Servers: ${dns.getServers().join(", ")}`);
     logger.info("=".repeat(50));
 
-    // Connect to database
     await connectDB();
 
-    // Start server - bind to 0.0.0.0 for Docker/Render
     app.listen(PORT, "0.0.0.0", () => {
       logger.info(`✓ Server running on http://0.0.0.0:${PORT}`);
       logger.info(`✓ API available at http://0.0.0.0:${PORT}/api`);
@@ -42,7 +44,6 @@ async function main() {
 
 main();
 
-// Handle graceful shutdown
 process.on("SIGTERM", () => {
   logger.info("SIGTERM received, shutting down gracefully...");
   process.exit(0);
@@ -53,7 +54,6 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-// Handle uncaught errors
 process.on("uncaughtException", (error) => {
   logger.error("Uncaught Exception:", error);
   process.exit(1);
