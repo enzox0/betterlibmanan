@@ -13,6 +13,7 @@ import { useContactStore } from "../../store/contactStore";
 import { useQuizStore } from "../../store/quizStore";
 import { useEmergencyContactsStore } from "../../store/emergencyContactsStore";
 import { useMarqueeImagesStore } from "../../store/marqueeImagesStore";
+import { useMunicipalHallStore } from "../../store/municipalHallStore";
 import type { ContentRecord } from "../../types/admin.types";
 
 interface DeleteConfirmDialogProps {
@@ -59,6 +60,9 @@ function DialogContent({
     (s) => s.deleteEmergencyContact,
   );
   const deleteMarqueeImage = useMarqueeImagesStore((s) => s.deleteMarqueeImage);
+  const deleteMunicipalHall = useMunicipalHallStore(
+    (s) => s.deleteMunicipalHall,
+  );
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -112,6 +116,9 @@ function DialogContent({
     } else if (sectionKey === "marquee-images") {
       if (!accessToken) return;
       await deleteMarqueeImage(record.id, accessToken);
+    } else if (sectionKey === "municipal-hall") {
+      if (!accessToken) return;
+      await deleteMunicipalHall(record.id, accessToken);
     } else {
       deleteRecord(sectionKey, record.id);
     }

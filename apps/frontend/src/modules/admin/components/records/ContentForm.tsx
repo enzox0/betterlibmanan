@@ -14,6 +14,7 @@ import { useContactStore } from "../../store/contactStore";
 import { useQuizStore } from "../../store/quizStore";
 import { useEmergencyContactsStore } from "../../store/emergencyContactsStore";
 import { useMarqueeImagesStore } from "../../store/marqueeImagesStore";
+import { useMunicipalHallStore } from "../../store/municipalHallStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { LucideIconPicker } from "./ReactIconPicker";
@@ -22,6 +23,8 @@ import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
 import { uploadPopularServiceIcon } from "../../services/popular-services.api";
 import { uploadLeadershipAvatarRequest } from "../../services/leadership.api";
 import { uploadMarqueeImageFileRequest } from "../../services/marquee-images.api";
+import { uploadMunicipalHallImageRequest } from "../../services/municipal-hall.api";
+import SafeImage from "@/modules/landing/components/ui/SafeImage";
 import type {
   ContentFormProps,
   ContentRecord,
@@ -137,6 +140,12 @@ export function ContentForm({
   );
   const createMarqueeImage = useMarqueeImagesStore((s) => s.createMarqueeImage);
   const updateMarqueeImage = useMarqueeImagesStore((s) => s.updateMarqueeImage);
+  const createMunicipalHall = useMunicipalHallStore(
+    (s) => s.createMunicipalHall,
+  );
+  const updateMunicipalHall = useMunicipalHallStore(
+    (s) => s.updateMunicipalHall,
+  );
 
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
@@ -152,6 +161,7 @@ export function ContentForm({
   const isQuizSection = sectionKey === "quiz";
   const isEmergencyContactsSection = sectionKey === "emergency-contacts";
   const isMarqueeImagesSection = sectionKey === "marquee-images";
+  const isMunicipalHallSection = sectionKey === "municipal-hall";
   const managedImageFieldKey = isBetterLugsSection
     ? "logo"
     : isBarangayMapSection
@@ -160,7 +170,9 @@ export function ContentForm({
         ? "avatar"
         : isMarqueeImagesSection
           ? "imageUrl"
-          : null;
+          : isMunicipalHallSection
+            ? "imageUrl"
+            : null;
 
   // Status field (always present)
   const [status, setStatus] = useState<ContentStatus>(
@@ -670,6 +682,58 @@ export function ContentForm({
         } else {
           await updateMarqueeImage(initialData!.id, payload, accessToken);
         }
+      } else if (isMunicipalHallSection) {
+        if (!accessToken) {
+          throw new Error(
+            "You must be signed in to manage Municipal Hall records.",
+          );
+        }
+
+        const payload: {
+          title: string;
+          imageUrl?: string;
+          imageKey?: string;
+          description?: string;
+          address?: string;
+          province?: string;
+          barangays?: string;
+          founded?: string;
+          officeHoursWeekday?: string;
+          officeHoursWeekend?: string;
+          status: ContentStatus;
+        } = {
+          title: fieldValues.title?.trim() ?? title.trim(),
+          description: fieldValues.description?.trim() ?? "",
+          address: fieldValues.address?.trim() ?? "",
+          province: fieldValues.province?.trim() ?? "",
+          barangays: fieldValues.barangays?.trim() ?? "",
+          founded: fieldValues.founded?.trim() ?? "",
+          officeHoursWeekday: fieldValues.officeHoursWeekday?.trim() ?? "",
+          officeHoursWeekend: fieldValues.officeHoursWeekend?.trim() ?? "",
+          status,
+        };
+
+        if (imageChangeState === "selected" && selectedImageFile) {
+          const uploaded = await uploadMunicipalHallImageRequest(
+            {
+              filename: selectedImageFile.name,
+              mimeType: selectedImageFile.type,
+              data: await readFileAsDataUrl(selectedImageFile),
+            },
+            accessToken,
+          );
+          payload.imageUrl = uploaded.url;
+          payload.imageKey = uploaded.key;
+        } else if (imageChangeState === "removed") {
+          payload.imageUrl = "";
+          payload.imageKey = "";
+        }
+
+        if (mode === "create") {
+          await createMunicipalHall(payload, accessToken);
+        } else {
+          await updateMunicipalHall(initialData!.id, payload, accessToken);
+        }
       } else if (mode === "create") {
         addRecord(sectionKey, {
           title,
@@ -725,11 +789,19 @@ export function ContentForm({
           <div className="space-y-3">
             {imagePreviewUrl ? (
               <div className="space-y-3">
-                <img
-                  src={imagePreviewUrl}
-                  alt={`${field.label} preview`}
-                  className="h-40 w-full rounded-xl border border-gray-200 bg-gray-50 object-contain p-3"
-                />
+                {imagePreviewUrl.startsWith("data:") ? (
+                  <img
+                    src={imagePreviewUrl}
+                    alt={`${field.label} preview`}
+                    className="h-40 w-full rounded-xl border border-gray-200 bg-gray-50 object-contain p-3"
+                  />
+                ) : (
+                  <SafeImage
+                    src={imagePreviewUrl}
+                    alt={`${field.label} preview`}
+                    className="h-40 w-full rounded-xl border border-gray-200 bg-gray-50 object-contain p-3"
+                  />
+                )}
                 <div className="flex gap-2">
                   <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                     Replace Image
