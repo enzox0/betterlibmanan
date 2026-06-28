@@ -1,8 +1,10 @@
+import dns from "dns";
+// Override DNS servers to bypass local resolver issues
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 import dotenv from "dotenv";
 import path from "path";
 
-// Load .env from project root
-// From apps/worker/src → go up 3 folders: src → worker → apps → root
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import axios from "axios";
 import { config } from "./shared/config";
