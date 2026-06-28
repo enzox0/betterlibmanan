@@ -13,7 +13,12 @@ import {
   LuChevronRight,
   LuUser,
   LuUpload,
+  LuBuilding2,
+  LuUsers,
+  LuCalendar,
+  LuClock,
 } from "react-icons/lu";
+import SafeImage from "@/modules/landing/components/ui/SafeImage";
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
 import { useBetterLugsStore } from "../store/betterLugsStore";
@@ -27,6 +32,7 @@ import { useContactStore } from "../store/contactStore";
 import { useQuizStore } from "../store/quizStore";
 import { useEmergencyContactsStore } from "../store/emergencyContactsStore";
 import { useMarqueeImagesStore } from "../store/marqueeImagesStore";
+import { useMunicipalHallStore } from "../store/municipalHallStore";
 import { mockSections } from "../data/mockSections";
 import type { ContentRecord } from "../types/admin.types";
 import { ContentForm } from "../components/records/ContentForm";
@@ -919,6 +925,233 @@ function BarangayMapLayout({
 
 // ─── Layout router ─────────────────────────────────────────────────────────────
 
+/** Municipal Hall — single-record info panel editor */
+function MunicipalHallLayout({
+  records,
+  editRef,
+  onEdit,
+  onDelete,
+  onAdd,
+}: {
+  records: ContentRecord[];
+  editRef: React.RefObject<HTMLButtonElement>;
+  onEdit: (r: ContentRecord) => void;
+  onDelete: (r: ContentRecord) => void;
+  onAdd: () => void;
+}) {
+  if (records.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 py-14 text-center">
+        <LuBuilding2
+          className="mx-auto h-9 w-9 text-gray-300 mb-2"
+          aria-hidden="true"
+        />
+        <p className="text-sm text-gray-400">
+          No Municipal Hall record yet. This powers the info panel on the map.
+        </p>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2"
+        >
+          Add the Municipal Hall record
+        </button>
+      </div>
+    );
+  }
+
+  const record = records[0];
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Live preview banner */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 flex items-center gap-2">
+        <LuBuilding2
+          className="h-4 w-4 text-blue-500 flex-shrink-0"
+          aria-hidden="true"
+        />
+        <p className="text-xs text-blue-700 font-medium">
+          This record controls the Municipal Hall info modal displayed on the
+          public map. Only one record is active at a time.
+        </p>
+      </div>
+
+      {/* Record card */}
+      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        {/* Card header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-neutral-900 flex items-center justify-center flex-shrink-0">
+              <LuBuilding2 className="h-5 w-5 text-white" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">{record.title}</p>
+              <div className="mt-0.5 flex items-center gap-2">
+                <StatusBadge status={record.status} />
+                <span className="text-[10px] text-gray-400">
+                  Updated {formatLastUpdated(record.updatedAt)}
+                </span>
+              </div>
+            </div>
+          </div>
+          <CardActions
+            record={record}
+            editRef={editRef}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        </div>
+
+        {/* Detail grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-50">
+          {/* Left column */}
+          <div className="px-5 py-4 flex flex-col gap-3">
+            {record.fields.imageUrl && (
+              <div>
+                <SafeImage
+                  src={record.fields.imageUrl as string}
+                  alt={record.title}
+                  className="w-full h-40 object-cover rounded-xl border border-gray-200"
+                />
+              </div>
+            )}
+            {record.fields.description && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">
+                  Description
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed line-clamp-4">
+                  {record.fields.description}
+                </p>
+              </div>
+            )}
+            {record.fields.address && (
+              <div className="flex items-start gap-2">
+                <LuMapPin
+                  className="h-3.5 w-3.5 text-gray-400 flex-shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">
+                    Address
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    {record.fields.address}
+                  </p>
+                </div>
+              </div>
+            )}
+            {record.fields.province && (
+              <div className="flex items-start gap-2">
+                <LuMapPin
+                  className="h-3.5 w-3.5 text-gray-400 flex-shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">
+                    Province
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    {record.fields.province}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right column */}
+          <div className="px-5 py-4 flex flex-col gap-3">
+            {(record.fields.barangays || record.fields.founded) && (
+              <div className="grid grid-cols-2 gap-3">
+                {record.fields.barangays && (
+                  <div className="flex items-start gap-2">
+                    <LuUsers
+                      className="h-3.5 w-3.5 text-gray-400 flex-shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">
+                        Barangays
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {record.fields.barangays}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {record.fields.founded && (
+                  <div className="flex items-start gap-2">
+                    <LuCalendar
+                      className="h-3.5 w-3.5 text-gray-400 flex-shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">
+                        Founded
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {record.fields.founded}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {(record.fields.officeHoursWeekday ||
+              record.fields.officeHoursWeekend) && (
+              <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5 flex items-center gap-1.5">
+                  <LuClock className="h-3 w-3" aria-hidden="true" />
+                  Office Hours
+                </p>
+                <div className="flex flex-col gap-1">
+                  {record.fields.officeHoursWeekday && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500 font-medium">
+                        Mon – Fri
+                      </span>
+                      <span className="text-gray-800">
+                        {record.fields.officeHoursWeekday}
+                      </span>
+                    </div>
+                  )}
+                  {record.fields.officeHoursWeekend && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500 font-medium">
+                        Sat – Sun
+                      </span>
+                      <span className="text-gray-800">
+                        {record.fields.officeHoursWeekend}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Warning if more than 1 record somehow exists */}
+      {records.length > 1 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          ⚠ Multiple records detected ({records.length}). Only the first
+          published record is shown on the public page. Delete the extras to
+          keep this section clean.
+          <div className="mt-2 flex flex-col gap-2">
+            {records.slice(1).map((r) => (
+              <div key={r.id} className="flex items-center justify-between">
+                <span className="truncate font-medium">{r.title}</span>
+                <CardActions record={r} onEdit={onEdit} onDelete={onDelete} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionContent({
   sectionKey,
   records,
@@ -960,6 +1193,8 @@ function SectionContent({
       return <BarangayMapLayout {...props} />;
     case "marquee-images":
       return <MarqueeImagesLayout {...props} />;
+    case "municipal-hall":
+      return <MunicipalHallLayout {...props} />;
     case "freedom-wall":
       return <FreedomWallLayout onCountChange={onFreedomWallCountChange} />;
     default:
@@ -1004,6 +1239,10 @@ export function HomeModulePage() {
   );
   const marqueeImagesRecords = useMarqueeImagesStore((s) => s.adminRecords);
   const fetchAdminMarqueeImages = useMarqueeImagesStore(
+    (s) => s.fetchAdminRecords,
+  );
+  const municipalHallRecords = useMunicipalHallStore((s) => s.adminRecords);
+  const fetchAdminMunicipalHall = useMunicipalHallStore(
     (s) => s.fetchAdminRecords,
   );
   const [activeTab, setActiveTab] = useState<string>(
@@ -1062,6 +1301,9 @@ export function HomeModulePage() {
     fetchAdminMarqueeImages(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
+    fetchAdminMunicipalHall(accessToken).catch(() => {
+      // Preserve the last known records so the page remains usable offline.
+    });
   }, [
     accessToken,
     fetchAdminBarangayMap,
@@ -1075,6 +1317,7 @@ export function HomeModulePage() {
     fetchAdminQuiz,
     fetchAdminEmergencyContacts,
     fetchAdminMarqueeImages,
+    fetchAdminMunicipalHall,
   ]);
 
   const mergedRecords: Record<string, ContentRecord[]> = {
@@ -1090,6 +1333,7 @@ export function HomeModulePage() {
     quiz: quizRecords,
     "emergency-contacts": emergencyContactsRecords,
     "marquee-images": marqueeImagesRecords,
+    "municipal-hall": municipalHallRecords,
   };
 
   const allRecords = Object.values(mergedRecords).flat();
@@ -1127,7 +1371,9 @@ export function HomeModulePage() {
                       ? emergencyContactsRecords
                       : activeTab === "marquee-images"
                         ? marqueeImagesRecords
-                        : (mergedRecords[activeTab] ?? []);
+                        : activeTab === "municipal-hall"
+                          ? municipalHallRecords
+                          : (mergedRecords[activeTab] ?? []);
   const activePublished = activeRecords.filter(
     (r) => r.status === "published",
   ).length;

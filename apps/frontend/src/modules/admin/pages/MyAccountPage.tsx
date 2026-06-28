@@ -19,6 +19,7 @@ import {
   LuLoader,
   LuLoaderCircle,
 } from "react-icons/lu";
+import SafeImage from "@/modules/landing/components/ui/SafeImage";
 import { useAdminStore } from "../store/adminStore";
 import {
   getMeRequest,
@@ -431,11 +432,19 @@ function EditProfileModal({
                 {avatarPreviewUrl ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-4">
-                      <img
-                        src={avatarPreviewUrl}
-                        alt="Profile avatar preview"
-                        className="h-24 w-24 rounded-2xl border border-gray-200 bg-gray-50 object-cover"
-                      />
+                      {avatarPreviewUrl.startsWith("data:") ? (
+                        <img
+                          src={avatarPreviewUrl}
+                          alt="Profile avatar preview"
+                          className="h-24 w-24 rounded-2xl border border-gray-200 bg-gray-50 object-cover"
+                        />
+                      ) : (
+                        <SafeImage
+                          src={avatarPreviewUrl}
+                          alt="Profile avatar preview"
+                          className="h-24 w-24 rounded-2xl border border-gray-200 bg-gray-50 object-cover"
+                        />
+                      )}
                       <div className="flex gap-2">
                         <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                           Replace
@@ -1115,7 +1124,7 @@ export function MyAccountPage() {
         <div className="px-6 pb-6">
           <div className="flex items-start justify-between gap-4 -mt-10">
             {profile.avatarUrl ? (
-              <img
+              <SafeImage
                 src={profile.avatarUrl}
                 alt="Profile Avatar"
                 className="h-20 w-20 rounded-2xl object-cover shrink-0 ring-4 ring-white shadow-lg"
