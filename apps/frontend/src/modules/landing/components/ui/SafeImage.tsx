@@ -2,21 +2,46 @@ import { useEffect, useState } from "react";
 
 const LOGO_FALLBACK = "/logo.svg";
 
-// Detect Cloudflare R2 URLs (e.g., *.r2.dev)
-const isR2Url = (url: string) => {
+export const R2_DNS_CONFIG = {
+  cloudflare: {
+    preconnect: "https://pub.r2.dev",
+    dnsPrefetch: "https://pub.r2.dev",
+  },
+
+  google: {
+    preconnect: "https://maps.googleapis.com",
+    dnsPrefetch: "https://maps.googleapis.com",
+  },
+} as const;
+
+const R2_CUSTOM_BASE =
+  (import.meta.env.VITE_R2_PUBLIC_BASE_URL as string | undefined)
+    ?.replace(/\/+$/, "")
+    .toLowerCase() ?? "";
+
+const isR2Url = (url: string): boolean => {
   try {
-    const u = new URL(url);
-    return u.hostname.endsWith(".r2.dev");
+    const { hostname } = new URL(url);
+
+    if (hostname.endsWith(".r2.dev")) return true;
+
+    if (R2_CUSTOM_BASE) {
+      const customHost = new URL(R2_CUSTOM_BASE).hostname;
+      if (hostname === customHost) return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
 };
 
-// Rewrite R2 URL to use our backend proxy
-export const getProxiedUrl = (url: string) => {
+export const getProxiedUrl = (url: string): string => {
   if (!isR2Url(url)) return url;
 
-  const apiUrl = (import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, "");
+  const apiUrl = (
+    (import.meta.env.VITE_API_URL as string | undefined) || "/api"
+  ).replace(/\/+$/, "");
   return `${apiUrl}/properties/image-proxy?src=${encodeURIComponent(url)}`;
 };
 
@@ -30,11 +55,6 @@ interface SafeImageProps extends Omit<
   containerClassName?: string;
 }
 
-/**
- * Renders an image with a fallback when:
- * - No image URL is provided (src is null, undefined, or empty)
- * - Image fails to load (404, network error, etc.)
- */
 export default function SafeImage({
   src,
   alt = "",
