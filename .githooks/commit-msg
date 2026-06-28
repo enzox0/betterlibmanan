@@ -39,7 +39,7 @@ esac
 # Types from: https://www.conventionalcommits.org/
 # Also includes 'wip' as a valid type (blocked on protected branches below)
 # -----------------------------------------------------------------------------
-VALID_TYPES="feat|fix|chore|docs|style|refactor|perf|test|ci|build|revert|wip|hotfix|security|deps"
+VALID_TYPES="feat|fix|chore|docs|style|types|refactor|perf|test|ci|build|revert|wip|hotfix|security|deps"
 CONVENTIONAL_REGEX="^(${VALID_TYPES})(\([a-zA-Z0-9_\/-]+\))?!?: .+"
 
 if ! echo "$FIRST_LINE" | grep -qE "$CONVENTIONAL_REGEX"; then
@@ -50,7 +50,7 @@ if ! echo "$FIRST_LINE" | grep -qE "$CONVENTIONAL_REGEX"; then
   echo ""
   echo "   Valid types: feat, fix, chore, docs, style, refactor,"
   echo "                perf, test, ci, build, revert, wip, hotfix,"
-  echo "                security, deps"
+  echo "                security, deps, types"
   echo ""
   echo "   Examples:"
   echo "     feat(auth): add JWT refresh token rotation"
