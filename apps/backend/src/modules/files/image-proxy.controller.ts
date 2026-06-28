@@ -93,13 +93,11 @@ export async function proxyImage(
     proxyReq.on("error", (err) => {
       logger.error(`[image-proxy] Request error: ${err.message}`);
       if (!res.headersSent) {
-        res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to proxy image",
-            error: err.message,
-          });
+        res.status(500).json({
+          success: false,
+          message: "Failed to proxy image",
+          error: err.message,
+        });
       }
     });
 
@@ -111,13 +109,11 @@ export async function proxyImage(
       code: err.code,
     });
     if (!res.headersSent) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to proxy image",
-          error: err.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Failed to proxy image",
+        error: err.message,
+      });
     }
   }
 }
