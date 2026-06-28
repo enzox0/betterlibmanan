@@ -9,9 +9,7 @@ declare global {
           opts?: google.maps.MapOptions,
         ) => google.maps.Map;
         Data: new (opts?: { map?: google.maps.Map }) => google.maps.Data;
-        // Required when loading the JS API with `loading=async`. Resolves
-        // when the named library is ready and its constructors are usable.
-        importLibrary: (libraryName: string) => Promise<unknown>;
+        importLibrary?: (libraryName: string) => Promise<unknown>;
       };
     };
   }
@@ -60,10 +58,13 @@ declare global {
       setStyle(
         style: DataStyleOptions | ((feature: DataFeature) => DataStyleOptions),
       ): void;
+      overrideStyle(feature: DataFeature, style: DataStyleOptions): void;
+      revertStyle(feature?: DataFeature): void;
       addListener(
         eventName: string,
         handler: (event: DataMouseEvent) => void,
       ): void;
+      setMap(map: google.maps.Map | null): void;
     }
   }
 }
