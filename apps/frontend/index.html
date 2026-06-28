@@ -46,10 +46,18 @@
     <link rel="icon" type="image/x-icon" href="/betterlibmanan-icon.ico" />
     <link rel="icon" type="image/png" sizes="192x192" href="/betterlibmanan.png" />
     
-    <!-- Preconnect for Performance -->
+    <!-- Preconnect / DNS-prefetch for Performance -->
+    <!-- Google: Fonts + Maps API (used by WeatherMapSection and typography) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://maps.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://maps.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://maps.googleapis.com" />
+    <link rel="dns-prefetch" href="https://maps.gstatic.com" />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Cloudflare R2: native *.r2.dev CDN used for uploaded assets -->
+    <link rel="preconnect" href="https://pub.r2.dev" crossorigin />
+    <link rel="dns-prefetch" href="https://pub.r2.dev" />
     
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
