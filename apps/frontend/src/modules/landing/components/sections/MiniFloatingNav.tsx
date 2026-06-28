@@ -14,9 +14,7 @@ interface NavItem {
   label: string;
   description: string;
   id: string;
-  /** Route to navigate to. If sectionId is set, we scroll instead when already on this route. */
   href: string;
-  /** When provided, scrolls to this element id on the target page. */
   sectionId?: string;
 }
 
@@ -101,7 +99,6 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
 
   return (
     <>
-      {/* Desktop: left-side vertical nav */}
       <motion.nav
         className="fixed left-2 lg:left-6 inset-y-0 z-[100] hidden md:flex items-center pointer-events-none"
         initial={false}
@@ -130,7 +127,6 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
         </div>
       </motion.nav>
 
-      {/* Mobile / tablet: bottom dock */}
       {visible && (
         <nav className="fixed bottom-4 inset-x-0 z-[100] flex md:hidden justify-center px-4">
           <motion.div
@@ -184,10 +180,9 @@ function NavButton({ item, index, onClick }: NavButtonProps) {
 
   const expanded = isMobile ? false : isHovered;
 
-  // Half of the extra height added above and below the base 44px
   const extraPadding = useMemo(() => {
-    const extraHeight = item.label.length * 5; // same as expandedHeight calculation
-    return `${extraHeight / 2 + 2}px`; // 6px is base p-1.5
+    const extraHeight = item.label.length * 5;
+    return `${extraHeight / 2 + 2}px`;
   }, [item.label.length]);
 
   return (

@@ -15,8 +15,6 @@ import {
   updateNotePosition as apiUpdateNotePosition,
 } from "@/api/freedomWall";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface Note {
   id: string;
   content: string;
@@ -27,9 +25,6 @@ interface Note {
   createdAt?: string;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-// No extra spaces — these strings are stored in the DB and must match exactly
 const COLORS = [
   "bg-yellow-100 border-yellow-300 text-yellow-900",
   "bg-blue-100 border-blue-300 text-blue-900",
@@ -48,12 +43,8 @@ const SWATCH: Record<string, string> = {
   "bg-orange-100 border-orange-300 text-orange-900": "bg-orange-400",
 };
 
-// Canvas is 6000×6000 px, offset by -2500 so (0,0) sits near the center.
-// This gives ~2500 px of space in every direction before notes clip.
 const CANVAS_SIZE = 6000;
-const CANVAS_OFFSET = 2500; // left/top offset applied to the canvas div
-
-// ─── Component ────────────────────────────────────────────────────────────────
+const CANVAS_OFFSET = 2500;
 
 export function FreedomWallSection() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -72,8 +63,6 @@ export function FreedomWallSection() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Refs mirror state so the wheel handler always sees the latest values
-  // without re-binding the listener on every change.
   const scaleRef = useRef(scale);
   const positionRef = useRef(position);
   useEffect(() => {
@@ -83,7 +72,6 @@ export function FreedomWallSection() {
     positionRef.current = position;
   }, [position]);
 
-  // ── Load notes + center on the latest one ───────────────────────────────────
   useEffect(() => {
     getNotes()
       .then((data: any[]) => {
@@ -98,22 +86,16 @@ export function FreedomWallSection() {
         }));
         setNotes(mapped);
 
-        // Center the viewport on the most recently created note.
-        // API returns notes sorted by createdAt DESC, so mapped[0] is newest.
         if (mapped.length > 0) {
           const latest = mapped[0];
           const board = boardRef.current;
           if (!board) return;
 
-          // Wait one frame so offsetWidth/Height are correct after layout.
           requestAnimationFrame(() => {
             const bw = board.offsetWidth;
             const bh = board.offsetHeight;
-            // Note center in canvas coords (note is ~240×150, top-left at x,y)
             const noteCenterX = latest.x + 120;
             const noteCenterY = latest.y + 75;
-            // Inverse of: vp = -CANVAS_OFFSET + canvasCoord*scale + pan
-            // Solving pan so that noteCenter renders at board center:
             const s = scaleRef.current;
             const panX = bw / 2 + CANVAS_OFFSET - noteCenterX * s;
             const panY = bh / 2 + CANVAS_OFFSET - noteCenterY * s;
@@ -125,7 +107,6 @@ export function FreedomWallSection() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Toolbar: absolute → fixed once sentinel scrolls behind the navbar ────────
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -137,14 +118,6 @@ export function FreedomWallSection() {
     return () => observer.disconnect();
   }, []);
 
-  // ── Wheel → zoom around the cursor ───────────────────────────────────────────
-  // Math (with transform-origin: 0 0 and canvas CSS left=-CANVAS_OFFSET):
-  //   A canvas-coord point (cx, cy) renders at board-coord
-  //     vp = (-CANVAS_OFFSET + cx*scale + panX, …)
-  //   For a cursor at board-coord (mx, my), the canvas point under it is:
-  //     cx = (mx + CANVAS_OFFSET - panX) / scale
-  //   To keep that same point under the cursor at newScale, solve for newPanX:
-  //     newPanX = mx + CANVAS_OFFSET - (mx + CANVAS_OFFSET - panX) * (newScale / scale)
   useEffect(() => {
     const board = boardRef.current;
     if (!board) return;
@@ -158,7 +131,7 @@ export function FreedomWallSection() {
       const factor = e.deltaY > 0 ? 0.95 : 1.05;
       const oldScale = scaleRef.current;
       const newScale = Math.min(Math.max(oldScale * factor, 0.2), 3);
-      if (newScale === oldScale) return; // hit min/max
+      if (newScale === oldScale) return;
 
       const ratio = newScale / oldScale;
       const oldPan = positionRef.current;
@@ -174,7 +147,6 @@ export function FreedomWallSection() {
     return () => board.removeEventListener("wheel", onWheel);
   }, []);
 
-  // ── Actions ──────────────────────────────────────────────────────────────────
   const addNote = async () => {
     if (!newContent.trim()) {
       toast("Please write something first!", "error");
@@ -184,8 +156,6 @@ export function FreedomWallSection() {
     const bw = el?.offsetWidth ?? 800;
     const bh = el?.offsetHeight ?? 600;
 
-    // Convert "board center" to canvas coordinates using the rendering math:
-    //   vp = -CANVAS_OFFSET + cx*scale + panX   →   cx = (vp + CANVAS_OFFSET - panX) / scale
     const cx = (bw / 2 + CANVAS_OFFSET - position.x) / scale;
     const cy = (bh / 2 + CANVAS_OFFSET - position.y) / scale;
 
@@ -255,7 +225,6 @@ export function FreedomWallSection() {
     );
   };
 
-  // ── Toolbar base classes ─────────────────────────────────────────────────────
   const toolbarBase = cn(
     "flex items-center gap-1.5 sm:gap-2",
     "px-2 sm:px-3 py-1.5 sm:py-2",
@@ -264,14 +233,12 @@ export function FreedomWallSection() {
     "z-[100]",
   );
 
-  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div
       ref={sectionRef}
       className="relative flex-1 bg-gray-950 select-none"
       style={{ minHeight: "100dvh", overflow: "hidden" }}
     >
-      {/* Dot-grid background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.06]"
         style={{
@@ -281,14 +248,11 @@ export function FreedomWallSection() {
         }}
       />
 
-      {/* Sentinel — 1px element at the section top watched by IntersectionObserver */}
       <div
         ref={sentinelRef}
         className="absolute top-0 left-0 w-full h-px pointer-events-none"
       />
 
-      {/* ── Toolbar ──────────────────────────────────────────────────────────
-           absolute (inside section) while in view → fixed below navbar on scroll */}
       <div
         className={cn(
           toolbarBase,
@@ -297,7 +261,6 @@ export function FreedomWallSection() {
             : "absolute top-3 sm:top-4 left-1/2 -translate-x-1/2",
         )}
       >
-        {/* Title */}
         <div className="flex items-center gap-1.5 pr-2 sm:pr-3 border-r border-white/10">
           <FaStickyNote className="text-blue-400 shrink-0" size={13} />
           <span className="text-white font-bold text-xs sm:text-sm tracking-wide whitespace-nowrap">
@@ -305,12 +268,10 @@ export function FreedomWallSection() {
           </span>
         </div>
 
-        {/* Hint — md+ only */}
         <span className="hidden md:block text-[10px] text-gray-500 uppercase tracking-widest pr-2 sm:pr-3 border-r border-white/10 whitespace-nowrap">
           scroll&nbsp;to&nbsp;zoom&nbsp;·&nbsp;drag&nbsp;to&nbsp;pan
         </span>
 
-        {/* Zoom % + reset */}
         <div className="flex items-center gap-1">
           <span className="hidden xs:block text-[11px] font-bold text-gray-400 tabular-nums w-8 text-center">
             {Math.round(scale * 100)}%
@@ -327,7 +288,6 @@ export function FreedomWallSection() {
 
         <div className="w-px h-4 bg-white/10 shrink-0" />
 
-        {/* Add Note */}
         <button
           onClick={() => setIsAdding(true)}
           style={{ minHeight: 0 }}
@@ -338,7 +298,6 @@ export function FreedomWallSection() {
         </button>
       </div>
 
-      {/* ── Board viewport ───────────────────────────────────────────────────── */}
       <div
         ref={boardRef}
         className={cn(
@@ -347,9 +306,6 @@ export function FreedomWallSection() {
         )}
         style={{ touchAction: "none", overflow: "hidden" }}
       >
-        {/* ── Infinite canvas ─────────────────────────────────────────────────
-             6000×6000 px, offset by -2500 px so canvas (0,0) is near center.
-             Framer Motion applies `x`/`y` as CSS transform on top of this.   */}
         <motion.div
           drag
           dragMomentum={false}
@@ -369,7 +325,7 @@ export function FreedomWallSection() {
             height: `${CANVAS_SIZE}px`,
             left: `-${CANVAS_OFFSET}px`,
             top: `-${CANVAS_OFFSET}px`,
-            transformOrigin: "0 0", // scale pivots from canvas top-left → cursor math is straightforward
+            transformOrigin: "0 0",
             touchAction: "none",
           }}
         >
@@ -412,7 +368,6 @@ export function FreedomWallSection() {
                   touchAction: "none",
                 }}
               >
-                {/* Timestamp */}
                 <div className="absolute top-1 left-0 right-0 flex justify-center pointer-events-none">
                   <span className="text-[7px] sm:text-[8px] font-semibold opacity-30 uppercase tracking-tight">
                     {fmtDate(note.createdAt)}
@@ -431,7 +386,6 @@ export function FreedomWallSection() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Empty state — outside canvas so it doesn't pan/zoom */}
         {notes.length === 0 && !isAdding && !loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 pointer-events-none gap-3 px-4">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-dashed border-gray-700 flex items-center justify-center">
@@ -444,7 +398,6 @@ export function FreedomWallSection() {
           </div>
         )}
 
-        {/* Loading state */}
         {loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 pointer-events-none gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
@@ -455,7 +408,6 @@ export function FreedomWallSection() {
         )}
       </div>
 
-      {/* ── Mobile FAB ───────────────────────────────────────────────────────── */}
       <div
         className="absolute bottom-6 right-5 z-20 sm:hidden"
         style={{
@@ -472,7 +424,6 @@ export function FreedomWallSection() {
         </button>
       </div>
 
-      {/* ── Add Note modal ───────────────────────────────────────────────────── */}
       <AnimatePresence>
         {isAdding && (
           <div
@@ -496,12 +447,10 @@ export function FreedomWallSection() {
                 "pb-[max(1.25rem,env(safe-area-inset-bottom))]",
               )}
             >
-              {/* Sheet handle (mobile) */}
               <div className="flex justify-center mb-4 sm:hidden">
                 <div className="w-10 h-1 rounded-full bg-neutral-200" />
               </div>
 
-              {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <FaStickyNote size={14} className="text-blue-500" />
@@ -522,7 +471,6 @@ export function FreedomWallSection() {
                 </button>
               </div>
 
-              {/* Textarea — 16px prevents iOS auto-zoom */}
               <textarea
                 autoFocus
                 value={newContent}
@@ -536,7 +484,6 @@ export function FreedomWallSection() {
                 {newContent.length}/500
               </p>
 
-              {/* Color picker */}
               <div className="mb-4">
                 <p className="text-xs font-semibold text-neutral-500 mb-2.5 flex items-center gap-1.5 uppercase tracking-wide">
                   <FaPalette size={11} />
@@ -561,7 +508,6 @@ export function FreedomWallSection() {
                 </div>
               </div>
 
-              {/* Preview */}
               <div
                 className={cn(
                   "px-3 py-2 rounded-xl border text-xs font-medium mb-5 opacity-75",
@@ -571,7 +517,6 @@ export function FreedomWallSection() {
                 Preview — your note will look like this
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <button
                   onClick={() => {

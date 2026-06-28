@@ -3,6 +3,7 @@ import { FaEnvelope, FaPhone, FaUserTie } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 import { useLeadershipStore } from "@/modules/admin/store/leadershipStore";
+import SafeImage from "../ui/SafeImage";
 
 export function LeadershipSection({
   isLoading = false,
@@ -14,9 +15,7 @@ export function LeadershipSection({
   const fetchPublicRecords = useLeadershipStore((s) => s.fetchPublicRecords);
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Preserve the last known records
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
   const officials = publicRecords.map((record) => ({
@@ -87,17 +86,15 @@ export function LeadershipSection({
                     key={official.name}
                     className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
                   >
-                    {/* Background image — bottom layer */}
                     {official.avatar && (
-                      <img
+                      <SafeImage
                         src={official.avatar}
                         alt=""
-                        aria-hidden="true"
                         className="absolute inset-y-0 right-0 h-full w-1/2 object-cover object-top"
+                        containerClassName="absolute inset-y-0 right-0 h-full w-1/2"
                       />
                     )}
 
-                    {/* Fading overlay — middle layer (left opaque → right transparent) */}
                     {official.avatar && (
                       <div
                         className="absolute inset-0"
@@ -108,7 +105,6 @@ export function LeadershipSection({
                       />
                     )}
 
-                    {/* Panel content — top layer */}
                     <div className="relative z-10 p-8">
                       <div className="mb-4">
                         <span className="inline-flex items-center rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white">

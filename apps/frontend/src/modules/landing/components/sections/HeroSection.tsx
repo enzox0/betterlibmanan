@@ -1,13 +1,8 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useMarqueeImagesStore } from "@/modules/admin/store/marqueeImagesStore";
+import SafeImage, { getProxiedUrl } from "../ui/SafeImage";
 
-// ---------------------------------------------------------------------------
-// MarqueeRow
-//
-// Preloads all images before rendering to prevent layout shift and flicker.
-// Duplicates the strip 4x to ensure seamless infinite loop with no visible cut.
-// ---------------------------------------------------------------------------
 function MarqueeRow({
   images,
   duration,
@@ -37,9 +32,9 @@ function MarqueeRow({
 
     images.forEach((img) => {
       const imgEl = new Image();
-      imgEl.src = img.src;
+      imgEl.src = getProxiedUrl(img.src);
       imgEl.onload = checkAllLoaded;
-      imgEl.onerror = checkAllLoaded; // Treat errors as loaded to prevent blocking
+      imgEl.onerror = checkAllLoaded;
     });
 
     return () => {
@@ -54,14 +49,11 @@ function MarqueeRow({
           key={`${idx}-${i}`}
           className="relative h-full w-56 shrink-0 overflow-hidden sm:w-64 lg:w-72"
         >
-          <img
+          <SafeImage
             src={img.src}
             alt={img.alt}
-            loading="eager"
-            decoding="sync"
-            width={400}
-            height={220}
             className="h-full w-full object-cover"
+            containerClassName="h-full w-full"
           />
         </div>
       ))}
@@ -69,11 +61,9 @@ function MarqueeRow({
   );
 
   if (!isLoaded || images.length === 0) {
-    // Invisible placeholder while images load
     return <div className="w-full flex-1" />;
   }
 
-  // Render 4 copies to ensure seamless loop at any viewport size & speed
   return (
     <div className="w-full flex-1 overflow-hidden">
       <div
@@ -91,15 +81,7 @@ function MarqueeRow({
   );
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Utility: Seeded Fisher-Yates shuffle
-//
-// Accepts an optional seed in [0, 1). Using the same seed produces the same
-// order — which we want within a React render cycle — but a different seed
-// (generated once per component mount) gives a different order every page load.
-// ───────────────────────────────────────────────────────────────────────────────
 function mulberry32(seed: number) {
-  // Simple 32-bit PRNG that turns a float seed into a sequence of floats.
   let s = (seed * 0xffffffff) >>> 0;
   return () => {
     s += 0x6d2b79f5;
@@ -120,26 +102,16 @@ function shuffleArray<T>(array: T[], seed: number = Math.random()): T[] {
   return shuffled;
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-// HeroSection
-// ───────────────────────────────────────────────────────────────────────────────
 export function HeroSection() {
   const publicRecords = useMarqueeImagesStore((s) => s.publicRecords);
   const fetchPublicRecords = useMarqueeImagesStore((s) => s.fetchPublicRecords);
 
-  // Stable per-mount seed: randomised once when the component mounts, never
-  // changes again so the marquee order is consistent within a session but
-  // different on every page load / hard refresh.
   const seedRef = useRef(Math.random());
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Silently fail - will use cached records
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
-  // Recompute only when the record list itself changes (new upload, delete,
-  // status change) OR when the per-mount seed changes (i.e. only on mount).
   const rowImages = useMemo(() => {
     const allImages = publicRecords
       .filter((r) => r.fields.imageUrl)
@@ -148,8 +120,6 @@ export function HeroSection() {
         alt: (r.fields.alt ?? r.title) as string,
       }));
 
-    // Seeded Fisher-Yates so the result is stable within the same mount but
-    // different across page loads.
     const shuffled = shuffleArray(allImages, seedRef.current);
 
     const rows: [typeof allImages, typeof allImages, typeof allImages] = [
@@ -159,7 +129,7 @@ export function HeroSection() {
     ];
     shuffled.forEach((img, i) => rows[i % 3].push(img));
     return rows;
-  }, [publicRecords]); // seedRef.current never changes after mount so omitting it is intentional
+  }, [publicRecords]);
 
   return (
     <>
@@ -171,7 +141,6 @@ export function HeroSection() {
       `}</style>
 
       <section className="relative overflow-hidden bg-gray-950">
-        {/* ── BACKGROUND: three marquee rows ──────────────────────────── */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 flex flex-col"
@@ -181,13 +150,11 @@ export function HeroSection() {
           <MarqueeRow images={rowImages[2]} duration={55} reverse />
         </div>
 
-        {/* ── OVERLAYS ─────────────────────────────────────────────────── */}
         <div aria-hidden="true" className="absolute inset-0 bg-gray-950/75" />
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-transparent to-gray-950/60"
         />
-        {/* Top & bottom edge fades */}
         <div
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-gray-950 to-transparent"
@@ -196,13 +163,11 @@ export function HeroSection() {
           aria-hidden="true"
           className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-gray-950 to-transparent"
         />
-        {/* Center spotlight dimming - radial gradient darkens toward center */}
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.5)_50%,rgba(0,0,0,0.7)_100%)]"
         />
 
-        {/* ── HERO CONTENT ─────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -211,7 +176,6 @@ export function HeroSection() {
         >
           <div className="mx-auto flex min-h-[70vh] max-w-7xl items-center px-4 pb-12 pt-10 sm:min-h-[80vh] sm:px-6 lg:px-8 lg:pb-16 lg:pt-12">
             <div className="grid w-full items-center gap-8 lg:grid-cols-2">
-              {/* Left – headline + CTAs */}
               <div className="text-center lg:text-left">
                 <h1 className="mb-6 text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl xl:text-6xl">
                   Welcome to <span className="text-yellow-400">Better</span>
@@ -231,7 +195,6 @@ export function HeroSection() {
                 </div>
               </div>
 
-              {/* Right – search card */}
               <div className="relative mx-auto w-full max-w-md lg:max-w-none">
                 <div className="rounded-2xl bg-white p-6 shadow-xl sm:p-8">
                   <div className="mb-6 flex items-center gap-3">

@@ -10,8 +10,8 @@ import {
 } from "react-icons/lu";
 import { Skeleton } from "@/shared/ui";
 import { useBarangayMapStore } from "@/modules/admin/store/barangayMapStore";
+import { getProxiedUrl } from "../ui/SafeImage";
 
-// Barangay data with detailed info
 type BarangayData = {
   image: string;
   description: string;
@@ -35,9 +35,6 @@ function normalizeBarangayKey(name: string): string {
   return name.trim().toLowerCase();
 }
 
-// Build an SVG-safe id from a barangay name (no spaces or special chars).
-// Required because url(#id) references break when the id contains spaces
-// (e.g. "Duang Niog" -> "Duang_Niog"), causing tiles to render with no fill.
 function getPatternId(name: string, prefix: string = "img"): string {
   const safe = name.replace(/[^a-zA-Z0-9_-]/g, "_");
   return `${prefix}-${safe}`;
@@ -50,7 +47,6 @@ function parseList(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-// GeoJSON types
 type Coordinate = [number, number];
 type Polygon = Coordinate[][];
 type MultiPolygon = Polygon[];
@@ -96,28 +92,23 @@ export function BarangayMapSection({
   const svgHeight = 450;
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Keep the section usable with cached records and fallbacks.
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
-  // Handle mouse move
   const handleMouseMove = (e: React.MouseEvent) => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      const tooltipWidth = 192; // w-48 is 192px
+      const tooltipWidth = 192;
       const tooltipHeight = 160;
 
       let x = e.clientX - rect.left - tooltipWidth / 2;
       let y = e.clientY - rect.top - tooltipHeight - 20;
 
-      // Prevent tooltip from going off left/right edges
       if (x < 10) x = 10;
       if (x + tooltipWidth > rect.width - 10) {
         x = rect.width - tooltipWidth - 10;
       }
 
-      // Prevent tooltip from going off top edge
       if (y < 10) {
         y = e.clientY - rect.top + 20;
       }
@@ -126,7 +117,6 @@ export function BarangayMapSection({
     }
   };
 
-  // Load GeoJSON
   useEffect(() => {
     fetch("/geojson/bgysubmuns-municity-501718000.0.01.json")
       .then((res) => res.json())
@@ -166,7 +156,6 @@ export function BarangayMapSection({
     [publicRecords],
   );
 
-  // Auto-hover effect - randomly cycle through barangays when not interacting
   useEffect(() => {
     if (!geoJson || selectedBarangay) return;
 
@@ -187,7 +176,7 @@ export function BarangayMapSection({
 
         currentIndex = nextIndex;
         setAutoHoveredBarangay(barangayNames[currentIndex]);
-      }, 3000); // Change every 3 seconds
+      }, 3000);
     };
 
     startAutoHover();
@@ -199,7 +188,6 @@ export function BarangayMapSection({
     };
   }, [geoJson, selectedBarangay]);
 
-  // Calculate bounds of all features
   const getBounds = (features: Feature[]) => {
     let minLng = Infinity,
       maxLng = -Infinity;
@@ -226,7 +214,6 @@ export function BarangayMapSection({
     return { minLng, maxLng, minLat, maxLat };
   };
 
-  // Convert GeoJSON coordinates to SVG coordinates with given bounds
   const convertCoords = (
     coords: Coordinate,
     bounds: ReturnType<typeof getBounds>,
@@ -250,7 +237,6 @@ export function BarangayMapSection({
     return [x, y];
   };
 
-  // Generate path string for a polygon
   const getPathString = (
     geometry: Geometry,
     bounds: ReturnType<typeof getBounds>,
@@ -282,13 +268,11 @@ export function BarangayMapSection({
     return path;
   };
 
-  // Get bounds of the current selection (all features)
   const bounds = useMemo(() => {
     if (!geoJson) return { minLng: 0, maxLng: 0, minLat: 0, maxLat: 0 };
     return getBounds(geoJson.features);
   }, [geoJson]);
 
-  // Get barangay data
   const getBarangayData = (name: string) =>
     barangayData[normalizeBarangayKey(name)] || defaultBarangayData;
   const hoveredData = hoveredBarangay ? getBarangayData(hoveredBarangay) : null;
@@ -299,7 +283,6 @@ export function BarangayMapSection({
     ? getBarangayData(selectedBarangay)
     : null;
 
-  // Find the selected feature
   const selectedFeature = useMemo(() => {
     if (!geoJson || !selectedBarangay) return null;
     return geoJson.features.find(
@@ -307,7 +290,6 @@ export function BarangayMapSection({
     );
   }, [geoJson, selectedBarangay]);
 
-  // Calculate bounds for a single feature
   const getFeatureBounds = (feature: Feature) => {
     let minLng = Infinity,
       maxLng = -Infinity;
@@ -337,7 +319,6 @@ export function BarangayMapSection({
     return getFeatureBounds(selectedFeature);
   }, [selectedFeature]);
 
-  // Larger SVG size for modal
   const modalSvgWidth = 800;
   const modalSvgHeight = 600;
 
@@ -368,7 +349,6 @@ export function BarangayMapSection({
             )}
           </div>
 
-          {/* Map Container */}
           <div className="relative">
             <div
               ref={containerRef}
@@ -383,7 +363,6 @@ export function BarangayMapSection({
                     className="w-full h-full"
                     preserveAspectRatio="xMidYMid meet"
                   >
-                    {/* Definitions for patterns */}
                     <defs>
                       {geoJson.features.map((feature) => (
                         <pattern
@@ -399,15 +378,17 @@ export function BarangayMapSection({
                           preserveAspectRatio="xMidYMid slice"
                         >
                           <image
-                            href={
-                              getBarangayData(feature.properties.adm4_en).image
-                            }
+                            href={getProxiedUrl(
+                              getBarangayData(feature.properties.adm4_en).image,
+                            )}
                             preserveAspectRatio="xMidYMid slice"
                             width="1"
                             height="1"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "/betterlibmanan.png";
+                              (e.target as SVGImageElement).setAttribute(
+                                "href",
+                                "/betterlibmanan.png",
+                              );
                             }}
                           />
                         </pattern>
@@ -483,7 +464,6 @@ export function BarangayMapSection({
               </div>
             </div>
 
-            {/* Floating Tooltip - Outside overflow-hidden container */}
             {(hoveredBarangay && hoveredData && !selectedBarangay) ||
             (autoHoveredBarangay &&
               autoHoveredData &&
@@ -499,11 +479,11 @@ export function BarangayMapSection({
                 <div className="space-y-2 w-48">
                   <div className="overflow-hidden rounded-lg">
                     <img
-                      src={
+                      src={getProxiedUrl(
                         hoveredBarangay
                           ? hoveredData!.image
-                          : autoHoveredData!.image
-                      }
+                          : autoHoveredData!.image,
+                      )}
                       alt={hoveredBarangay || autoHoveredBarangay!}
                       className="h-24 w-full object-cover"
                       onError={(e) => {
@@ -527,16 +507,13 @@ export function BarangayMapSection({
         </div>
       </motion.div>
 
-      {/* Selected barangay overlay */}
       {selectedBarangay && selectedData && selectedFeature && (
         <div className="fixed inset-0 z-[9999999]">
-          {/* Dim overlay */}
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => setSelectedBarangay(null)}
           />
 
-          {/* Left side: Polygon only - 70% width (desktop only) */}
           <div className="absolute left-0 top-0 w-[70%] h-full hidden items-center justify-center p-8 lg:flex">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -562,13 +539,15 @@ export function BarangayMapSection({
                     preserveAspectRatio="xMidYMid slice"
                   >
                     <image
-                      href={selectedData.image}
+                      href={getProxiedUrl(selectedData.image)}
                       preserveAspectRatio="xMidYMid slice"
                       width="1"
                       height="1"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "/betterlibmanan.png";
+                        (e.target as SVGImageElement).setAttribute(
+                          "href",
+                          "/betterlibmanan.png",
+                        );
                       }}
                     />
                   </pattern>
@@ -589,7 +568,6 @@ export function BarangayMapSection({
             </motion.div>
           </div>
 
-          {/* Right side: Info panel */}
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
@@ -605,32 +583,26 @@ export function BarangayMapSection({
             </button>
 
             <div className="p-0 lg:p-5">
-              {/* Image at top (mobile/tablet only) */}
               <div className="relative lg:hidden">
                 <img
-                  src={selectedData.image}
+                  src={getProxiedUrl(selectedData.image)}
                   alt={selectedBarangay}
                   className="w-full h-64 object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = "/betterlibmanan.png";
                   }}
                 />
-                {/* Overlay for better readability of close button */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
               </div>
 
               <div className="p-5 lg:p-0">
-                {/* Barangay name */}
                 <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">
                   {selectedBarangay}
                 </h1>
 
-                {/* Description */}
                 <p className="text-sm text-neutral-600 mb-4">
                   {selectedData.description}
                 </p>
 
-                {/* Quick stats */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
@@ -660,7 +632,6 @@ export function BarangayMapSection({
                   </div>
                 </div>
 
-                {/* Tourist Attractions */}
                 <div className="mb-4 rounded-lg border border-neutral-200 bg-white p-4">
                   <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
@@ -683,7 +654,6 @@ export function BarangayMapSection({
                   </ul>
                 </div>
 
-                {/* Festivals */}
                 <div className="rounded-lg border border-neutral-200 bg-white p-4">
                   <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">

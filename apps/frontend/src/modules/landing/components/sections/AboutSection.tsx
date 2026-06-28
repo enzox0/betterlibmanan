@@ -31,8 +31,6 @@ const fadeUpDelay = (delay: number) => ({
   transition: { ...fadeUp.transition, delay },
 });
 
-// ─── What is BetterLibmanan ────────────────────────────────────────────────────
-
 const pillars = [
   {
     icon: FaEye,
@@ -59,8 +57,6 @@ const pillars = [
       "Built by residents, for residents. Everyone is welcome to contribute data, report errors, or join the volunteer team.",
   },
 ];
-
-// ─── BetterGov tools ──────────────────────────────────────────────────────────
 
 const betterGovTools = [
   {
@@ -97,8 +93,6 @@ const betterGovTools = [
   },
 ];
 
-// ─── Better LGU Network ────────────────────────────────────────────────────────
-
 const betterLGUs = [
   { name: "Better Solano", href: "https://bettersolano.org" },
   { name: "Better Cainta", href: "https://bettercainta.org" },
@@ -109,8 +103,6 @@ const betterLGUs = [
   { name: "Better LB", href: "https://betterlb.org" },
   { name: "Better San Pablo", href: "https://bettersanpablo.org" },
 ];
-
-// ─── Contribute ───────────────────────────────────────────────────────────────
 
 const contributeItems = [
   {
@@ -139,12 +131,9 @@ const contributeItems = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function AboutSection() {
   return (
     <div className="bg-white">
-      {/* ── Hero ── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent pointer-events-none" />
         <motion.div
@@ -187,7 +176,6 @@ export function AboutSection() {
         </motion.div>
       </section>
 
-      {/* ── What is BetterLibmanan ── */}
       <section className="py-16 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeUp}>
@@ -234,7 +222,6 @@ export function AboutSection() {
         </div>
       </section>
 
-      {/* ── BetterGov.ph ── */}
       <section className="py-16 bg-neutral-50 border-y border-neutral-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -302,7 +289,6 @@ export function AboutSection() {
               </div>
             </div>
 
-            {/* BetterGov tools sidebar */}
             <div className="mt-10 lg:mt-0 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-4">
                 BetterGov.ph tools
@@ -333,7 +319,6 @@ export function AboutSection() {
         </div>
       </section>
 
-      {/* ── Better LGU Network ── */}
       <section className="py-16 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeUp}>
@@ -381,7 +366,6 @@ export function AboutSection() {
         </div>
       </section>
 
-      {/* ── Principles ── */}
       <section className="py-16 bg-gray-900">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeUp}>
@@ -437,7 +421,6 @@ export function AboutSection() {
         </div>
       </section>
 
-      {/* ── Get Involved ── */}
       <section className="py-16 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeUp}>
@@ -484,7 +467,6 @@ export function AboutSection() {
         </div>
       </section>
 
-      {/* ── Data Sources ── */}
       <section className="py-16 bg-neutral-50 border-t border-neutral-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeUp}>
@@ -552,7 +534,6 @@ export function AboutSection() {
         </div>
       </section>
 
-      {/* ── CTA Banner ── */}
       <section className="py-16 bg-gray-900 border-t border-neutral-800">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeUp} className="text-center">

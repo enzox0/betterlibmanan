@@ -15,8 +15,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface Discussion {
   id: string;
   author: string;
@@ -43,8 +41,6 @@ interface Person {
   name: string;
   role: string;
 }
-
-// ─── Static Data ──────────────────────────────────────────────────────────────
 
 const INITIAL_DISCUSSIONS: Discussion[] = [
   {
@@ -111,13 +107,9 @@ const PEOPLE_TO_FOLLOW: Person[] = [
   { id: "5", name: "Doc_Villanueva", role: "Health Officer" },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Avatar({
   initials,
@@ -171,8 +163,6 @@ function SectionHeader({
   );
 }
 
-// ─── Discussion Card ──────────────────────────────────────────────────────────
-
 function DiscussionCard({
   discussion,
   index,
@@ -218,8 +208,6 @@ function DiscussionCard({
   );
 }
 
-// ─── Peer Group Card ──────────────────────────────────────────────────────────
-
 function PeerGroupCard({
   group,
   index,
@@ -238,10 +226,7 @@ function PeerGroupCard({
       transition={{ duration: 0.35, delay: index * 0.07 }}
       className="bg-white border border-neutral-200 rounded-2xl overflow-hidden flex items-stretch hover:border-neutral-300 hover:shadow-md transition-all"
     >
-      {/* Cover strip */}
       <div className="w-24 sm:w-32 shrink-0 bg-neutral-200" />
-
-      {/* Info */}
       <div className="flex-1 min-w-0 p-4 flex flex-col justify-between gap-2">
         <div>
           <h3 className="text-sm font-bold text-neutral-900 leading-snug">
@@ -274,8 +259,6 @@ function PeerGroupCard({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export function CommunitySection() {
   const { toast } = useToast();
   const [discussions, setDiscussions] =
@@ -284,7 +267,6 @@ export function CommunitySection() {
   const [followedPeople, setFollowedPeople] = useState<Set<string>>(new Set());
   const [isAddingDiscussion, setIsAddingDiscussion] = useState(false);
 
-  // New discussion form state
   const [newTitle, setNewTitle] = useState("");
   const [newTagInput, setNewTagInput] = useState("");
   const [newTags, setNewTags] = useState<string[]>([]);
@@ -362,7 +344,6 @@ export function CommunitySection() {
 
   return (
     <div className="min-h-screen bg-neutral-100">
-      {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="bg-white border-b border-neutral-200">
         <div className="responsive-container py-6 sm:py-8">
           <div className="flex items-center justify-between gap-4">
@@ -387,12 +368,9 @@ export function CommunitySection() {
         </div>
       </div>
 
-      {/* ── Main Content ────────────────────────────────────────────────────── */}
       <div className="responsive-container py-6 lg:py-8">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* ── Left / Main column ──────────────────────────────────────────── */}
           <div className="flex-1 min-w-0 flex flex-col gap-8">
-            {/* Trending Discussions */}
             <section>
               <SectionHeader
                 icon={<FaFire size={13} className="text-neutral-500" />}
@@ -407,7 +385,6 @@ export function CommunitySection() {
               </div>
             </section>
 
-            {/* Peer Groups */}
             <section>
               <SectionHeader
                 icon={<FaUsers size={13} className="text-neutral-500" />}
@@ -429,9 +406,7 @@ export function CommunitySection() {
             </section>
           </div>
 
-          {/* ── Right sidebar ────────────────────────────────────────────────── */}
           <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4">
-            {/* Featured Event Banner */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -470,7 +445,6 @@ export function CommunitySection() {
               </button>
             </motion.div>
 
-            {/* Trending Hashtags */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -497,7 +471,6 @@ export function CommunitySection() {
               </div>
             </motion.div>
 
-            {/* People to Follow */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -542,7 +515,6 @@ export function CommunitySection() {
         </div>
       </div>
 
-      {/* ── New Discussion Modal ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {isAddingDiscussion && (
           <div
@@ -563,12 +535,10 @@ export function CommunitySection() {
                 "pb-[max(1.25rem,env(safe-area-inset-bottom))]",
               )}
             >
-              {/* Sheet handle (mobile) */}
               <div className="flex justify-center mb-4 sm:hidden">
                 <div className="w-10 h-1 rounded-full bg-neutral-200" />
               </div>
 
-              {/* Header */}
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center">
@@ -588,7 +558,6 @@ export function CommunitySection() {
                 </button>
               </div>
 
-              {/* Title */}
               <label className="block mb-1 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
                 Discussion Title
               </label>
@@ -605,7 +574,6 @@ export function CommunitySection() {
                 {newTitle.length}/200
               </p>
 
-              {/* Tags */}
               <label className="block mb-1 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
                 Tags{" "}
                 <span className="normal-case font-normal">
@@ -657,7 +625,6 @@ export function CommunitySection() {
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex gap-3 mt-2">
                 <button
                   onClick={closeModal}

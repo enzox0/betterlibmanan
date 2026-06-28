@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import LogoLoop from "@/modules/landing/components/LogoLoop";
 import { useBetterLugsStore } from "@/modules/admin/store/betterLugsStore";
+import SafeImage from "../ui/SafeImage";
 
 const FALLBACK_LOGOS = [
   {
@@ -72,9 +73,7 @@ export default function PartnerLogos() {
   );
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Preserve the cached records so the logo section still renders offline.
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
   const logos =
@@ -121,12 +120,12 @@ export default function PartnerLogos() {
               className="bg-neutral-100 opacity-60 hover:opacity-100 transition-opacity duration-500"
               renderItem={(item, key) => {
                 const image = (
-                  <img
+                  <SafeImage
                     key={key}
                     src={(item as any).src}
                     alt={(item as any).alt}
                     className="h-[var(--logoloop-logoHeight)] w-auto object-contain"
-                    draggable={false}
+                    containerClassName="flex items-center"
                   />
                 );
 

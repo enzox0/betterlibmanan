@@ -28,9 +28,7 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
   const fetchPublicRecords = useContactStore((s) => s.fetchPublicRecords);
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Preserve the last known records
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
   const showSkeleton = isLoading || isPublicLoading;

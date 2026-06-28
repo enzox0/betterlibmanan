@@ -14,9 +14,7 @@ export function AtAGlanceSection({
   const fetchPublicRecords = useAtAGlanceStore((s) => s.fetchPublicRecords);
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Fail silently — cached records will still be shown
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
   const isLoading = externalLoading || isPublicLoading;
@@ -76,8 +74,7 @@ export function AtAGlanceSection({
                   </div>
                 ))
               : publicRecords.length === 0
-                ? // Nothing published yet — render nothing rather than broken UI
-                  null
+                ? null
                 : publicRecords.map((record) => {
                     const Icon = resolveIcon(record.fields.icon ?? "");
                     return (

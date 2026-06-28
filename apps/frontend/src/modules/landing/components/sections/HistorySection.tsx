@@ -12,12 +12,9 @@ export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
   const fetchPublicRecords = useHistoryStore((s) => s.fetchPublicRecords);
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Preserve the last known records
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
-  // Map store records to the timeline shape; fall back to empty array
   const historyTimeline = publicRecords.map((record) => ({
     year: record.fields.year || record.title,
     event: record.fields.content || "",

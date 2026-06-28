@@ -1,5 +1,4 @@
 export { HeroSection } from "./HeroSection";
-// AppointmentSection removed — component file not yet implemented
 export { PopularServicesSection } from "./PopularServicesSection";
 export { AtAGlanceSection } from "./AtAGlanceSection";
 export { WeatherMapSection } from "./WeatherMapSection";

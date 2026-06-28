@@ -21,7 +21,6 @@ const MONTH_NAMES = [
 
 function formatDisplayDate(isoDate: string): string {
   if (!isoDate) return "—";
-  // isoDate is YYYY-MM-DD
   const [year, month, day] = isoDate.split("-");
   const monthName = MONTH_NAMES[parseInt(month, 10) - 1] ?? "";
   return `${monthName} ${parseInt(day, 10)}, ${year}`;
@@ -37,9 +36,7 @@ export function LatestUpdatesSection({
   const fetchPublicRecords = useLatestUpdatesStore((s) => s.fetchPublicRecords);
 
   useEffect(() => {
-    fetchPublicRecords().catch(() => {
-      // Preserve the last known records
-    });
+    fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
 
   const loading = isLoading || isPublicLoading;
@@ -94,7 +91,6 @@ export function LatestUpdatesSection({
                   key={record.id}
                   className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
                 >
-                  {/* Banner image — fall back to the default brand image */}
                   <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
                     <img
                       src="/betterlibmanan.png"
