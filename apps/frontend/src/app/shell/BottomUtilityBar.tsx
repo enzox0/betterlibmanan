@@ -160,7 +160,7 @@ export function BottomUtilityBar() {
   );
 
   return (
-    <div className="bg-blue-900 text-white py-1.5 sm:py-2 overflow-hidden">
+    <div className="bg-blue-900 text-white py-1.5 sm:py-2 px-2 overflow-hidden">
       <div
         className="mx-auto px-0 sm:px-6 lg:px-8 transition-[max-width] duration-500 ease-in-out"
         style={{ maxWidth: isInHero ? "100%" : "80rem" }}
