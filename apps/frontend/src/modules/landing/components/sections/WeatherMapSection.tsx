@@ -18,7 +18,9 @@ import {
   LuCalendar,
 } from "react-icons/lu";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
+import SafeImage from "../ui/SafeImage";
 import { useBarangayMapStore } from "@/modules/admin/store/barangayMapStore";
+import { useMunicipalHallStore } from "@/modules/admin/store/municipalHallStore";
 
 // ─── Google Maps loader (singleton promise, safe for StrictMode) ──────────────
 type GMInfoWindow = {
@@ -38,6 +40,9 @@ type MapsLibrary = {
   Data: new (opts?: { map?: google.maps.Map }) => google.maps.Data;
   // InfoWindow is accessed via window.google.maps at runtime; typed manually above
   newInfoWindow: () => GMInfoWindow;
+  event: {
+    trigger: (instance: any, eventName: string, ...args: any[]) => void;
+  };
 };
 let _mapsLoader: Promise<MapsLibrary> | null = null;
 
@@ -82,6 +87,7 @@ function loadGoogleMaps(apiKey: string): Promise<MapsLibrary> {
         Data: window.google.maps.Data as MapsLibrary["Data"],
         newInfoWindow: () =>
           new (window.google!.maps as any).InfoWindow() as GMInfoWindow,
+        event: (window.google.maps as any).event,
       });
       return;
     }
@@ -115,6 +121,7 @@ function loadGoogleMaps(apiKey: string): Promise<MapsLibrary> {
           Map: maps.Map as MapsLibrary["Map"],
           Data: maps.Data as MapsLibrary["Data"],
           newInfoWindow: () => new (maps as any).InfoWindow() as GMInfoWindow,
+          event: (maps as any).event,
         });
       } catch (err) {
         _mapsLoader = null;
@@ -239,6 +246,8 @@ export function WeatherMapSection({
   const [sectionVisible, setSectionVisible] = useState(false);
   const [mapsLib, setMapsLib] = useState<MapsLibrary | null>(null);
   const [mapError, setMapError] = useState(false);
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  const noApiKey = !apiKey;
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
@@ -255,9 +264,20 @@ export function WeatherMapSection({
   const publicRecords = useBarangayMapStore((s) => s.publicRecords);
   const fetchPublicRecords = useBarangayMapStore((s) => s.fetchPublicRecords);
 
+  // Municipal Hall record from store
+  const municipalHallRecords = useMunicipalHallStore((s) => s.publicRecords);
+  const fetchMunicipalHall = useMunicipalHallStore((s) => s.fetchPublicRecords);
+
   useEffect(() => {
     fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
+
+  useEffect(() => {
+    fetchMunicipalHall().catch(() => {});
+  }, [fetchMunicipalHall]);
+
+  // Resolved municipal hall data — falls back to hardcoded defaults if store is empty
+  const municipalHallData = municipalHallRecords[0] ?? null;
 
   // Build a lookup map: normalized name → panel data
   const barangayLookup = useRef<Map<string, BarangayPanelData>>(new Map());
@@ -331,7 +351,15 @@ export function WeatherMapSection({
 
   // ── Initialise map once library is ready ──────────────────────────────────
   useEffect(() => {
-    if (!mapsLib || !mapRef.current || mapInstanceRef.current) return;
+    if (!mapsLib || !mapRef.current || mapInstanceRef.current) {
+      console.log("Skipping map init:", {
+        mapsLib: !!mapsLib,
+        mapRefCurrent: !!mapRef.current,
+        mapInstanceRefCurrent: !!mapInstanceRef.current,
+      });
+      return;
+    }
+    console.log("Initializing map!");
     injectInfoWindowStyles();
 
     const map = new mapsLib.Map(mapRef.current, {
@@ -342,6 +370,24 @@ export function WeatherMapSection({
       fullscreenControl: true,
     });
     mapInstanceRef.current = map;
+
+    // Wait for multiple animation frames to ensure layout is complete
+    const waitAndResize = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (mapInstanceRef.current && mapsLib) {
+            console.log("Resizing map and recentering");
+            mapsLib.event.trigger(mapInstanceRef.current, "resize");
+            mapInstanceRef.current.setCenter({
+              lat: MUNICIPAL_LAT,
+              lng: MUNICIPAL_LNG,
+            });
+          }
+        });
+      });
+    };
+    waitAndResize();
+    setTimeout(waitAndResize, 500);
 
     // ── Custom Municipal Hall marker via OverlayView ────────────────────────
     const gmaps = window.google!.maps as any;
@@ -564,8 +610,6 @@ export function WeatherMapSection({
     ? interpretWeatherCode(weather.weatherCode)
     : null;
   const WeatherIcon = weatherInfo?.icon ?? LuCloud;
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-  const noApiKey = !apiKey;
 
   return (
     <section ref={sectionRef} className="bg-white py-16">
@@ -742,7 +786,11 @@ export function WeatherMapSection({
               <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
                 {/* Map container */}
                 <div className="relative h-80">
-                  <div ref={mapRef} className="absolute inset-0" />
+                  <div
+                    ref={mapRef}
+                    className="absolute inset-0"
+                    style={{ width: "100%", height: "100%" }}
+                  />
 
                   {/* Overlay while SDK loads or if no key */}
                   {(noApiKey || mapError || !mapsLib) && (
@@ -798,6 +846,7 @@ export function WeatherMapSection({
                 className="mt-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm lg:hidden"
               >
                 <MunicipalHallContent
+                  data={municipalHallData}
                   onClose={() => setMunicipalModalOpen(false)}
                   inline
                 />
@@ -959,6 +1008,7 @@ export function WeatherMapSection({
               aria-labelledby="municipal-modal-title"
             >
               <MunicipalHallContent
+                data={municipalHallData}
                 onClose={() => setMunicipalModalOpen(false)}
               />
             </motion.div>
@@ -975,33 +1025,64 @@ const MUNICIPAL_IMAGES = [
   { src: "/betterlibmanan.png", alt: "Libmanan Municipal Hall grounds" },
 ];
 
+// Fallback values shown when no published record exists in the store
+const MUNICIPAL_DEFAULTS = {
+  title: "Libmanan Municipal Hall",
+  description:
+    "The Libmanan Municipal Hall is the seat of local government for the Municipality of Libmanan in Camarines Sur, Philippines. It serves as the administrative center where residents can access government services, public records, and civic programs.",
+  address: "Libmanan, Camarines Sur 4407, Philippines",
+  province: "Camarines Sur",
+  barangays: "76 barangays",
+  founded: "1919",
+  officeHoursWeekday: "8:00 AM – 5:00 PM",
+  officeHoursWeekend: "Closed",
+};
+
 function MunicipalHallContent({
+  data,
   onClose,
   inline = false,
 }: {
+  data: import("@/modules/admin/types/admin.types").ContentRecord | null;
   onClose: () => void;
   inline?: boolean;
 }) {
   const [activeImg, setActiveImg] = useState(0);
 
+  const title = data?.title || MUNICIPAL_DEFAULTS.title;
+  const description =
+    data?.fields.description || MUNICIPAL_DEFAULTS.description;
+  const address = data?.fields.address || MUNICIPAL_DEFAULTS.address;
+  const province = data?.fields.province || MUNICIPAL_DEFAULTS.province;
+  const barangays = data?.fields.barangays
+    ? `${data.fields.barangays} barangays`
+    : MUNICIPAL_DEFAULTS.barangays;
+  const founded = data?.fields.founded || MUNICIPAL_DEFAULTS.founded;
+  const officeHoursWeekday =
+    data?.fields.officeHoursWeekday || MUNICIPAL_DEFAULTS.officeHoursWeekday;
+  const officeHoursWeekend =
+    data?.fields.officeHoursWeekend || MUNICIPAL_DEFAULTS.officeHoursWeekend;
+
+  const images = data?.fields.imageUrl
+    ? [{ src: data.fields.imageUrl as string, alt: title }]
+    : MUNICIPAL_IMAGES;
+
   return (
     <div>
       {/* Hero image carousel */}
       <div className="relative h-56 bg-neutral-100 overflow-hidden">
-        <img
-          src={MUNICIPAL_IMAGES[activeImg].src}
-          alt={MUNICIPAL_IMAGES[activeImg].alt}
+        <SafeImage
+          src={images[activeImg].src}
+          alt={images[activeImg].alt}
           className="w-full h-full object-cover transition-opacity duration-300"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "/betterlibmanan.png";
-          }}
+          fallbackSrc="/betterlibmanan.png"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
         {/* Image switcher dots */}
-        {MUNICIPAL_IMAGES.length > 1 && (
+        {images.length > 1 && (
           <div className="absolute bottom-14 left-0 right-0 flex justify-center gap-1.5">
-            {MUNICIPAL_IMAGES.map((_, i) => (
+            {images.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setActiveImg(i)}
@@ -1018,7 +1099,7 @@ function MunicipalHallContent({
           id="municipal-modal-title"
           className="absolute bottom-4 left-5 right-12 text-xl font-bold text-white leading-tight"
         >
-          Libmanan Municipal Hall
+          {title}
         </h2>
 
         <button
@@ -1032,12 +1113,7 @@ function MunicipalHallContent({
 
       {/* Body */}
       <div className="p-5 space-y-4">
-        <p className="text-sm text-neutral-600">
-          The Libmanan Municipal Hall is the seat of local government for the
-          Municipality of Libmanan in Camarines Sur, Philippines. It serves as
-          the administrative center where residents can access government
-          services, public records, and civic programs.
-        </p>
+        <p className="text-sm text-neutral-600">{description}</p>
 
         {/* Key facts */}
         <div className="grid grid-cols-2 gap-3">
@@ -1050,7 +1126,7 @@ function MunicipalHallContent({
                 Address
               </div>
               <div className="mt-0.5 text-xs text-neutral-500 leading-snug">
-                Libmanan, Camarines Sur 4407, Philippines
+                {address}
               </div>
             </div>
           </div>
@@ -1062,9 +1138,7 @@ function MunicipalHallContent({
               <div className="text-xs font-semibold text-neutral-900">
                 Province
               </div>
-              <div className="mt-0.5 text-xs text-neutral-500">
-                Camarines Sur
-              </div>
+              <div className="mt-0.5 text-xs text-neutral-500">{province}</div>
             </div>
           </div>
           <div className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-white p-3">
@@ -1075,9 +1149,7 @@ function MunicipalHallContent({
               <div className="text-xs font-semibold text-neutral-900">
                 Barangays
               </div>
-              <div className="mt-0.5 text-xs text-neutral-500">
-                76 barangays
-              </div>
+              <div className="mt-0.5 text-xs text-neutral-500">{barangays}</div>
             </div>
           </div>
           <div className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-white p-3">
@@ -1088,7 +1160,7 @@ function MunicipalHallContent({
               <div className="text-xs font-semibold text-neutral-900">
                 Founded
               </div>
-              <div className="mt-0.5 text-xs text-neutral-500">1919</div>
+              <div className="mt-0.5 text-xs text-neutral-500">{founded}</div>
             </div>
           </div>
         </div>
@@ -1100,9 +1172,9 @@ function MunicipalHallContent({
           </h3>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-neutral-600">
             <span className="font-medium">Monday – Friday</span>
-            <span>8:00 AM – 5:00 PM</span>
+            <span>{officeHoursWeekday}</span>
             <span className="font-medium">Saturday – Sunday</span>
-            <span>Closed</span>
+            <span>{officeHoursWeekend}</span>
           </div>
         </div>
 
