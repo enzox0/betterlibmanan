@@ -16,6 +16,8 @@ import { quizRouter } from "@/modules/quiz";
 import { emergencyContactsRouter } from "@/modules/emergency-contacts";
 import { marqueeImagesRouter } from "@/modules/marquee-images";
 import { municipalHallRouter } from "@/modules/municipal-hall";
+import { communityRouter } from "@/modules/community";
+import { userRouter } from "@/modules/users";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -79,6 +81,12 @@ apiRouter.use("/marquee-images", marqueeImagesRouter);
 
 // Municipal Hall — single-record content for the WeatherMapSection info panel
 apiRouter.use("/municipal-hall", municipalHallRouter);
+
+// Community — discussions, peer groups, featured event
+apiRouter.use("/community", communityRouter);
+
+// Public user auth — register, login, profile
+apiRouter.use("/users", userRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
