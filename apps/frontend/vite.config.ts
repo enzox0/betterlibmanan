@@ -60,7 +60,16 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // 10 MiB — large enough for all real assets; giant outliers excluded via globIgnores
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        globPatterns: ["**/*.{css,html,ico,svg,woff2,js,png}"],
+        // Exclude assets that are too large or change too frequently to be worth precaching
+        globIgnores: [
+          // Hero background image (~2.3 MB) — runtime cached below
+          "**/hero-bg-*.png",
+          // react-icons bundles all icons into a massive chunk (~9 MB) — exclude from precache
+          "**/vendor-icons-*.js",
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -77,6 +86,16 @@ export default defineConfig({
             options: {
               cacheName: "gstatic-fonts-cache",
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Large local images (hero-bg, og-image, etc.) — serve fresh, cache as fallback
+            urlPattern: /\/assets\/.*\.png$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "local-images-cache",
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 7 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
@@ -116,7 +135,23 @@ export default defineConfig({
     minify: "esbuild",
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        // Split vendor libraries into separate cacheable chunks
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("framer-motion")) return "vendor-framer";
+            // Do NOT group react-icons — it's 9 MB when bundled together.
+            // Let Rollup tree-shake icons per-page instead.
+            if (id.includes("@tanstack")) return "vendor-query";
+            if (id.includes("react-router")) return "vendor-router";
+            if (
+              id.includes("/react/") ||
+              id.includes("/react-dom/") ||
+              id.includes("/scheduler/")
+            )
+              return "vendor-react";
+            return "vendor";
+          }
+        },
         // Ensure consistent file naming
         entryFileNames: "assets/[name]-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",
