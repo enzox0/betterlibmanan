@@ -1,6 +1,14 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
+import {
+  FaBars,
+  FaTimes,
+  FaChevronDown,
+  FaUser,
+  FaSignOutAlt,
+} from "react-icons/fa";
+import { useUserStore } from "@/modules/admin/store/userStore";
+import { UserAuthModal } from "@/modules/landing/components/ui/UserAuthModal";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -9,7 +17,28 @@ export function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showLangModal, setShowLangModal] = useState(false);
   const [isInHero, setIsInHero] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isAuthenticated = useUserStore((s) => s.isAuthenticated);
+  const currentUser = useUserStore((s) => s.user);
+  const logout = useUserStore((s) => s.logout);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Expand navbar to full width only when on the homepage and within the hero viewport
   const isHomePage = location.pathname === "/";
@@ -251,8 +280,9 @@ export function Navbar() {
             </div>
             {/* end logo+nav group */}
 
-            {/* Desktop Language Buttons */}
-            <div className="hidden lg:flex items-center gap-2">
+            {/* Desktop right-side: language + user auth */}
+            <div className="hidden lg:flex items-center gap-3">
+              {/* Language buttons */}
               {languageButtons.map((lang) => (
                 <button
                   key={lang.code}
@@ -266,6 +296,65 @@ export function Navbar() {
                   {lang.code}
                 </button>
               ))}
+
+              {/* User auth */}
+              {isAuthenticated && currentUser ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setShowUserMenu((v) => !v)}
+                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-blue-800 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+                      {currentUser.displayName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                      {currentUser.displayName}
+                    </span>
+                    <FaChevronDown
+                      className={`text-[10px] text-gray-400 transition-transform ${showUserMenu ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50">
+                      <div className="px-4 py-2.5 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {currentUser.displayName}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          @{currentUser.username}
+                        </p>
+                      </div>
+                      <Link
+                        to="/community"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                      >
+                        <FaUser size={12} />
+                        My Community
+                      </Link>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <FaSignOutAlt size={12} />
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-blue-800 hover:bg-blue-700 active:bg-blue-900 text-white text-sm font-semibold transition-colors shadow-sm"
+                >
+                  <FaUser size={11} />
+                  Sign In
+                </button>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -330,7 +419,7 @@ export function Navbar() {
                   </div>
                 ))}
               </nav>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {languageButtons.map((lang) => (
                   <button
                     key={lang.code}
@@ -345,10 +434,67 @@ export function Navbar() {
                   </button>
                 ))}
               </div>
+
+              {/* Mobile user auth */}
+              <div className="pt-3 mt-3 border-t border-gray-100">
+                {isAuthenticated && currentUser ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2.5 px-1 py-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {currentUser.displayName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {currentUser.displayName}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          @{currentUser.username}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      to="/community"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                    >
+                      <FaUser size={12} />
+                      My Community
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2 py-2 text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      <FaSignOutAlt size={12} />
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setAuthModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-800 hover:bg-blue-700 text-white text-sm font-semibold transition-colors"
+                  >
+                    <FaUser size={12} />
+                    Sign In / Create Account
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
       </header>
+
+      {/* User auth modal — rendered outside header to avoid z-index conflicts */}
+      <UserAuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultTab="login"
+      />
     </>
   );
 }
