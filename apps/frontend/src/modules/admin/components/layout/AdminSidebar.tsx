@@ -14,6 +14,7 @@ import {
   LuLogOut,
   LuClipboardList,
   LuTriangleAlert,
+  LuMessageSquare,
 } from "react-icons/lu";
 import { useState } from "react";
 import { useAdminStore } from "../../store/adminStore";
@@ -59,6 +60,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Contacts",
     to: "/admin/contacts",
     icon: <LuPhone className="h-4 w-4 shrink-0" aria-hidden="true" />,
+  },
+  {
+    label: "Community",
+    to: "/admin/community",
+    icon: <LuMessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />,
   },
 ];
 
