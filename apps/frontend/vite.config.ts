@@ -1,13 +1,103 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: [
+        "betterlibmanan-icon.ico",
+        "betterlibmanan.png",
+        "betterlibmanan-extended-logo.png",
+      ],
+      manifest: {
+        name: "BetterLibmanan — Official Portal",
+        short_name: "BetterLibmanan",
+        description:
+          "Official portal of Libmanan, Camarines Sur. Access government services, legislation, and local information.",
+        theme_color: "#1e3a8a",
+        background_color: "#ffffff",
+        display: "standalone",
+        orientation: "portrait-primary",
+        scope: "/",
+        start_url: "/",
+        lang: "en",
+        categories: ["government", "public services"],
+        icons: [
+          {
+            src: "/betterlibmanan.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+          {
+            src: "/betterlibmanan.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+        ],
+        shortcuts: [
+          {
+            name: "Services",
+            short_name: "Services",
+            description: "Browse all government services",
+            url: "/services",
+          },
+          {
+            name: "Contact",
+            short_name: "Contact",
+            description: "Get in touch with the LGU",
+            url: "/contact",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "gstatic-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache",
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        // Enable SW in dev so you can test the install prompt locally
+        enabled: true,
+        type: "module",
+      },
+    }),
+  ],
   base: "/",
   // Load .env files from the monorepo root so frontend and backend share
   // a single source of truth. Only variables prefixed with VITE_ are
