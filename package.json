@@ -54,5 +54,10 @@
   },
   "dependencies": {
     "imgtowebp": "^0.0.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "^5.0.8"
+    }
   }
 }
