@@ -72,6 +72,7 @@ export function Navbar() {
       dropdownOnly: true,
       dropdownItems: [
         { name: "Tourism", path: "/tourism" },
+        { name: "Install App", path: "/install" },
         { name: "About", path: "/about" },
       ],
     },

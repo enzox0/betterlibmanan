@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AppRouter } from "@/app/router";
-import { OfflineBanner, ScrollToTop } from "@/app/components";
+import { OfflineBanner, ScrollToTop, PWAInstallBanner } from "@/app/components";
 import {
   SplashScreen,
   hasSplashBeenShown,
@@ -32,6 +32,8 @@ export function App() {
         onRetry={retryCheck}
       />
       <SessionExpiredModal />
+      {/* PWA install banner — desktop only, works on all platforms */}
+      <PWAInstallBanner />
     </ToastProvider>
   );
 }
