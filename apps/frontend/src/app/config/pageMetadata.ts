@@ -162,6 +162,15 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     description: "The page you are looking for could not be found.",
     keywords: "404, not found, error",
   },
+
+  // Install
+  "/install": {
+    title: "Install App",
+    description:
+      "Install BetterLibmanan on your device for quick access to government services, anytime, from your home screen.",
+    keywords:
+      "install app, PWA, progressive web app, home screen, BetterLibmanan install",
+  },
 };
 
 /**
