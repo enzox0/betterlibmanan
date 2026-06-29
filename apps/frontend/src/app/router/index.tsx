@@ -75,6 +75,9 @@ const CommunityPage = lazyLoad(() =>
 const QuizPage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.QuizPage })),
 );
+const InstallPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.InstallPage })),
+);
 const TourismPage = lazyLoad(() => import("@/modules/tourism"));
 
 export function AppRouter() {
@@ -285,6 +288,14 @@ export function AppRouter() {
         element={
           <Layout>
             <CommunityPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/install"
+        element={
+          <Layout>
+            <InstallPage />
           </Layout>
         }
       />
