@@ -1,13 +1,43 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// Load .env from project root
+// Load .env files from project root in order of precedence
+// Precedence: .env.<NODE_ENV>.local > .env.<NODE_ENV> > .env.local > .env
 // When compiled, __dirname is in dist folder, so we need to go up more levels
 // From apps/backend/dist/shared/config → go up 5 folders to reach project root
-const envPath = path.resolve(__dirname, "../../../../../.env");
-console.log("[Backend Config] Loading env from:", envPath);
-dotenv.config({ path: envPath });
+const projectRoot = path.resolve(__dirname, "../../../../../");
+const nodeEnv = process.env.NODE_ENV || "development";
+
+// List of env files to load, in order of precedence (highest first)
+const envFiles = [
+  `.env.${nodeEnv}.local`,
+  `.env.${nodeEnv}`,
+  `.env.local`,
+  `.env`
+];
+
+console.log(`[Backend Config] Loading env files (NODE_ENV=${nodeEnv}):`);
+envFiles.forEach(file => {
+  const fullPath = path.resolve(projectRoot, file);
+  const result = dotenv.config({ path: fullPath });
+  if (!result.error) {
+    console.log(`[Backend Config] Loaded: ${file}`);
+  }
+});
+
 console.log("[Backend Config] SMTP_HOST:", process.env.SMTP_HOST);
+
+// Determine port based on environment
+const getPort = (): number => {
+  const env = process.env.NODE_ENV || "development";
+  if (env === "production") {
+    return parseInt(process.env.PORT_PRODUCTION || process.env.PORT || "5002", 10);
+  } else if (env === "staging") {
+    return parseInt(process.env.PORT_STAGING || process.env.PORT || "5001", 10);
+  }
+  // Development
+  return parseInt(process.env.PORT || "5000", 10);
+};
 
 export const config = {
   app: {
@@ -15,7 +45,7 @@ export const config = {
     url: process.env.APP_URL || "http://localhost:3000",
     apiUrl: process.env.API_URL || "http://localhost:5000",
     env: process.env.NODE_ENV || "development",
-    port: parseInt(process.env.PORT || "5000", 10),
+    port: getPort(),
     host: process.env.HOST || "0.0.0.0",
   },
   health: {
