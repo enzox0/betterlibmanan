@@ -28,6 +28,8 @@ export interface CommunityGroup {
   _id: string;
   name: string;
   description: string;
+  imageUrl: string;
+  imageKey: string;
   memberCount: number;
   order: number;
   isActive: boolean;
@@ -114,6 +116,8 @@ export async function leaveGroupRequest(id: string): Promise<CommunityGroup> {
 export interface ProposeGroupPayload {
   name: string;
   description: string;
+  imageUrl?: string;
+  imageKey?: string;
 }
 
 // Public — no auth
@@ -124,6 +128,28 @@ export async function proposeGroupRequest(
     success: boolean;
     data: CommunityGroup;
   }>("/groups", payload);
+  return data.data;
+}
+
+export interface GroupImageUploadPayload {
+  filename: string;
+  mimeType: string;
+  data: string;
+}
+
+export interface UploadedGroupImage {
+  key: string;
+  url: string;
+}
+
+/** Upload a group cover image to R2. Returns { key, url }. */
+export async function uploadGroupImageRequest(
+  payload: GroupImageUploadPayload,
+): Promise<UploadedGroupImage> {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    data: UploadedGroupImage;
+  }>("/groups/upload-image", payload);
   return data.data;
 }
 
