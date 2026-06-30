@@ -5,6 +5,7 @@ import {
   GroupModel,
   FeaturedEventModel,
 } from "./community.model";
+import { uploadBase64ImageToR2 } from "@/shared/storage/r2";
 
 // ─── Discussions ──────────────────────────────────────────────────────────────
 
@@ -107,6 +108,8 @@ export async function getGroups(_req: Request, res: Response): Promise<void> {
 const proposeGroupSchema = z.object({
   name: z.string().min(1).max(100).trim(),
   description: z.string().min(1).max(300).trim(),
+  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageKey: z.string().optional().or(z.literal("")),
 });
 
 /** POST /api/community/groups — propose a new group (public) */
@@ -119,10 +122,12 @@ export async function proposeGroup(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const { name, description } = parsed.data;
+    const { name, description, imageUrl, imageKey } = parsed.data;
     const group = await GroupModel.create({
       name,
       description,
+      imageUrl: imageUrl ?? "",
+      imageKey: imageKey ?? "",
       memberCount: 0,
       isActive: true,
       status: "pending",
@@ -133,6 +138,40 @@ export async function proposeGroup(req: Request, res: Response): Promise<void> {
     res
       .status(500)
       .json({ success: false, message: "Failed to propose group" });
+  }
+}
+
+const uploadGroupImageSchema = z.object({
+  filename: z.string().min(1),
+  mimeType: z.string().min(1),
+  data: z.string().min(1),
+});
+
+/** POST /api/community/groups/upload-image — upload a group cover image to R2 (public) */
+export async function uploadGroupImage(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const parsed = uploadGroupImageSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map((e) => e.message);
+      res.status(400).json({ success: false, message: errors[0], errors });
+      return;
+    }
+
+    const uploaded = await uploadBase64ImageToR2({
+      ...parsed.data,
+      folder: "community-groups",
+    });
+
+    res.status(201).json({ success: true, data: uploaded });
+  } catch (err: any) {
+    const status = err?.statusCode ?? 500;
+    res.status(status).json({
+      success: false,
+      message: err?.message ?? "Failed to upload image",
+    });
   }
 }
 

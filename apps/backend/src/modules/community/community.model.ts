@@ -60,6 +60,8 @@ export const DiscussionModel = mongoose.model<IDiscussion>(
 export interface IGroup extends Document {
   name: string;
   description: string;
+  imageUrl: string;
+  imageKey: string;
   memberCount: number;
   order: number;
   isActive: boolean;
@@ -81,6 +83,16 @@ const GroupSchema = new Schema<IGroup>(
       required: true,
       trim: true,
       maxlength: 300,
+    },
+    imageUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    imageKey: {
+      type: String,
+      default: "",
+      trim: true,
     },
     memberCount: {
       type: Number,

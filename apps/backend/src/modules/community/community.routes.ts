@@ -14,6 +14,7 @@ import {
   proposeGroup,
   listPendingGroups,
   updateGroupStatus,
+  uploadGroupImage,
 } from "./community.controller";
 
 export const communityRouter: Router = Router();
@@ -30,6 +31,8 @@ communityRouter.delete("/discussions/:id", requireAuth, deleteDiscussion);
 communityRouter.get("/groups", getGroups);
 // Public: propose a new group
 communityRouter.post("/groups", proposeGroup);
+// Public: upload a group cover image
+communityRouter.post("/groups/upload-image", uploadGroupImage);
 // Public: toggle membership
 communityRouter.post("/groups/join/:id", joinGroup);
 communityRouter.post("/groups/leave/:id", leaveGroup);
