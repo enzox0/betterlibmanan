@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUsers,
@@ -25,6 +26,10 @@ import type {
   FeaturedEvent,
   ProposeGroupPayload,
 } from "@/modules/admin/services/community.api";
+import {
+  uploadGroupImageRequest,
+} from "@/modules/admin/services/community.api";
+import SafeImage from "../ui/SafeImage";
 
 // ─── Static sidebar data ──────────────────────────────────────────────────────
 
@@ -119,15 +124,21 @@ function LoadingRows({ count = 2 }: { count?: number }) {
 function DiscussionCard({
   discussion,
   index,
+  onClick,
 }: {
   discussion: Discussion;
   index: number;
+  onClick?: () => void;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.06 }}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       className="bg-white border border-neutral-200 rounded-xl p-4 flex flex-col gap-3 hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer"
     >
       <div className="flex items-center gap-2">
@@ -174,12 +185,14 @@ function GroupCard({
   isJoined,
   onJoin,
   isGuest,
+  onClick,
 }: {
   group: CommunityGroup;
   index: number;
   isJoined: boolean;
   onJoin: () => void;
   isGuest: boolean;
+  onClick?: () => void;
 }) {
   const memberLabel =
     group.memberCount >= 1000
@@ -191,10 +204,23 @@ function GroupCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.07 }}
-      className="bg-white border border-neutral-200 rounded-xl overflow-hidden flex items-stretch hover:border-neutral-300 hover:shadow-md transition-all"
+      className="bg-white border border-neutral-200 rounded-xl overflow-hidden flex items-stretch hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onClick?.()}
     >
-      <div className="w-24 sm:w-32 shrink-0 bg-neutral-100 flex items-center justify-center">
-        <FaUsers size={24} className="text-neutral-300" />
+      <div className="w-24 sm:w-32 shrink-0 bg-neutral-100 flex items-center justify-center overflow-hidden">
+        {group.imageUrl ? (
+          <SafeImage
+            src={group.imageUrl}
+            alt={group.name}
+            className="w-full h-full object-cover"
+            containerClassName="w-full h-full"
+          />
+        ) : (
+          <FaUsers size={24} className="text-neutral-300" />
+        )}
       </div>
       <div className="flex-1 min-w-0 p-4 flex flex-col justify-between gap-2">
         <div>
@@ -212,7 +238,7 @@ function GroupCard({
           </div>
           {isGuest ? (
             <button
-              onClick={onJoin}
+              onClick={(e) => { e.stopPropagation(); onJoin(); }}
               style={{ minHeight: 0 }}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0 bg-neutral-200 text-neutral-500 hover:bg-neutral-300 flex items-center gap-1"
             >
@@ -221,7 +247,7 @@ function GroupCard({
             </button>
           ) : (
             <button
-              onClick={onJoin}
+              onClick={(e) => { e.stopPropagation(); onJoin(); }}
               style={{ minHeight: 0 }}
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0",
@@ -506,12 +532,37 @@ function ProposeGroupModal({
   proposing: boolean;
 }) {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const ACCEPTED = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+  const MAX_BYTES = 5 * 1024 * 1024;
+
+  const handleImageFile = (file: File) => {
+    setImageError(null);
+    if (!ACCEPTED.includes(file.type) || file.size > MAX_BYTES) {
+      setImageError("Must be PNG, JPG, GIF or WebP — max 5 MB.");
+      return;
+    }
+    setImageFile(file);
+    const url = URL.createObjectURL(file);
+    setImagePreview(url);
+  };
 
   const reset = () => {
     setName("");
     setDescription("");
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setImageError(null);
+    setUploadingImage(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleClose = () => {
@@ -528,9 +579,43 @@ function ProposeGroupModal({
       toast("Please enter a group description.", "error");
       return;
     }
-    await onPropose({ name: name.trim(), description: description.trim() });
+
+    let imageUrl = "";
+    let imageKey = "";
+
+    if (imageFile) {
+      setUploadingImage(true);
+      try {
+        const reader = new FileReader();
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(imageFile);
+        });
+        const uploaded = await uploadGroupImageRequest({
+          filename: imageFile.name,
+          mimeType: imageFile.type,
+          data: dataUrl,
+        });
+        imageUrl = uploaded.url;
+        imageKey = uploaded.key;
+      } catch {
+        toast("Image upload failed. Submitting without image.", "error");
+      } finally {
+        setUploadingImage(false);
+      }
+    }
+
+    await onPropose({
+      name: name.trim(),
+      description: description.trim(),
+      imageUrl,
+      imageKey,
+    });
     reset();
   };
+
+  const isSubmitting = proposing || uploadingImage;
 
   return (
     <AnimatePresence>
@@ -546,12 +631,14 @@ function ProposeGroupModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="bg-white w-full sm:max-w-md shadow-2xl rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            className="bg-white w-full sm:max-w-md shadow-2xl rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] max-h-[90dvh] overflow-y-auto"
           >
+            {/* Mobile drag handle */}
             <div className="flex justify-center mb-4 sm:hidden">
               <div className="w-10 h-1 rounded-full bg-neutral-200" />
             </div>
 
+            {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center">
@@ -571,6 +658,78 @@ function ProposeGroupModal({
               </button>
             </div>
 
+            {/* Group image — optional */}
+            <label className="block mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
+              Group Image{" "}
+              <span className="normal-case font-normal text-neutral-400">
+                (optional)
+              </span>
+            </label>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImageFile(f);
+              }}
+            />
+
+            {imagePreview ? (
+              <div className="relative mb-4 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-36 object-cover"
+                />
+                <button
+                  onClick={() => {
+                    if (imagePreview) URL.revokeObjectURL(imagePreview);
+                    setImagePreview(null);
+                    setImageFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  style={{ minHeight: 0 }}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                  aria-label="Remove image"
+                >
+                  <FaTimes size={11} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) handleImageFile(f);
+                }}
+                style={{ minHeight: 0 }}
+                className="w-full mb-4 flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 hover:border-neutral-400 hover:bg-neutral-100 transition-colors cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center">
+                  <FaUsers size={16} className="text-neutral-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-semibold text-neutral-600">
+                    Click or drag to upload an image
+                  </p>
+                  <p className="text-[11px] text-neutral-400 mt-0.5">
+                    PNG, JPG, GIF, WebP · max 5 MB
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {imageError && (
+              <p className="text-xs text-red-500 mb-3 -mt-2">{imageError}</p>
+            )}
+
+            {/* Group Name */}
             <label className="block mb-1 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
               Group Name
             </label>
@@ -587,6 +746,7 @@ function ProposeGroupModal({
               {name.length}/100
             </p>
 
+            {/* Description */}
             <label className="block mb-1 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
               Description
             </label>
@@ -602,20 +762,25 @@ function ProposeGroupModal({
               {description.length}/300
             </p>
 
+            {/* Actions */}
             <div className="flex gap-3 mt-2">
               <button
                 onClick={handleClose}
-                className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600 hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
+                disabled={isSubmitting}
+                className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600 hover:bg-neutral-50 active:bg-neutral-100 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={proposing}
-                className="flex-1 rounded-xl bg-neutral-900 hover:bg-neutral-700 active:bg-black py-2.5 text-sm font-semibold text-white transition-colors shadow disabled:opacity-60"
+                disabled={isSubmitting}
+                className="flex-1 rounded-xl bg-neutral-900 hover:bg-neutral-700 active:bg-black py-2.5 text-sm font-semibold text-white transition-colors shadow disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {proposing ? (
-                  <FaSpinner className="animate-spin mx-auto" />
+                {isSubmitting ? (
+                  <>
+                    <FaSpinner className="animate-spin" size={12} />
+                    {uploadingImage ? "Uploading…" : "Submitting…"}
+                  </>
                 ) : (
                   "Submit Proposal"
                 )}
@@ -637,6 +802,8 @@ export function CommunitySection() {
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
   const currentUser = useUserStore((s) => s.user);
   const displayName = currentUser?.displayName ?? "Anonymous";
+
+  const navigate = useNavigate();
 
   // ── Auth modal state ────────────────────────────────────────────────────────
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -832,7 +999,7 @@ export function CommunitySection() {
                 icon={<FaFire size={13} className="text-neutral-500" />}
                 title="Trending Discussions"
                 actionLabel="See More"
-                onAction={() => toast("More discussions coming soon", "info")}
+                onAction={() => navigate("/community/discussions")}
               />
               {isDiscussionsLoading ? (
                 <LoadingRows count={2} />
@@ -843,7 +1010,12 @@ export function CommunitySection() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {discussions.map((d, i) => (
-                    <DiscussionCard key={d._id} discussion={d} index={i} />
+                    <DiscussionCard
+                      key={d._id}
+                      discussion={d}
+                      index={i}
+                      onClick={() => navigate(`/community/discussions/${d._id}`)}
+                    />
                   ))}
                 </div>
               )}
@@ -864,18 +1036,33 @@ export function CommunitySection() {
                   No groups available yet.
                 </p>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {groups.map((group, i) => (
-                    <GroupCard
-                      key={group._id}
-                      group={group}
-                      index={i}
-                      isJoined={joinedGroups.has(group._id)}
-                      onJoin={() => requireAuth(() => handleToggleGroup(group))}
-                      isGuest={!isAuthenticated}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="flex flex-col gap-3">
+                    {groups.slice(0, 10).map((group, i) => (
+                      <GroupCard
+                        key={group._id}
+                        group={group}
+                        index={i}
+                        isJoined={joinedGroups.has(group._id)}
+                        onJoin={() => requireAuth(() => handleToggleGroup(group))}
+                        isGuest={!isAuthenticated}
+                        onClick={() => navigate(`/community/groups/${group._id}`)}
+                      />
+                    ))}
+                  </div>
+
+                  {/* View More — shown when there are more than 10 groups */}
+                  {groups.length > 10 && (
+                    <button
+                      onClick={() => navigate("/community/groups")}
+                      style={{ minHeight: 0 }}
+                      className="mt-4 w-full py-3 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100 transition-all flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      View All Peer Groups
+                      <FaChevronRight size={11} />
+                    </button>
+                  )}
+                </>
               )}
 
               {/* Guest invite below groups list */}
