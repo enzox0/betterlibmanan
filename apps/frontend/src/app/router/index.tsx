@@ -72,6 +72,18 @@ const FreedomWallPage = lazyLoad(() =>
 const CommunityPage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.CommunityPage })),
 );
+const AllPeerGroupsPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.AllPeerGroupsPage })),
+);
+const GroupDetailPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.GroupDetailPage })),
+);
+const AllDiscussionsPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.AllDiscussionsPage })),
+);
+const DiscussionDetailPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.DiscussionDetailPage })),
+);
 const QuizPage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.QuizPage })),
 );
@@ -288,6 +300,38 @@ export function AppRouter() {
         element={
           <Layout>
             <CommunityPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/community/groups"
+        element={
+          <Layout>
+            <AllPeerGroupsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/community/groups/:id"
+        element={
+          <Layout>
+            <GroupDetailPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/community/discussions"
+        element={
+          <Layout>
+            <AllDiscussionsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/community/discussions/:id"
+        element={
+          <Layout>
+            <DiscussionDetailPage />
           </Layout>
         }
       />
