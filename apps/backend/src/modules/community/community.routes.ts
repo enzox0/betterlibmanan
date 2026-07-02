@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "@/modules/auth/auth.module";
+import { requireUser } from "@/modules/users/user.middleware";
 import {
   getDiscussions,
   createDiscussion,
@@ -9,43 +10,70 @@ import {
   deleteGroup,
   joinGroup,
   leaveGroup,
+  getGroupMembers,
   getFeaturedEvent,
   rsvpFeaturedEvent,
   proposeGroup,
   listPendingGroups,
   updateGroupStatus,
   uploadGroupImage,
+  getDiscussionReplies,
+  createDiscussionReply,
+  likeDiscussionReply,
+  deleteDiscussionReply,
+  getGroupMessages,
+  createGroupMessage,
+  deleteGroupMessage,
+  reactToGroupMessage,
+  getTrendingTags,
 } from "./community.controller";
 
 export const communityRouter: Router = Router();
 
 // ─── Discussions ──────────────────────────────────────────────────────────────
-// Public: anyone can read and post
 communityRouter.get("/discussions", getDiscussions);
-communityRouter.post("/discussions", createDiscussion);
-// Admin-only: remove a discussion
+communityRouter.post("/discussions", requireUser, createDiscussion);
 communityRouter.delete("/discussions/:id", requireAuth, deleteDiscussion);
 
+// ─── Discussion Replies ───────────────────────────────────────────────────────
+communityRouter.get("/discussions/:id/replies", getDiscussionReplies);
+communityRouter.post(
+  "/discussions/:id/replies",
+  requireUser,
+  createDiscussionReply,
+);
+communityRouter.post("/replies/:id/like", requireUser, likeDiscussionReply);
+communityRouter.delete("/replies/:id", requireAuth, deleteDiscussionReply);
+
 // ─── Groups ───────────────────────────────────────────────────────────────────
-// Public: read approved groups and toggle membership
 communityRouter.get("/groups", getGroups);
-// Public: propose a new group
-communityRouter.post("/groups", proposeGroup);
-// Public: upload a group cover image
+communityRouter.post("/groups", requireUser, proposeGroup);
 communityRouter.post("/groups/upload-image", uploadGroupImage);
-// Public: toggle membership
-communityRouter.post("/groups/join/:id", joinGroup);
-communityRouter.post("/groups/leave/:id", leaveGroup);
-// Admin only: list pending groups (must come before /:id param routes)
+communityRouter.post("/groups/join/:id", requireUser, joinGroup);
+communityRouter.post("/groups/leave/:id", requireUser, leaveGroup);
 communityRouter.get("/groups/pending", requireAuth, listPendingGroups);
-// Admin only: list all groups regardless of status
 communityRouter.get("/groups/all", requireAuth, listAllGroups);
-// Admin only: approve or reject a group
 communityRouter.patch("/groups/:id/status", requireAuth, updateGroupStatus);
-// Admin only: hard-delete a group
 communityRouter.delete("/groups/:id", requireAuth, deleteGroup);
+communityRouter.get("/groups/:id/members", getGroupMembers);
+
+// ─── Group Messages ───────────────────────────────────────────────────────────
+communityRouter.get("/groups/:id/messages", getGroupMessages);
+communityRouter.post("/groups/:id/messages", requireUser, createGroupMessage);
+communityRouter.post(
+  "/groups/:id/messages/:msgId/react",
+  requireUser,
+  reactToGroupMessage,
+);
+communityRouter.delete(
+  "/groups/:groupId/messages/:messageId",
+  requireAuth,
+  deleteGroupMessage,
+);
 
 // ─── Featured Event ───────────────────────────────────────────────────────────
-// Public: read and RSVP
 communityRouter.get("/featured-event", getFeaturedEvent);
 communityRouter.post("/featured-event/rsvp", rsvpFeaturedEvent);
+
+// ─── Trending Tags ────────────────────────────────────────────────────────────
+communityRouter.get("/trending-tags", getTrendingTags);

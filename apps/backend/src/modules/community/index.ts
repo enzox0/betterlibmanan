@@ -3,5 +3,14 @@ export {
   DiscussionModel,
   GroupModel,
   FeaturedEventModel,
+  DiscussionReplyModel,
+  GroupMessageModel,
 } from "./community.model";
-export type { IDiscussion, IGroup, IFeaturedEvent } from "./community.model";
+export type {
+  IDiscussion,
+  IGroup,
+  IGroupMember,
+  IFeaturedEvent,
+  IDiscussionReply,
+  IGroupMessage,
+} from "./community.model";
