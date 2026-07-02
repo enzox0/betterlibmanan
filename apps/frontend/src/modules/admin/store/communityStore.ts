@@ -14,10 +14,25 @@ import {
   listPendingGroups as listPendingGroupsApi,
   updateGroupStatus,
   deleteGroupRequest,
+  listDiscussionReplies,
+  createDiscussionReplyRequest,
+  likeDiscussionReplyRequest,
+  listGroupMessages,
+  sendGroupMessageRequest,
+  reactToGroupMessageRequest,
+  getGroupMembersRequest,
+  listTrendingTagsRequest,
   type Discussion,
+  type DiscussionReply,
+  type GroupMessage,
+  type GroupMember,
+  type GroupMembersResult,
+  type TrendingTag,
   type CommunityGroup,
   type FeaturedEvent,
   type CreateDiscussionPayload,
+  type CreateReplyPayload,
+  type SendGroupMessagePayload,
   type ProposeGroupPayload,
 } from "../services/community.api";
 
@@ -27,6 +42,10 @@ interface CommunityState {
   // Discussions
   discussions: Discussion[];
   isDiscussionsLoading: boolean;
+
+  // Discussion replies — keyed by discussionId
+  repliesByDiscussion: Record<string, DiscussionReply[]>;
+  isRepliesLoading: boolean;
 
   // Groups
   groups: CommunityGroup[];
@@ -40,6 +59,21 @@ interface CommunityState {
   pendingGroups: CommunityGroup[];
   isPendingGroupsLoading: boolean;
 
+  // Group messages — keyed by groupId
+  messagesByGroup: Record<string, GroupMessage[]>;
+  isMessagesLoading: boolean;
+
+  // Group members — keyed by groupId
+  membersByGroup: Record<string, GroupMember[]>;
+  isMembersLoading: boolean;
+
+  // Joined group IDs for the current user (persisted)
+  joinedGroupIds: string[];
+
+  // Trending tags
+  trendingTags: TrendingTag[];
+  isTrendingTagsLoading: boolean;
+
   // Featured Event
   featuredEvent: FeaturedEvent | null;
   isFeaturedEventLoading: boolean;
@@ -50,21 +84,60 @@ interface CommunityState {
 
   // Discussion actions
   fetchDiscussions: () => Promise<Discussion[]>;
-  postDiscussion: (payload: CreateDiscussionPayload) => Promise<Discussion>;
+  postDiscussion: (
+    payload: CreateDiscussionPayload,
+    userToken: string,
+  ) => Promise<Discussion>;
   removeDiscussion: (id: string, accessToken: string) => Promise<void>;
+
+  // Reply actions
+  fetchReplies: (discussionId: string) => Promise<DiscussionReply[]>;
+  postReply: (
+    discussionId: string,
+    payload: CreateReplyPayload,
+    userToken: string,
+  ) => Promise<DiscussionReply>;
+  toggleLikeReply: (
+    replyId: string,
+    userToken: string,
+  ) => Promise<DiscussionReply>;
 
   // Group actions
   fetchGroups: () => Promise<CommunityGroup[]>;
   fetchAllGroups: (accessToken: string) => Promise<CommunityGroup[]>;
-  joinGroup: (id: string) => Promise<CommunityGroup>;
-  leaveGroup: (id: string) => Promise<CommunityGroup>;
+  joinGroup: (
+    id: string,
+    userToken: string,
+    displayName: string,
+  ) => Promise<CommunityGroup>;
+  leaveGroup: (id: string, userToken: string) => Promise<CommunityGroup>;
   deleteGroup: (id: string, accessToken: string) => Promise<void>;
 
   // Group proposal actions
-  proposeGroup: (payload: ProposeGroupPayload) => Promise<CommunityGroup>;
+  proposeGroup: (
+    payload: ProposeGroupPayload,
+    userToken: string,
+  ) => Promise<CommunityGroup>;
   fetchPendingGroups: (accessToken: string) => Promise<CommunityGroup[]>;
   approveGroup: (id: string, accessToken: string) => Promise<CommunityGroup>;
   rejectGroup: (id: string, accessToken: string) => Promise<CommunityGroup>;
+
+  // Group message actions
+  fetchGroupMessages: (groupId: string) => Promise<GroupMessage[]>;
+  sendGroupMessage: (
+    groupId: string,
+    payload: SendGroupMessagePayload,
+    userToken: string,
+  ) => Promise<GroupMessage>;
+  reactToGroupMessage: (
+    groupId: string,
+    msgId: string,
+    emoji: string,
+    userToken: string,
+  ) => Promise<GroupMessage>;
+  fetchGroupMembers: (groupId: string) => Promise<GroupMembersResult>;
+  // Trending tags
+  fetchTrendingTags: () => Promise<TrendingTag[]>;
 
   // Featured event actions
   fetchFeaturedEvent: () => Promise<FeaturedEvent | null>;
@@ -96,6 +169,28 @@ function upsertGroup(
   return updated;
 }
 
+function upsertReply(
+  list: DiscussionReply[],
+  next: DiscussionReply,
+): DiscussionReply[] {
+  const idx = list.findIndex((r) => r._id === next._id);
+  if (idx === -1) return [...list, next];
+  const updated = [...list];
+  updated[idx] = next;
+  return updated;
+}
+
+function upsertMessage(
+  list: GroupMessage[],
+  next: GroupMessage,
+): GroupMessage[] {
+  const idx = list.findIndex((m) => m._id === next._id);
+  if (idx === -1) return [...list, next];
+  const updated = [...list];
+  updated[idx] = next;
+  return updated;
+}
+
 // ─── Fetch-dedup guards (module-level) ───────────────────────────────────────
 
 let discussionsFetchPromise: Promise<Discussion[]> | null = null;
@@ -103,6 +198,15 @@ let groupsFetchPromise: Promise<CommunityGroup[]> | null = null;
 let allGroupsFetchPromise: Promise<CommunityGroup[]> | null = null;
 let pendingGroupsFetchPromise: Promise<CommunityGroup[]> | null = null;
 let featuredEventFetchPromise: Promise<FeaturedEvent | null> | null = null;
+let trendingTagsFetchPromise: Promise<TrendingTag[]> | null = null;
+const repliesFetchPromises: Record<
+  string,
+  Promise<DiscussionReply[]> | undefined
+> = {};
+const messagesFetchPromises: Record<
+  string,
+  Promise<GroupMessage[]> | undefined
+> = {};
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
@@ -111,12 +215,21 @@ export const useCommunityStore = create<CommunityState>()(
     (set, get) => ({
       discussions: [],
       isDiscussionsLoading: false,
+      repliesByDiscussion: {},
+      isRepliesLoading: false,
       groups: [],
       isGroupsLoading: false,
       allGroups: [],
       isAllGroupsLoading: false,
       pendingGroups: [],
       isPendingGroupsLoading: false,
+      messagesByGroup: {},
+      isMessagesLoading: false,
+      membersByGroup: {},
+      isMembersLoading: false,
+      joinedGroupIds: [],
+      trendingTags: [],
+      isTrendingTagsLoading: false,
       featuredEvent: null,
       isFeaturedEventLoading: false,
       error: null,
@@ -147,10 +260,10 @@ export const useCommunityStore = create<CommunityState>()(
         return discussionsFetchPromise;
       },
 
-      postDiscussion: async (payload) => {
+      postDiscussion: async (payload, userToken) => {
         set({ error: null });
         try {
-          const created = await createDiscussionRequest(payload);
+          const created = await createDiscussionRequest(payload, userToken);
           set({ discussions: upsertDiscussion(get().discussions, created) });
           return created;
         } catch (error: any) {
@@ -170,6 +283,81 @@ export const useCommunityStore = create<CommunityState>()(
           set({
             error: getErrorMessage(error, "Failed to delete discussion."),
           });
+          throw error;
+        }
+      },
+
+      // ── Discussion Replies ───────────────────────────────────────────────────
+
+      fetchReplies: async (discussionId) => {
+        if (repliesFetchPromises[discussionId]) {
+          return repliesFetchPromises[discussionId]!;
+        }
+
+        set({ isRepliesLoading: true, error: null });
+        repliesFetchPromises[discussionId] = (async () => {
+          try {
+            const replies = await listDiscussionReplies(discussionId);
+            set((state) => ({
+              repliesByDiscussion: {
+                ...state.repliesByDiscussion,
+                [discussionId]: replies,
+              },
+            }));
+            return replies;
+          } catch (error: any) {
+            set({ error: getErrorMessage(error, "Failed to load replies.") });
+            throw error;
+          } finally {
+            set({ isRepliesLoading: false });
+            delete repliesFetchPromises[discussionId];
+          }
+        })();
+        return repliesFetchPromises[discussionId]!;
+      },
+
+      postReply: async (discussionId, payload, userToken) => {
+        set({ error: null });
+        try {
+          const created = await createDiscussionReplyRequest(
+            discussionId,
+            payload,
+            userToken,
+          );
+          const current = get().repliesByDiscussion[discussionId] ?? [];
+          set((state) => ({
+            repliesByDiscussion: {
+              ...state.repliesByDiscussion,
+              [discussionId]: [...current, created],
+            },
+            // Increment local reply count on the discussion
+            discussions: state.discussions.map((d) =>
+              d._id === discussionId ? { ...d, replies: d.replies + 1 } : d,
+            ),
+          }));
+          return created;
+        } catch (error: any) {
+          set({ error: getErrorMessage(error, "Failed to post reply.") });
+          throw error;
+        }
+      },
+
+      toggleLikeReply: async (replyId, userToken) => {
+        set({ error: null });
+        try {
+          const updated = await likeDiscussionReplyRequest(replyId, userToken);
+          // Update the reply in whichever discussion it belongs to
+          const discussionId = updated.discussionId;
+          const current = get().repliesByDiscussion[discussionId] ?? [];
+          set((state) => ({
+            repliesByDiscussion: {
+              ...state.repliesByDiscussion,
+              [discussionId]: upsertReply(current, updated),
+            },
+          }));
+          return updated;
+        } catch (error: any) {
+          set({ error: getErrorMessage(error, "Failed to toggle like.") });
           throw error;
         }
       },
@@ -196,11 +384,16 @@ export const useCommunityStore = create<CommunityState>()(
         return groupsFetchPromise;
       },
 
-      joinGroup: async (id) => {
+      joinGroup: async (id, userToken, displayName) => {
         set({ error: null });
         try {
-          const updated = await joinGroupRequest(id);
-          set({ groups: upsertGroup(get().groups, updated) });
+          const updated = await joinGroupRequest(id, userToken, displayName);
+          set((state) => ({
+            groups: upsertGroup(state.groups, updated),
+            joinedGroupIds: state.joinedGroupIds.includes(id)
+              ? state.joinedGroupIds
+              : [...state.joinedGroupIds, id],
+          }));
           return updated;
         } catch (error: any) {
           set({ error: getErrorMessage(error, "Failed to join group.") });
@@ -208,11 +401,14 @@ export const useCommunityStore = create<CommunityState>()(
         }
       },
 
-      leaveGroup: async (id) => {
+      leaveGroup: async (id, userToken) => {
         set({ error: null });
         try {
-          const updated = await leaveGroupRequest(id);
-          set({ groups: upsertGroup(get().groups, updated) });
+          const updated = await leaveGroupRequest(id, userToken);
+          set((state) => ({
+            groups: upsertGroup(state.groups, updated),
+            joinedGroupIds: state.joinedGroupIds.filter((gid) => gid !== id),
+          }));
           return updated;
         } catch (error: any) {
           set({ error: getErrorMessage(error, "Failed to leave group.") });
@@ -257,10 +453,16 @@ export const useCommunityStore = create<CommunityState>()(
 
       // ── Group proposals ──────────────────────────────────────────────────────
 
-      proposeGroup: async (payload) => {
+      proposeGroup: async (payload, userToken) => {
         set({ error: null });
         try {
-          const created = await proposeGroupRequest(payload);
+          const created = await proposeGroupRequest(payload, userToken);
+          // Founder is already a member — track locally so join button shows as joined
+          set((state) => ({
+            joinedGroupIds: state.joinedGroupIds.includes(created._id)
+              ? state.joinedGroupIds
+              : [...state.joinedGroupIds, created._id],
+          }));
           // Do NOT add to `groups` — it's pending, not approved yet
           return created;
         } catch (error: any) {
@@ -322,6 +524,125 @@ export const useCommunityStore = create<CommunityState>()(
         }
       },
 
+      // ── Group Messages ────────────────────────────────────────────────────────
+
+      fetchGroupMessages: async (groupId) => {
+        if (messagesFetchPromises[groupId]) {
+          return messagesFetchPromises[groupId]!;
+        }
+
+        set({ isMessagesLoading: true, error: null });
+        messagesFetchPromises[groupId] = (async () => {
+          try {
+            const messages = await listGroupMessages(groupId);
+            set((state) => ({
+              messagesByGroup: {
+                ...state.messagesByGroup,
+                [groupId]: messages,
+              },
+            }));
+            return messages;
+          } catch (error: any) {
+            set({ error: getErrorMessage(error, "Failed to load messages.") });
+            throw error;
+          } finally {
+            set({ isMessagesLoading: false });
+            delete messagesFetchPromises[groupId];
+          }
+        })();
+        return messagesFetchPromises[groupId]!;
+      },
+
+      sendGroupMessage: async (groupId, payload, userToken) => {
+        set({ error: null });
+        try {
+          const created = await sendGroupMessageRequest(
+            groupId,
+            payload,
+            userToken,
+          );
+          const current = get().messagesByGroup[groupId] ?? [];
+          set((state) => ({
+            messagesByGroup: {
+              ...state.messagesByGroup,
+              [groupId]: [...current, created],
+            },
+          }));
+          return created;
+        } catch (error: any) {
+          set({ error: getErrorMessage(error, "Failed to send message.") });
+          throw error;
+        }
+      },
+
+      reactToGroupMessage: async (groupId, msgId, emoji, userToken) => {
+        set({ error: null });
+        try {
+          const updated = await reactToGroupMessageRequest(
+            groupId,
+            msgId,
+            emoji,
+            userToken,
+          );
+          const current = get().messagesByGroup[groupId] ?? [];
+          set((state) => ({
+            messagesByGroup: {
+              ...state.messagesByGroup,
+              [groupId]: upsertMessage(current, updated),
+            },
+          }));
+          return updated;
+        } catch (error: any) {
+          set({ error: getErrorMessage(error, "Failed to react to message.") });
+          throw error;
+        }
+      },
+
+      fetchGroupMembers: async (groupId) => {
+        set({ isMembersLoading: true });
+        try {
+          const result = await getGroupMembersRequest(groupId);
+          set((state) => ({
+            membersByGroup: {
+              ...state.membersByGroup,
+              [groupId]: result.members,
+            },
+            isMembersLoading: false,
+          }));
+          return result;
+        } catch (error: any) {
+          set({
+            error: getErrorMessage(error, "Failed to load members."),
+            isMembersLoading: false,
+          });
+          throw error;
+        }
+      },
+      // ── Trending Tags ─────────────────────────────────────────────────────────
+
+      fetchTrendingTags: async () => {
+        if (trendingTagsFetchPromise) return trendingTagsFetchPromise;
+
+        set({ isTrendingTagsLoading: true, error: null });
+        trendingTagsFetchPromise = (async () => {
+          try {
+            const tags = await listTrendingTagsRequest();
+            set({ trendingTags: tags });
+            return tags;
+          } catch (error: any) {
+            set({
+              error: getErrorMessage(error, "Failed to load trending tags."),
+            });
+            // Don't rethrow — non-critical; sidebar degrades gracefully
+            return get().trendingTags;
+          } finally {
+            set({ isTrendingTagsLoading: false });
+            trendingTagsFetchPromise = null;
+          }
+        })();
+        return trendingTagsFetchPromise;
+      },
+
       // ── Featured Event ───────────────────────────────────────────────────────
 
       fetchFeaturedEvent: async () => {
@@ -363,6 +684,8 @@ export const useCommunityStore = create<CommunityState>()(
         discussions: state.discussions,
         groups: state.groups,
         featuredEvent: state.featuredEvent,
+        trendingTags: state.trendingTags,
+        joinedGroupIds: state.joinedGroupIds,
       }),
     },
   ),
