@@ -17,7 +17,9 @@ import { emergencyContactsRouter } from "@/modules/emergency-contacts";
 import { marqueeImagesRouter } from "@/modules/marquee-images";
 import { municipalHallRouter } from "@/modules/municipal-hall";
 import { communityRouter } from "@/modules/community";
+import { servicesRouter } from "@/modules/services";
 import { userRouter } from "@/modules/users";
+import { adminRegistrationRouter } from "@/modules/admin-registration";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -85,8 +87,14 @@ apiRouter.use("/municipal-hall", municipalHallRouter);
 // Community — discussions, peer groups, featured event
 apiRouter.use("/community", communityRouter);
 
+// Services — categories, individual services, and life events
+apiRouter.use("/services", servicesRouter);
+
 // Public user auth — register, login, profile
 apiRouter.use("/users", userRouter);
+
+// Admin registration requests — public submit + superadmin review
+apiRouter.use("/admin-registrations", adminRegistrationRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
