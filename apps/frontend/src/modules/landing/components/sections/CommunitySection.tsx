@@ -7,7 +7,6 @@ import {
   FaTimes,
   FaComment,
   FaHashtag,
-  FaUserPlus,
   FaFire,
   FaCalendarAlt,
   FaClock,
@@ -26,52 +25,8 @@ import type {
   FeaturedEvent,
   ProposeGroupPayload,
 } from "@/modules/admin/services/community.api";
-import {
-  uploadGroupImageRequest,
-} from "@/modules/admin/services/community.api";
-import SafeImage from "../ui/SafeImage";
-
-// ─── Static sidebar data ──────────────────────────────────────────────────────
-
-const TRENDING_TAGS = [
-  { id: "1", label: "CivicEngagement" },
-  { id: "2", label: "CleanCommunity" },
-  { id: "3", label: "LocalGovWatch" },
-  { id: "4", label: "PublicServices" },
-  { id: "5", label: "YouthLeaders" },
-  { id: "6", label: "Agriculture" },
-  { id: "7", label: "BusinessTips" },
-  { id: "8", label: "HealthAwareness" },
-];
-
-const PEOPLE_TO_FOLLOW = [
-  { id: "1", name: "CivicAdvocate", role: "Community Organizer" },
-  { id: "2", name: "LocalFarmer", role: "Agri Advocate" },
-  { id: "3", name: "BizConnect", role: "Livelihood Officer" },
-  { id: "4", name: "YouthCouncil", role: "Youth Leader" },
-  { id: "5", name: "HealthDesk", role: "Health Officer" },
-];
-
-// ─── Shared sub-components ────────────────────────────────────────────────────
-
-function Avatar({
-  initials,
-  size = "md",
-}: {
-  initials: string;
-  size?: "sm" | "md";
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-full flex items-center justify-center bg-neutral-200 text-neutral-700 font-bold shrink-0",
-        size === "sm" ? "w-7 h-7 text-[10px]" : "w-8 h-8 text-xs",
-      )}
-    >
-      {initials}
-    </div>
-  );
-}
+import { uploadGroupImageRequest } from "@/modules/admin/services/community.api";
+import SafeImage, { getProxiedUrl } from "../ui/SafeImage";
 
 function SectionHeader({
   icon,
@@ -142,7 +97,17 @@ function DiscussionCard({
       className="bg-white border border-neutral-200 rounded-xl p-4 flex flex-col gap-3 hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer"
     >
       <div className="flex items-center gap-2">
-        <Avatar initials={discussion.avatarInitials} size="sm" />
+        <div className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-700 text-[10px] font-bold shrink-0 overflow-hidden">
+          {discussion.avatarUrl ? (
+            <img
+              src={getProxiedUrl(discussion.avatarUrl)}
+              alt={discussion.author}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            discussion.avatarInitials
+          )}
+        </div>
         <span className="text-xs font-semibold text-neutral-600">
           {discussion.author}
         </span>
@@ -238,7 +203,10 @@ function GroupCard({
           </div>
           {isGuest ? (
             <button
-              onClick={(e) => { e.stopPropagation(); onJoin(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onJoin();
+              }}
               style={{ minHeight: 0 }}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0 bg-neutral-200 text-neutral-500 hover:bg-neutral-300 flex items-center gap-1"
             >
@@ -247,7 +215,10 @@ function GroupCard({
             </button>
           ) : (
             <button
-              onClick={(e) => { e.stopPropagation(); onJoin(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onJoin();
+              }}
               style={{ minHeight: 0 }}
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0",
@@ -328,12 +299,14 @@ function AddDiscussionModal({
   onPost,
   posting,
   displayName,
+  avatarUrl,
 }: {
   open: boolean;
   onClose: () => void;
   onPost: (title: string, tags: string[]) => Promise<void>;
   posting: boolean;
   displayName: string;
+  avatarUrl?: string;
 }) {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
@@ -416,8 +389,16 @@ function AddDiscussionModal({
 
             {/* Posting as */}
             <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200">
-              <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center text-[10px] font-bold text-neutral-700 shrink-0">
-                {displayName.slice(0, 2).toUpperCase()}
+              <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center text-[10px] font-bold text-neutral-700 shrink-0 overflow-hidden">
+                {avatarUrl ? (
+                  <img
+                    src={getProxiedUrl(avatarUrl)}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  displayName.slice(0, 2).toUpperCase()
+                )}
               </div>
               <p className="text-xs text-neutral-500">
                 Posting as{" "}
@@ -801,6 +782,7 @@ export function CommunitySection() {
   // ── User identity ───────────────────────────────────────────────────────────
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
   const currentUser = useUserStore((s) => s.user);
+  const userToken = useUserStore((s) => s.token);
   const displayName = currentUser?.displayName ?? "Anonymous";
 
   const navigate = useNavigate();
@@ -839,29 +821,49 @@ export function CommunitySection() {
 
   const proposeGroup = useCommunityStore((s) => s.proposeGroup);
 
+  const trendingTags = useCommunityStore((s) => s.trendingTags);
+  const fetchTrendingTags = useCommunityStore((s) => s.fetchTrendingTags);
+
+  const joinedGroupIds = useCommunityStore((s) => s.joinedGroupIds);
+
   // ── Local UI state ──────────────────────────────────────────────────────────
   const [isAddingDiscussion, setIsAddingDiscussion] = useState(false);
   const [posting, setPosting] = useState(false);
   const [isProposingGroup, setIsProposingGroup] = useState(false);
   const [proposing, setProposing] = useState(false);
-  const [joinedGroups, setJoinedGroups] = useState<Set<string>>(new Set());
-  const [followedPeople, setFollowedPeople] = useState<Set<string>>(new Set());
 
   // ── Fetch on mount ──────────────────────────────────────────────────────────
   useEffect(() => {
-    fetchDiscussions().catch(() =>
-      toast("Failed to load discussions.", "error"),
-    );
-    fetchGroups().catch(() => toast("Failed to load groups.", "error"));
+    if (discussions.length === 0) {
+      fetchDiscussions().catch(() =>
+        toast("Failed to load discussions.", "error"),
+      );
+    }
+    if (groups.length === 0) {
+      fetchGroups().catch(() => toast("Failed to load groups.", "error"));
+    }
     fetchFeaturedEvent().catch(() => {});
-  }, [fetchDiscussions, fetchGroups, fetchFeaturedEvent]);
+    fetchTrendingTags().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handlePostDiscussion = async (title: string, tags: string[]) => {
     setPosting(true);
     try {
-      await postDiscussion({ author: displayName, title, tags });
+      if (!userToken) {
+        toast("Please sign in to post a discussion.", "error");
+        return;
+      }
+      await postDiscussion(
+        {
+          author: displayName,
+          title,
+          tags,
+        },
+        userToken,
+      );
       setIsAddingDiscussion(false);
       toast("Discussion posted!", "success");
     } catch {
@@ -872,42 +874,19 @@ export function CommunitySection() {
   };
 
   const handleToggleGroup = async (group: CommunityGroup) => {
-    const isJoined = joinedGroups.has(group._id);
-    setJoinedGroups((prev) => {
-      const next = new Set(prev);
-      isJoined ? next.delete(group._id) : next.add(group._id);
-      return next;
-    });
+    if (!userToken) return;
+    const isJoined = joinedGroupIds.includes(group._id);
     try {
       if (isJoined) {
-        await leaveGroup(group._id);
+        await leaveGroup(group._id, userToken);
         toast(`Left "${group.name}"`, "info");
       } else {
-        await joinGroup(group._id);
+        await joinGroup(group._id, userToken, displayName);
         toast(`Joined "${group.name}"`, "success");
       }
     } catch {
-      setJoinedGroups((prev) => {
-        const next = new Set(prev);
-        isJoined ? next.add(group._id) : next.delete(group._id);
-        return next;
-      });
       toast("Failed to update membership.", "error");
     }
-  };
-
-  const handleFollow = (personId: string, name: string) => {
-    setFollowedPeople((prev) => {
-      const next = new Set(prev);
-      if (next.has(personId)) {
-        next.delete(personId);
-        toast(`Unfollowed @${name}`, "info");
-      } else {
-        next.add(personId);
-        toast(`Following @${name}`, "success");
-      }
-      return next;
-    });
   };
 
   const handleRsvp = async () => {
@@ -922,7 +901,11 @@ export function CommunitySection() {
   const handleProposeGroup = async (payload: ProposeGroupPayload) => {
     setProposing(true);
     try {
-      await proposeGroup(payload);
+      if (!userToken) {
+        toast("Please sign in to propose a group.", "error");
+        return;
+      }
+      await proposeGroup(payload, userToken);
       setIsProposingGroup(false);
       toast("Your group proposal has been submitted for review!", "success");
     } catch {
@@ -931,6 +914,39 @@ export function CommunitySection() {
       setProposing(false);
     }
   };
+
+  // ── Top Contributors (client-side, derived from loaded data) ────────────────
+  const topContributors = (() => {
+    const tally: Record<
+      string,
+      {
+        name: string;
+        initials: string;
+        avatarUrl: string;
+        discussions: number;
+        groups: number;
+      }
+    > = {};
+
+    for (const d of discussions) {
+      if (!tally[d.author]) {
+        tally[d.author] = {
+          name: d.author,
+          initials: d.avatarInitials,
+          avatarUrl: d.avatarUrl ?? "",
+          discussions: 0,
+          groups: 0,
+        };
+      }
+      tally[d.author].discussions += 1;
+      // keep the latest avatarUrl in case it was updated
+      if (d.avatarUrl) tally[d.author].avatarUrl = d.avatarUrl;
+    }
+
+    return Object.values(tally)
+      .sort((a, b) => b.discussions + b.groups - (a.discussions + a.groups))
+      .slice(0, 10);
+  })();
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -1009,12 +1025,14 @@ export function CommunitySection() {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {discussions.map((d, i) => (
+                  {discussions.slice(0, 2).map((d, i) => (
                     <DiscussionCard
                       key={d._id}
                       discussion={d}
                       index={i}
-                      onClick={() => navigate(`/community/discussions/${d._id}`)}
+                      onClick={() =>
+                        navigate(`/community/discussions/${d._id}`)
+                      }
                     />
                   ))}
                 </div>
@@ -1043,10 +1061,14 @@ export function CommunitySection() {
                         key={group._id}
                         group={group}
                         index={i}
-                        isJoined={joinedGroups.has(group._id)}
-                        onJoin={() => requireAuth(() => handleToggleGroup(group))}
+                        isJoined={joinedGroupIds.includes(group._id)}
+                        onJoin={() =>
+                          requireAuth(() => handleToggleGroup(group))
+                        }
                         isGuest={!isAuthenticated}
-                        onClick={() => navigate(`/community/groups/${group._id}`)}
+                        onClick={() =>
+                          navigate(`/community/groups/${group._id}`)
+                        }
                       />
                     ))}
                   </div>
@@ -1099,21 +1121,34 @@ export function CommunitySection() {
                   Trending Hashtags
                 </h3>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {TRENDING_TAGS.map((tag) => (
-                  <button
-                    key={tag.id}
-                    onClick={() => toast(`#${tag.label} — coming soon`, "info")}
-                    style={{ minHeight: 0 }}
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-colors"
-                  >
-                    #{tag.label}
-                  </button>
-                ))}
-              </div>
+              {trendingTags.length === 0 ? (
+                <p className="text-xs text-neutral-400">
+                  No trending tags yet.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {trendingTags.map((tag) => (
+                    <button
+                      key={tag.label}
+                      onClick={() =>
+                        navigate(
+                          `/community/discussions?tag=${encodeURIComponent(tag.label)}`,
+                        )
+                      }
+                      style={{ minHeight: 0 }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-colors"
+                    >
+                      #{tag.label}
+                      <span className="text-neutral-400 font-normal">
+                        {tag.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
 
-            {/* People to Follow */}
+            {/* Top Contributors */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1121,50 +1156,62 @@ export function CommunitySection() {
               className="rounded-xl bg-white border border-neutral-200 p-5"
             >
               <div className="flex items-center gap-2 mb-4">
-                <FaUserPlus size={12} className="text-neutral-400" />
+                <FaUsers size={12} className="text-neutral-400" />
                 <h3 className="font-bold text-sm text-neutral-900">
-                  People to Follow
+                  Most Active Members
                 </h3>
               </div>
-              <div className="flex flex-col gap-3">
-                {PEOPLE_TO_FOLLOW.map((person) => (
-                  <div key={person.id} className="flex items-center gap-3">
-                    <Avatar initials={person.name.slice(0, 2).toUpperCase()} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-neutral-900 truncate">
-                        {person.name}
-                      </p>
-                      <p className="text-xs text-neutral-500 truncate">
-                        {person.role}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        requireAuth(() => handleFollow(person.id, person.name))
-                      }
-                      style={{ minHeight: 0 }}
-                      className={cn(
-                        "text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors shrink-0",
-                        !isAuthenticated
-                          ? "bg-neutral-100 text-neutral-400 cursor-default"
-                          : followedPeople.has(person.id)
-                            ? "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                            : "bg-neutral-900 text-white hover:bg-neutral-700",
-                      )}
+
+              {isDiscussionsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <FaSpinner
+                    className="animate-spin text-neutral-300"
+                    size={16}
+                  />
+                </div>
+              ) : topContributors.length === 0 ? (
+                <p className="text-xs text-neutral-400">No contributors yet.</p>
+              ) : (
+                <ol className="flex flex-col gap-2.5">
+                  {topContributors.map((contributor, idx) => (
+                    <li
+                      key={contributor.name}
+                      className="flex items-center gap-2.5"
                     >
-                      {!isAuthenticated ? (
-                        <span className="flex items-center gap-1">
-                          <FaLock size={9} /> Follow
-                        </span>
-                      ) : followedPeople.has(person.id) ? (
-                        "Following"
-                      ) : (
-                        "+ Follow"
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      {/* Rank */}
+                      <span className="w-5 shrink-0 text-center text-[11px] font-bold text-neutral-400">
+                        {idx + 1}
+                      </span>
+
+                      {/* Avatar */}
+                      <div className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-700 text-[10px] font-bold shrink-0 overflow-hidden">
+                        {contributor.avatarUrl ? (
+                          <img
+                            src={getProxiedUrl(contributor.avatarUrl)}
+                            alt={contributor.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          contributor.initials
+                        )}
+                      </div>
+
+                      {/* Name + stat */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-neutral-800 truncate leading-tight">
+                          {contributor.name}
+                        </p>
+                        <p className="text-[11px] text-neutral-400 leading-tight">
+                          {contributor.discussions}{" "}
+                          {contributor.discussions === 1
+                            ? "discussion"
+                            : "discussions"}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </motion.div>
           </aside>
         </div>
@@ -1176,6 +1223,7 @@ export function CommunitySection() {
         onPost={handlePostDiscussion}
         posting={posting}
         displayName={displayName}
+        avatarUrl={currentUser?.avatarUrl}
       />
 
       <ProposeGroupModal
