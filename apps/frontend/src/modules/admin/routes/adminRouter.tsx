@@ -8,6 +8,7 @@ import { AccountManagementPage } from "../pages/AccountManagementPage";
 import { MyAccountPage } from "../pages/MyAccountPage";
 import { ContactsPage } from "../pages/ContactsPage";
 import { AdminLoginPage } from "../components/auth/AdminLoginPage";
+import { AdminRegisterPage } from "../components/auth/AdminRegisterPage";
 import { GovernmentModulePage } from "../pages/GovernmentModulePage";
 import { LegislativeModulePage } from "../pages/LegislativeModulePage";
 import { TransparencyModulePage } from "../pages/TransparencyModulePage";
@@ -21,6 +22,11 @@ export const adminRoutes: RouteObject[] = [
   {
     path: "login",
     element: <AdminLoginPage />,
+  },
+  // Public registration page — no auth guard
+  {
+    path: "register",
+    element: <AdminRegisterPage />,
   },
   // Protected admin routes
   {
