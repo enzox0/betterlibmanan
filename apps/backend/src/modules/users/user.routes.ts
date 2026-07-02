@@ -1,6 +1,12 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { handleRegister, handleLogin, handleGetMe } from "./user.controller";
+import {
+  handleRegister,
+  handleLogin,
+  handleGetMe,
+  handleUpdateMe,
+  handleChangePassword,
+} from "./user.controller";
 import { requireUser } from "./user.middleware";
 
 export const userRouter: Router = Router();
@@ -20,3 +26,5 @@ userRouter.post("/login", authLimiter, handleLogin);
 
 // Protected
 userRouter.get("/me", requireUser, handleGetMe);
+userRouter.patch("/me", requireUser, handleUpdateMe);
+userRouter.post("/me/password", requireUser, handleChangePassword);

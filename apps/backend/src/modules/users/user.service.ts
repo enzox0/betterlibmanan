@@ -125,3 +125,62 @@ export async function getMe(userId: string): Promise<PublicUser> {
   }
   return user as PublicUser;
 }
+
+export interface UpdateMeInput {
+  displayName?: string;
+  email?: string;
+  avatarUrl?: string;
+}
+
+export async function updateMe(
+  userId: string,
+  input: UpdateMeInput,
+): Promise<PublicUser> {
+  if (input.email) {
+    const existing = await UserModel.findOne({
+      email: input.email.toLowerCase().trim(),
+      _id: { $ne: userId },
+    });
+    if (existing) {
+      const err: any = new Error("Email is already in use.");
+      err.statusCode = 409;
+      throw err;
+    }
+  }
+
+  const updates: Partial<IUser> = {};
+  if (input.displayName) updates.displayName = input.displayName.trim();
+  if (input.email) updates.email = input.email.toLowerCase().trim();
+  if (input.avatarUrl !== undefined) updates.avatarUrl = input.avatarUrl;
+
+  const user = await UserModel.findByIdAndUpdate(userId, updates, {
+    new: true,
+  }).lean();
+  if (!user) {
+    const err: any = new Error("User not found.");
+    err.statusCode = 404;
+    throw err;
+  }
+  return user as PublicUser;
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await UserModel.findById(userId).select("+password");
+  if (!user || !user.isActive) {
+    const err: any = new Error("User not found.");
+    err.statusCode = 404;
+    throw err;
+  }
+  const valid = await user.comparePassword(currentPassword);
+  if (!valid) {
+    const err: any = new Error("Current password is incorrect.");
+    err.statusCode = 400;
+    throw err;
+  }
+  user.password = newPassword;
+  await user.save();
+}
