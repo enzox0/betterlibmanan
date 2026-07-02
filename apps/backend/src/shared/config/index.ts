@@ -13,11 +13,11 @@ const envFiles = [
   `.env.${nodeEnv}.local`,
   `.env.${nodeEnv}`,
   `.env.local`,
-  `.env`
+  `.env`,
 ];
 
 console.log(`[Backend Config] Loading env files (NODE_ENV=${nodeEnv}):`);
-envFiles.forEach(file => {
+envFiles.forEach((file) => {
   const fullPath = path.resolve(projectRoot, file);
   const result = dotenv.config({ path: fullPath });
   if (!result.error) {
@@ -31,7 +31,10 @@ console.log("[Backend Config] SMTP_HOST:", process.env.SMTP_HOST);
 const getPort = (): number => {
   const env = process.env.NODE_ENV || "development";
   if (env === "production") {
-    return parseInt(process.env.PORT_PRODUCTION || process.env.PORT || "5002", 10);
+    return parseInt(
+      process.env.PORT_PRODUCTION || process.env.PORT || "5002",
+      10,
+    );
   } else if (env === "staging") {
     return parseInt(process.env.PORT_STAGING || process.env.PORT || "5001", 10);
   }
