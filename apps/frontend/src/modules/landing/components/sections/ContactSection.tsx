@@ -5,7 +5,7 @@ import { Skeleton, SkeletonCard } from "@/shared/ui";
 import { useContactStore } from "@/modules/admin/store/contactStore";
 import type { IconType } from "react-icons";
 
-const TYPE_ICON: Record<string, IconType> = {
+export const TYPE_ICON: Record<string, IconType> = {
   phone: FaPhone,
   email: FaEnvelope,
   address: FaMapMarkerAlt,
