@@ -169,6 +169,22 @@ export const mockServicesData: ServicesData = {
           processingTime: "Same day",
           categorySlug: "tax-payments",
         },
+        {
+          id: "cedula",
+          title: "Cedula (Community Tax Certificate)",
+          description:
+            "Obtain a Community Tax Certificate (CTC) required for most government transactions",
+          requirements: ["Valid ID", "Previous cedula (for renewal)"],
+          steps: [
+            "Visit the Municipal Treasurer's Office",
+            "Fill out the CTC application form",
+            "Pay the community tax",
+            "Receive your cedula",
+          ],
+          fee: "Php 5 basic + additional based on income",
+          processingTime: "Same day",
+          categorySlug: "tax-payments",
+        },
       ],
     },
     {
@@ -383,6 +399,7 @@ export const mockServicesData: ServicesData = {
         "new-business-permit",
         "business-permit-renewal",
         "business-tax",
+        "cedula",
         "environmental-clearance",
       ],
     },
