@@ -64,3 +64,36 @@ export async function getMeRequest(token: string): Promise<PublicUser> {
   );
   return data.data;
 }
+
+// ─── Update profile ───────────────────────────────────────────────────────────
+
+export interface UpdateProfilePayload {
+  displayName?: string;
+  email?: string;
+  avatarUrl?: string;
+}
+
+export async function updateProfileRequest(
+  payload: UpdateProfilePayload,
+  token: string,
+): Promise<PublicUser> {
+  const { data } = await apiClient.patch<{
+    success: boolean;
+    data: PublicUser;
+  }>("/me", payload, { headers: { Authorization: `Bearer ${token}` } });
+  return data.data;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export async function changePasswordRequest(
+  payload: ChangePasswordPayload,
+  token: string,
+): Promise<void> {
+  await apiClient.post("/me/password", payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
