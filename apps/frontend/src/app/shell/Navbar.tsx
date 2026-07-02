@@ -8,17 +8,20 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import { useUserStore } from "@/modules/admin/store/userStore";
-import { UserAuthModal } from "@/modules/landing/components/ui/UserAuthModal";
 import { getProxiedUrl } from "@/modules/landing/components/ui/SafeImage";
 
-export function Navbar() {
+interface NavbarProps {
+  authModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+}
+
+export function Navbar({ authModalOpen, setAuthModalOpen }: NavbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showLangModal, setShowLangModal] = useState(false);
   const [isInHero, setIsInHero] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -505,13 +508,6 @@ export function Navbar() {
           )}
         </div>
       </header>
-
-      {/* User auth modal — rendered outside header to avoid z-index conflicts */}
-      <UserAuthModal
-        open={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        defaultTab="login"
-      />
     </>
   );
 }

@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaClock,
   FaFacebook,
+  FaGithub,
 } from "react-icons/fa";
 
 interface CurrencyRates {
@@ -143,6 +144,15 @@ export function BottomUtilityBar() {
         <FaFacebook size={12} />
         <span>BetterLibmanan Facebook</span>
       </a>
+      <a
+        href="#"
+        className="flex items-center gap-2 whitespace-nowrap hover:text-blue-200 transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FaGithub size={12} />
+        <span>BetterLibmanan GitHub</span>
+      </a>
       <div className="flex items-center gap-2 whitespace-nowrap">
         <CurrencyIcon size={12} />
         <span>
@@ -167,15 +177,26 @@ export function BottomUtilityBar() {
       >
         {/* Desktop: static row */}
         <div className="hidden sm:flex justify-between items-center gap-6 text-xs">
-          <a
-            href="#"
-            className="flex items-center gap-2 hover:text-blue-200 transition-colors"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FaFacebook size={12} />
-            <span>BetterLibmanan Facebook</span>
-          </a>
+          <div className="flex items-center gap-6">
+            <a
+              href="#"
+              className="flex items-center gap-2 hover:text-blue-200 transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaFacebook size={12} />
+              <span>BetterLibmanan Facebook</span>
+            </a>
+            <a
+              href="https://github.com/enzox0/betterlibmanan"
+              className="flex items-center gap-2 hover:text-blue-200 transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaGithub size={12} />
+              <span>GitHub</span>
+            </a>
+          </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 h-6 overflow-hidden">
               <div
