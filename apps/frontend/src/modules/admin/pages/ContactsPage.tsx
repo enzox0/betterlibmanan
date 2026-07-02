@@ -85,7 +85,7 @@ const INITIAL_CONTACTS: ContactEntry[] = [
     id: "c-address",
     type: "address",
     title: "Address",
-    value: "Municipal Hall, Poblacion, Libmanan, Camarines Sur 4418",
+    value: "Municipal Hall, Poblacion, Libmanan, Camarines Sur 4407",
     href: "#",
     description: "Visit us during office hours",
   },

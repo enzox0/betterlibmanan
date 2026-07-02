@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+﻿import { useEffect, useRef, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactDOM from "react-dom";
 import { useAdminStore } from "../store/adminStore";
+import { useAdminRegistrationsStore } from "../store/adminRegistrationsStore";
 import { TableSkeletonRows, Pagination } from "@/shared/ui";
+import { useToast } from "@/context/ToastContext";
 import {
   fetchAccounts,
   createAccountRequest,
@@ -14,6 +16,20 @@ import {
   type CreateAccountPayload,
   type UpdateAccountPayload,
 } from "../services/accounts.api";
+import type { AdminRegistration } from "../services/admin-registrations.api";
+import {
+  LuClock,
+  LuCheck,
+  LuX,
+  LuTrash2,
+  LuSearch,
+  LuChevronDown,
+  LuUser,
+  LuCalendar,
+  LuBuilding2,
+  LuPhone,
+  LuFileText,
+} from "react-icons/lu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -742,6 +758,641 @@ function AccessDeniedBanner() {
   );
 }
 
+// ─── Pending Registrations — helpers ─────────────────────────────────────────
+
+const REG_STATUS_META = {
+  pending: {
+    label: "Pending",
+    dot: "bg-amber-400",
+    classes: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+  },
+  approved: {
+    label: "Approved",
+    dot: "bg-green-500",
+    classes: "bg-green-50 text-green-700 ring-1 ring-green-200",
+  },
+  rejected: {
+    label: "Rejected",
+    dot: "bg-red-500",
+    classes: "bg-red-50 text-red-600 ring-1 ring-red-200",
+  },
+} as const;
+
+function RegStatusBadge({ status }: { status: AdminRegistration["status"] }) {
+  const m = REG_STATUS_META[status];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${m.classes}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
+      {m.label}
+    </span>
+  );
+}
+
+function formatRegDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// ─── Reject dialog ────────────────────────────────────────────────────────────
+
+interface RejectDialogProps {
+  reg: AdminRegistration;
+  onClose: () => void;
+  onConfirm: (reason: string) => Promise<void>;
+}
+
+function RejectDialog({ reg, onClose, onConfirm }: RejectDialogProps) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handle() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await onConfirm(reason);
+      onClose();
+    } catch (e: any) {
+      setErr(e?.response?.data?.message || e?.message || "Failed.");
+      setBusy(false);
+    }
+  }
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+        aria-modal="true"
+        role="dialog"
+      >
+        <motion.div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          transition={{ duration: 0.2, ease: EASE }}
+          onClick={onClose}
+          aria-hidden="true"
+        />
+        <motion.div
+          className="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden"
+          variants={panelVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          transition={{ duration: 0.25, ease: EASE }}
+        >
+          <div className="h-1 bg-gradient-to-r from-red-500 to-red-600" />
+          <div className="p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
+                <LuX className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  Reject Registration
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Reject{" "}
+                  <span className="font-semibold">{reg.displayName}</span> (@
+                  {reg.username})?
+                </p>
+              </div>
+            </div>
+            <label
+              htmlFor="reject-reason"
+              className="block text-xs font-semibold text-gray-600 mb-1.5"
+            >
+              Reason{" "}
+              <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <textarea
+              id="reject-reason"
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Briefly explain why this request is rejected…"
+              className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+            />
+            {err && (
+              <p role="alert" className="mt-2 text-xs text-red-600">
+                {err}
+              </p>
+            )}
+            <div className="mt-4 flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handle}
+                disabled={busy}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition-all disabled:opacity-60"
+              >
+                {busy ? "Rejecting…" : "Reject"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+// ─── Registration Detail Panel ────────────────────────────────────────────────
+
+interface RegDetailPanelProps {
+  reg: AdminRegistration | null;
+  onClose: () => void;
+  onApprove: (id: string) => Promise<void>;
+  onReject: (reg: AdminRegistration) => void;
+}
+
+function RegDetailPanel({
+  reg,
+  onClose,
+  onApprove,
+  onReject,
+}: RegDetailPanelProps) {
+  const [approving, setApproving] = useState(false);
+
+  useEffect(() => {
+    if (!reg) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [reg, onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = reg ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [reg]);
+
+  return (
+    <AnimatePresence>
+      {reg && (
+        <>
+          <motion.div
+            key="reg-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="fixed inset-0 z-[200] bg-black/30"
+            onClick={onClose}
+          />
+          <motion.aside
+            key="reg-panel"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="fixed right-0 top-0 bottom-0 z-[201] w-full max-w-[420px] bg-white shadow-2xl flex flex-col"
+          >
+            <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100 shrink-0">
+              <div className="min-w-0 pr-4">
+                <h2 className="text-sm font-bold text-gray-900 leading-snug">
+                  {reg.displayName}
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-400">
+                  @{reg.username} · {reg.email}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close panel"
+                className="h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0 mt-0.5"
+              >
+                <LuX className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <RegStatusBadge status={reg.status} />
+                <span className="text-xs text-gray-400">
+                  Submitted {formatRegDate(reg.createdAt)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {reg.phone && (
+                  <div className="rounded-xl bg-gray-50 p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <LuPhone className="h-3 w-3 text-gray-400" />
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                        Phone
+                      </p>
+                    </div>
+                    <p className="text-xs font-semibold text-gray-700">
+                      {reg.phone}
+                    </p>
+                  </div>
+                )}
+                {reg.department && (
+                  <div className="rounded-xl bg-gray-50 p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <LuBuilding2 className="h-3 w-3 text-gray-400" />
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                        Department
+                      </p>
+                    </div>
+                    <p className="text-xs font-semibold text-gray-700">
+                      {reg.department}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {reg.reason && (
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <LuFileText className="h-3.5 w-3.5 text-gray-400" />
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                      Reason for Access
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    {reg.reason}
+                  </p>
+                </div>
+              )}
+              {reg.status !== "pending" && (
+                <div className="rounded-xl bg-gray-50 p-4 space-y-2">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <LuCalendar className="h-3.5 w-3.5 text-gray-400" />
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                      Review Details
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    <span className="font-semibold text-gray-700">
+                      Reviewed by:
+                    </span>{" "}
+                    {reg.reviewedByName || "—"}
+                  </p>
+                  {reg.reviewedAt && (
+                    <p className="text-xs text-gray-600">
+                      <span className="font-semibold text-gray-700">Date:</span>{" "}
+                      {formatRegDate(reg.reviewedAt)}
+                    </p>
+                  )}
+                  {reg.status === "rejected" && reg.rejectionReason && (
+                    <p className="text-xs text-gray-600">
+                      <span className="font-semibold text-gray-700">
+                        Reason:
+                      </span>{" "}
+                      {reg.rejectionReason}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            {reg.status === "pending" ? (
+              <div className="shrink-0 border-t border-gray-100 px-6 py-4 bg-white flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setApproving(true);
+                    try {
+                      await onApprove(reg._id);
+                    } finally {
+                      setApproving(false);
+                    }
+                  }}
+                  disabled={approving}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors disabled:opacity-60"
+                >
+                  <LuCheck className="h-4 w-4" />
+                  {approving ? "Approving…" : "Approve"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReject(reg)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors"
+                >
+                  <LuX className="h-4 w-4" />
+                  Reject
+                </button>
+              </div>
+            ) : (
+              <div className="shrink-0 border-t border-gray-100 px-6 py-4 bg-white">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── Pending Registrations Tab ────────────────────────────────────────────────
+
+function PendingRegistrationsTab({ accessToken }: { accessToken: string }) {
+  const { toast } = useToast();
+  const {
+    registrations,
+    isLoading,
+    fetchRegistrations,
+    approveRegistration,
+    rejectRegistration,
+    deleteRegistration,
+  } = useAdminRegistrationsStore();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "pending" | "approved" | "rejected"
+  >("all");
+  const [selectedReg, setSelectedReg] = useState<AdminRegistration | null>(
+    null,
+  );
+  const [rejectTarget, setRejectTarget] = useState<AdminRegistration | null>(
+    null,
+  );
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRegistrations(accessToken).catch(() => {});
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!selectedReg) return;
+    const updated = registrations.find((r) => r._id === selectedReg._id);
+    if (updated) setSelectedReg(updated);
+    else setSelectedReg(null);
+  }, [registrations]);
+
+  const filtered = registrations.filter((r) => {
+    const q = search.toLowerCase();
+    const matchQ =
+      !q ||
+      r.displayName.toLowerCase().includes(q) ||
+      r.username.toLowerCase().includes(q) ||
+      r.email.toLowerCase().includes(q) ||
+      (r.department ?? "").toLowerCase().includes(q);
+    return matchQ && (statusFilter === "all" || r.status === statusFilter);
+  });
+  const pendingCount = registrations.filter(
+    (r) => r.status === "pending",
+  ).length;
+
+  async function handleApprove(id: string) {
+    try {
+      await approveRegistration(id, accessToken);
+      toast("Registration approved. Admin account created.", "success");
+      setSelectedReg(null);
+    } catch (e: any) {
+      toast(e?.response?.data?.message || "Failed to approve.", "error");
+      throw e;
+    }
+  }
+
+  async function handleRejectConfirm(reason: string) {
+    if (!rejectTarget) return;
+    await rejectRegistration(rejectTarget._id, reason, accessToken);
+    toast("Registration rejected.", "info");
+    setSelectedReg(null);
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      await deleteRegistration(id, accessToken);
+      toast("Registration deleted.", "success");
+      if (selectedReg?._id === id) setSelectedReg(null);
+    } catch {
+      toast("Failed to delete.", "error");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <>
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="flex flex-col gap-3 p-5 border-b border-gray-100 sm:flex-row sm:items-center">
+          <div className="relative flex-1 sm:max-w-xs">
+            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, username, email…"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as typeof statusFilter)
+                }
+                className="appearance-none rounded-lg border border-gray-200 bg-gray-50 pl-3 pr-8 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <LuChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+            </div>
+            <button
+              onClick={() => fetchRegistrations(accessToken).catch(() => {})}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+        {pendingCount > 0 && (
+          <div className="px-5 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+            <LuClock className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className="text-xs text-amber-700 font-semibold">
+              {pendingCount} pending registration{pendingCount !== 1 ? "s" : ""}{" "}
+              awaiting your review.
+            </p>
+          </div>
+        )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Applicant
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Department
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Status
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Submitted
+                </th>
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            {isLoading ? (
+              <tbody>
+                <TableSkeletonRows rows={5} cols={5} />
+              </tbody>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                <motion.tbody
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                            <LuUser className="h-5 w-5 text-gray-300" />
+                          </div>
+                          <p className="text-sm text-gray-400">
+                            {search || statusFilter !== "all"
+                              ? "No registrations match your filters."
+                              : "No registration requests yet."}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((reg) => (
+                      <motion.tr
+                        key={reg._id}
+                        variants={rowVariants}
+                        layout
+                        className={`border-b border-gray-50 transition-colors cursor-pointer ${selectedReg?._id === reg._id ? "bg-blue-50/60" : "hover:bg-gray-50/60"}`}
+                        onClick={() =>
+                          setSelectedReg(
+                            selectedReg?._id === reg._id ? null : reg,
+                          )
+                        }
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700 shrink-0">
+                              {reg.displayName
+                                .split(" ")
+                                .map((n) => n[0])
+                                .slice(0, 2)
+                                .join("")
+                                .toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-900 truncate">
+                                {reg.displayName}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate">
+                                @{reg.username} · {reg.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-gray-500">
+                          {reg.department || (
+                            <span className="text-gray-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <RegStatusBadge status={reg.status} />
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-gray-500">
+                          {formatRegDate(reg.createdAt)}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div
+                            className="flex items-center justify-end gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {reg.status === "pending" && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprove(reg._id)}
+                                  className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 ring-1 ring-green-200 transition-all"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRejectTarget(reg)}
+                                  className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 ring-1 ring-red-200 transition-all"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(reg._id)}
+                              disabled={deletingId === reg._id}
+                              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-500 ring-1 ring-gray-200 transition-all disabled:opacity-40"
+                            >
+                              {deletingId === reg._id ? (
+                                <span className="text-xs">…</span>
+                              ) : (
+                                <LuTrash2 className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
+                </motion.tbody>
+              </AnimatePresence>
+            )}
+          </table>
+        </div>
+      </div>
+      <RegDetailPanel
+        reg={selectedReg}
+        onClose={() => setSelectedReg(null)}
+        onApprove={handleApprove}
+        onReject={(r) => setRejectTarget(r)}
+      />
+      <AnimatePresence>
+        {rejectTarget && (
+          <RejectDialog
+            reg={rejectTarget}
+            onClose={() => setRejectTarget(null)}
+            onConfirm={handleRejectConfirm}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ─── Page tab type ────────────────────────────────────────────────────────────
+
+type PageTab = "accounts" | "pending-registrations";
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 type FilterStatus = "all" | AccountStatus;
@@ -754,6 +1405,10 @@ export function AccountManagementPage() {
   }));
   const isSuperAdmin = admin?.role === "superadmin";
 
+  // ── Page-level tab
+  const [pageTab, setPageTab] = useState<PageTab>("accounts");
+
+  // ── Accounts state
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -765,6 +1420,11 @@ export function AccountManagementPage() {
   const [editTarget, setEditTarget] = useState<AdminAccount | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null);
   const newButtonRef = useRef<HTMLButtonElement>(null);
+
+  const { registrations } = useAdminRegistrationsStore();
+  const pendingRegCount = registrations.filter(
+    (r) => r.status === "pending",
+  ).length;
 
   const loadAccounts = useCallback(async () => {
     if (!accessToken) return;
@@ -783,8 +1443,6 @@ export function AccountManagementPage() {
   useEffect(() => {
     loadAccounts();
   }, [loadAccounts]);
-
-  // Reset to page 1 whenever filters change
   useEffect(() => {
     setPage(1);
   }, [search, filterStatus, filterRole]);
@@ -822,7 +1480,6 @@ export function AccountManagementPage() {
     await createAccountRequest(payload as CreateAccountPayload, accessToken!);
     await loadAccounts();
   }
-
   async function handleEdit(
     payload: CreateAccountPayload | UpdateAccountPayload,
   ) {
@@ -834,23 +1491,19 @@ export function AccountManagementPage() {
     );
     await loadAccounts();
   }
-
   async function handleDelete() {
     if (!deleteTarget) return;
     await deleteAccountRequest(deleteTarget._id, accessToken!);
     await loadAccounts();
   }
-
   async function handleToggleStatus(account: AdminAccount) {
     await setAccountStatusRequest(account._id, !account.isActive, accessToken!);
     await loadAccounts();
   }
-
   function openEdit(account: AdminAccount) {
     setEditTarget(account);
     setFormMode("edit");
   }
-
   function closeForm() {
     setFormMode(null);
     setEditTarget(null);
@@ -874,7 +1527,7 @@ export function AccountManagementPage() {
             Manage admin accounts, roles, and access permissions.
           </p>
         </div>
-        {isSuperAdmin && (
+        {isSuperAdmin && pageTab === "accounts" && (
           <button
             ref={newButtonRef}
             type="button"
@@ -921,208 +1574,436 @@ export function AccountManagementPage() {
         />
       </div>
 
-      {/* Error */}
       {apiError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {apiError}
         </div>
       )}
 
-      {/* Table card */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-        {/* Filters */}
-        <div className="flex flex-col gap-3 p-5 border-b border-gray-100 sm:flex-row sm:items-center">
-          <div className="relative flex-1 sm:max-w-xs">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
-              aria-hidden="true"
+      {/* ── Page tabs ── */}
+      {isSuperAdmin && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <nav
+              className="flex min-w-max px-4 pt-3 gap-1"
+              role="tablist"
+              aria-label="Account management sections"
             >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Search by name, username, email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search accounts"
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-            />
+              {(
+                [
+                  ["accounts", "Admin Accounts", accounts.length, null],
+                  [
+                    "pending-registrations",
+                    "Pending Admin Registrations",
+                    pendingRegCount,
+                    pendingRegCount > 0 ? "amber" : null,
+                  ],
+                ] as const
+              ).map(([id, label, count, badge]) => {
+                const isActive = pageTab === id;
+                return (
+                  <button
+                    key={id}
+                    role="tab"
+                    aria-selected={isActive}
+                    type="button"
+                    onClick={() => setPageTab(id)}
+                    className={`relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${isActive ? "text-blue-600 bg-blue-50/60" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"}`}
+                  >
+                    {label}
+                    <span
+                      className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold min-w-[18px] ${badge === "amber" ? "bg-amber-100 text-amber-700" : isActive ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}
+                    >
+                      {count}
+                    </span>
+                    {isActive && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-              aria-label="Filter by status"
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value as FilterRole)}
-              aria-label="Filter by role"
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-            >
-              <option value="all">All Roles</option>
-              <option value="superadmin">Super Admin</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Account
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Role
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Status
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Joined
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Last Login
-                </th>
-                {isSuperAdmin && (
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-widest text-gray-400">
-                    Actions
-                  </th>
-                )}
-              </tr>
-            </thead>
-
-            {loading ? (
-              <tbody>
-                <TableSkeletonRows rows={8} cols={colCount} />
-              </tbody>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                <motion.tbody
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
-                  {paginated.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={colCount}
-                        className="py-12 text-center text-sm text-gray-400"
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pageTab}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15, ease: EASE }}
+            >
+              {pageTab === "accounts" ? (
+                <>
+                  {/* Filters */}
+                  <div className="flex flex-col gap-3 p-5 border-b border-gray-100 sm:flex-row sm:items-center">
+                    <div className="relative flex-1 sm:max-w-xs">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+                        aria-hidden="true"
                       >
-                        No accounts match your filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginated.map((account) => (
-                      <motion.tr
-                        key={account._id}
-                        variants={rowVariants}
-                        layout
-                        className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors"
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                      </svg>
+                      <input
+                        type="search"
+                        placeholder="Search by name, username, email…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        aria-label="Search accounts"
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={filterStatus}
+                        onChange={(e) =>
+                          setFilterStatus(e.target.value as FilterStatus)
+                        }
+                        aria-label="Filter by status"
+                        className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                       >
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <Avatar account={account} />
-                            <div className="min-w-0">
-                              <p className="font-semibold text-gray-900 truncate">
-                                {account.displayName}
-                              </p>
-                              <p className="text-xs text-gray-400 truncate">
-                                @{account.username} · {account.email}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <RoleBadge role={account.role} />
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <StatusBadge
-                            status={account.isActive ? "active" : "inactive"}
-                          />
-                        </td>
-                        <td className="px-5 py-3.5 text-xs text-gray-500">
-                          {formatDate(account.createdAt)}
-                        </td>
-                        <td className="px-5 py-3.5 text-xs text-gray-500">
-                          {account.lastLoginAt ? (
-                            formatDateTime(account.lastLoginAt)
-                          ) : (
-                            <span className="text-gray-300">Never</span>
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                      <select
+                        value={filterRole}
+                        onChange={(e) =>
+                          setFilterRole(e.target.value as FilterRole)
+                        }
+                        aria-label="Filter by role"
+                        className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      >
+                        <option value="all">All Roles</option>
+                        <option value="superadmin">Super Admin</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                  </div>
+                  {/* Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                            Account
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                            Role
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                            Status
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                            Joined
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                            Last Login
+                          </th>
+                          {isSuperAdmin && (
+                            <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-widest text-gray-400">
+                              Actions
+                            </th>
                           )}
+                        </tr>
+                      </thead>
+                      {loading ? (
+                        <tbody>
+                          <TableSkeletonRows rows={8} cols={colCount} />
+                        </tbody>
+                      ) : (
+                        <AnimatePresence mode="popLayout">
+                          <motion.tbody
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                          >
+                            {paginated.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={colCount}
+                                  className="py-12 text-center text-sm text-gray-400"
+                                >
+                                  No accounts match your filters.
+                                </td>
+                              </tr>
+                            ) : (
+                              paginated.map((account) => (
+                                <motion.tr
+                                  key={account._id}
+                                  variants={rowVariants}
+                                  layout
+                                  className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors"
+                                >
+                                  <td className="px-5 py-3.5">
+                                    <div className="flex items-center gap-3">
+                                      <Avatar account={account} />
+                                      <div className="min-w-0">
+                                        <p className="font-semibold text-gray-900 truncate">
+                                          {account.displayName}
+                                        </p>
+                                        <p className="text-xs text-gray-400 truncate">
+                                          @{account.username} · {account.email}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-5 py-3.5">
+                                    <RoleBadge role={account.role} />
+                                  </td>
+                                  <td className="px-5 py-3.5">
+                                    <StatusBadge
+                                      status={
+                                        account.isActive ? "active" : "inactive"
+                                      }
+                                    />
+                                  </td>
+                                  <td className="px-5 py-3.5 text-xs text-gray-500">
+                                    {formatDate(account.createdAt)}
+                                  </td>
+                                  <td className="px-5 py-3.5 text-xs text-gray-500">
+                                    {account.lastLoginAt ? (
+                                      formatDateTime(account.lastLoginAt)
+                                    ) : (
+                                      <span className="text-gray-300">
+                                        Never
+                                      </span>
+                                    )}
+                                  </td>
+                                  {isSuperAdmin && (
+                                    <td className="px-5 py-3.5">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleToggleStatus(account)
+                                          }
+                                          title={
+                                            account.isActive
+                                              ? "Deactivate"
+                                              : "Activate"
+                                          }
+                                          className={`rounded-md px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all ${account.isActive ? "text-amber-700 bg-amber-50 hover:bg-amber-100 ring-1 ring-amber-200 focus:ring-amber-400" : "text-green-700 bg-green-50 hover:bg-green-100 ring-1 ring-green-200 focus:ring-green-400"}`}
+                                        >
+                                          {account.isActive
+                                            ? "Deactivate"
+                                            : "Activate"}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => openEdit(account)}
+                                          className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 ring-1 ring-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 transition-all"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setDeleteTarget(account)
+                                          }
+                                          disabled={account._id === admin?.id}
+                                          title={
+                                            account._id === admin?.id
+                                              ? "Cannot delete your own account"
+                                              : "Remove account"
+                                          }
+                                          className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 ring-1 ring-red-200 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </motion.tr>
+                              ))
+                            )}
+                          </motion.tbody>
+                        </AnimatePresence>
+                      )}
+                    </table>
+                  </div>
+                  {!loading && (
+                    <Pagination
+                      page={page}
+                      totalPages={totalPages}
+                      total={filtered.length}
+                      pageSize={PAGE_SIZE}
+                      onPageChange={setPage}
+                    />
+                  )}
+                </>
+              ) : (
+                <div className="p-5">
+                  {accessToken && (
+                    <PendingRegistrationsTab accessToken={accessToken} />
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Non-superadmin sees the table directly (no tabs) */}
+      {!isSuperAdmin && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="flex flex-col gap-3 p-5 border-b border-gray-100 sm:flex-row sm:items-center">
+            <div className="relative flex-1 sm:max-w-xs">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                type="search"
+                placeholder="Search by name, username, email…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search accounts"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={filterStatus}
+                onChange={(e) =>
+                  setFilterStatus(e.target.value as FilterStatus)
+                }
+                aria-label="Filter by status"
+                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value as FilterRole)}
+                aria-label="Filter by role"
+                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              >
+                <option value="all">All Roles</option>
+                <option value="superadmin">Super Admin</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                    Account
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                    Role
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                    Status
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                    Joined
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">
+                    Last Login
+                  </th>
+                </tr>
+              </thead>
+              {loading ? (
+                <tbody>
+                  <TableSkeletonRows rows={8} cols={5} />
+                </tbody>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  <motion.tbody
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {paginated.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="py-12 text-center text-sm text-gray-400"
+                        >
+                          No accounts match your filters.
                         </td>
-                        {isSuperAdmin && (
+                      </tr>
+                    ) : (
+                      paginated.map((account) => (
+                        <motion.tr
+                          key={account._id}
+                          variants={rowVariants}
+                          layout
+                          className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors"
+                        >
                           <td className="px-5 py-3.5">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleStatus(account)}
-                                title={
-                                  account.isActive ? "Deactivate" : "Activate"
-                                }
-                                className={`rounded-md px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all ${account.isActive ? "text-amber-700 bg-amber-50 hover:bg-amber-100 ring-1 ring-amber-200 focus:ring-amber-400" : "text-green-700 bg-green-50 hover:bg-green-100 ring-1 ring-green-200 focus:ring-green-400"}`}
-                              >
-                                {account.isActive ? "Deactivate" : "Activate"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openEdit(account)}
-                                className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 ring-1 ring-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 transition-all"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeleteTarget(account)}
-                                disabled={account._id === admin?.id}
-                                title={
-                                  account._id === admin?.id
-                                    ? "Cannot delete your own account"
-                                    : "Remove account"
-                                }
-                                className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 ring-1 ring-red-200 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                Remove
-                              </button>
+                            <div className="flex items-center gap-3">
+                              <Avatar account={account} />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">
+                                  {account.displayName}
+                                </p>
+                                <p className="text-xs text-gray-400 truncate">
+                                  @{account.username} · {account.email}
+                                </p>
+                              </div>
                             </div>
                           </td>
-                        )}
-                      </motion.tr>
-                    ))
-                  )}
-                </motion.tbody>
-              </AnimatePresence>
-            )}
-          </table>
+                          <td className="px-5 py-3.5">
+                            <RoleBadge role={account.role} />
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <StatusBadge
+                              status={account.isActive ? "active" : "inactive"}
+                            />
+                          </td>
+                          <td className="px-5 py-3.5 text-xs text-gray-500">
+                            {formatDate(account.createdAt)}
+                          </td>
+                          <td className="px-5 py-3.5 text-xs text-gray-500">
+                            {account.lastLoginAt ? (
+                              formatDateTime(account.lastLoginAt)
+                            ) : (
+                              <span className="text-gray-300">Never</span>
+                            )}
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
+                  </motion.tbody>
+                </AnimatePresence>
+              )}
+            </table>
+          </div>
+          {!loading && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={filtered.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          )}
         </div>
-
-        {/* Pagination */}
-        {!loading && (
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            total={filtered.length}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-          />
-        )}
-      </div>
+      )}
 
       {/* Form modal */}
       <AnimatePresence>
