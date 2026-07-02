@@ -405,6 +405,14 @@ function PendingTab({
               <LuClock className="h-3 w-3" aria-hidden="true" />
               Submitted {formatDate(g.createdAt)}
             </span>
+            {g.proposerName && (
+              <span className="text-[11px] text-gray-400">
+                Proposed by{" "}
+                <span className="font-semibold text-gray-600">
+                  {g.proposerName}
+                </span>
+              </span>
+            )}
           </div>
 
           {/* Actions — always visible for pending */}
