@@ -9,3 +9,4 @@ export { DiscussionDetailPage } from "./pages/DiscussionDetailPage";
 export { GroupDetailPage } from "./pages/GroupDetailPage";
 export { QuizPage } from "./pages/QuizPage";
 export { InstallPage } from "./pages/InstallPage";
+export { UserProfilePage } from "./pages/UserProfilePage";
