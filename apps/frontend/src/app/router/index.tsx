@@ -82,13 +82,18 @@ const AllDiscussionsPage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.AllDiscussionsPage })),
 );
 const DiscussionDetailPage = lazyLoad(() =>
-  import("@/modules/landing").then((m) => ({ default: m.DiscussionDetailPage })),
+  import("@/modules/landing").then((m) => ({
+    default: m.DiscussionDetailPage,
+  })),
 );
 const QuizPage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.QuizPage })),
 );
 const InstallPage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.InstallPage })),
+);
+const UserProfilePage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.UserProfilePage })),
 );
 const TourismPage = lazyLoad(() => import("@/modules/tourism"));
 
@@ -340,6 +345,14 @@ export function AppRouter() {
         element={
           <Layout>
             <InstallPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <Layout>
+            <UserProfilePage />
           </Layout>
         }
       />

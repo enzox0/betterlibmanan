@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { UserAuthModal } from "@/modules/landing/components/ui/UserAuthModal";
+import { getProxiedUrl } from "@/modules/landing/components/ui/SafeImage";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -304,8 +305,16 @@ export function Navbar() {
                     onClick={() => setShowUserMenu((v) => !v)}
                     className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="w-7 h-7 rounded-full bg-blue-800 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
-                      {currentUser.displayName.slice(0, 2).toUpperCase()}
+                    <div className="w-7 h-7 rounded-full bg-blue-800 flex items-center justify-center text-white text-[11px] font-bold shrink-0 overflow-hidden">
+                      {currentUser.avatarUrl ? (
+                        <img
+                          src={getProxiedUrl(currentUser.avatarUrl)}
+                          alt={currentUser.displayName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        currentUser.displayName.slice(0, 2).toUpperCase()
+                      )}
                     </div>
                     <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
                       {currentUser.displayName}
@@ -326,12 +335,12 @@ export function Navbar() {
                         </p>
                       </div>
                       <Link
-                        to="/community"
+                        to="/profile"
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
                         <FaUser size={12} />
-                        My Community
+                        My Profile
                       </Link>
                       <button
                         onClick={() => {
@@ -440,8 +449,16 @@ export function Navbar() {
                 {isAuthenticated && currentUser ? (
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2.5 px-1 py-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {currentUser.displayName.slice(0, 2).toUpperCase()}
+                      <div className="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
+                        {currentUser.avatarUrl ? (
+                          <img
+                            src={getProxiedUrl(currentUser.avatarUrl)}
+                            alt={currentUser.displayName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          currentUser.displayName.slice(0, 2).toUpperCase()
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">
@@ -453,12 +470,12 @@ export function Navbar() {
                       </div>
                     </div>
                     <Link
-                      to="/community"
+                      to="/profile"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-2 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                     >
                       <FaUser size={12} />
-                      My Community
+                      My Profile
                     </Link>
                     <button
                       onClick={() => {
