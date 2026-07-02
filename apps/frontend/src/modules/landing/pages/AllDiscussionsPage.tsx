@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   FaArrowLeft,
+  FaChevronLeft,
+  FaChevronRight,
   FaComment,
   FaFire,
   FaLock,
@@ -15,6 +18,7 @@ import { useToast } from "@/context/ToastContext";
 import { useCommunityStore } from "@/modules/admin/store/communityStore";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { UserAuthModal } from "../components/ui/UserAuthModal";
+import { Avatar } from "../components/ui/Avatar";
 import type { Discussion } from "@/modules/admin/services/community.api";
 
 // ─── Discussion card ──────────────────────────────────────────────────────────
@@ -41,9 +45,11 @@ function DiscussionCard({
     >
       {/* Author row */}
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-full bg-neutral-200 text-neutral-700 text-[10px] font-bold flex items-center justify-center shrink-0">
-          {discussion.avatarInitials}
-        </div>
+        <Avatar
+          initials={discussion.avatarInitials}
+          avatarUrl={discussion.avatarUrl}
+          size="sm"
+        />
         <span className="text-xs font-semibold text-neutral-600">
           {discussion.author}
         </span>
@@ -63,8 +69,7 @@ function DiscussionCard({
       <div className="flex items-center gap-1.5 text-neutral-400 text-xs">
         <FaComment size={10} />
         <span>
-          {discussion.replies}{" "}
-          {discussion.replies === 1 ? "reply" : "replies"}
+          {discussion.replies} {discussion.replies === 1 ? "reply" : "replies"}
         </span>
       </div>
 
@@ -89,6 +94,7 @@ function DiscussionCard({
 
 export function AllDiscussionsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
@@ -100,6 +106,15 @@ export function AllDiscussionsPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  // Pre-select tag from ?tag= query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tagParam = params.get("tag");
+    if (tagParam) setActiveTag(tagParam);
+  }, [location.search]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -129,6 +144,58 @@ export function AllDiscussionsPage() {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
     return b.replies - a.replies;
   });
+
+  // Reset to first page whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTag]);
+
+  // Keep URL in sync with active tag
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const current = params.get("tag") ?? null;
+    if (activeTag === current) return;
+    if (activeTag) {
+      params.set("tag", activeTag);
+    } else {
+      params.delete("tag");
+    }
+    const newSearch = params.toString();
+    navigate(
+      { pathname: location.pathname, search: newSearch ? `?${newSearch}` : "" },
+      { replace: true },
+    );
+  }, [activeTag]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginated = sorted.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  // Build page number array with ellipsis markers
+  const pageNumbers = (() => {
+    if (totalPages <= 7)
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | "…")[] = [1];
+    if (safePage > 3) pages.push("…");
+    for (
+      let p = Math.max(2, safePage - 1);
+      p <= Math.min(totalPages - 1, safePage + 1);
+      p++
+    ) {
+      pages.push(p);
+    }
+    if (safePage < totalPages - 2) pages.push("…");
+    pages.push(totalPages);
+    return pages;
+  })();
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -174,11 +241,7 @@ export function AllDiscussionsPage() {
                   : "bg-neutral-200 text-neutral-500 hover:bg-neutral-300",
               )}
             >
-              {isAuthenticated ? (
-                <FaPlus size={11} />
-              ) : (
-                <FaLock size={11} />
-              )}
+              {isAuthenticated ? <FaPlus size={11} /> : <FaLock size={11} />}
               <span className="hidden sm:inline">New Discussion</span>
             </button>
           </div>
@@ -275,6 +338,7 @@ export function AllDiscussionsPage() {
             {sorted.length} {sorted.length === 1 ? "discussion" : "discussions"}
             {activeTag ? ` tagged #${activeTag}` : ""}
             {search ? ` matching "${search}"` : ""}
+            {totalPages > 1 && ` · page ${safePage} of ${totalPages}`}
           </p>
         )}
 
@@ -305,16 +369,71 @@ export function AllDiscussionsPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {sorted.map((d, i) => (
-              <DiscussionCard
-                key={d._id}
-                discussion={d}
-                index={i}
-                onClick={() => navigate(`/community/discussions/${d._id}`)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {paginated.map((d, i) => (
+                <DiscussionCard
+                  key={d._id}
+                  discussion={d}
+                  index={i}
+                  onClick={() => navigate(`/community/discussions/${d._id}`)}
+                />
+              ))}
+            </div>
+
+            {/* ── Pagination controls ── */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-1.5 flex-wrap">
+                {/* Back */}
+                <button
+                  onClick={() => goToPage(safePage - 1)}
+                  disabled={safePage === 1}
+                  style={{ minHeight: 0 }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <FaChevronLeft size={9} />
+                  Back
+                </button>
+
+                {/* Page numbers */}
+                {pageNumbers.map((p, idx) =>
+                  p === "…" ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="px-1.5 text-xs text-neutral-400 select-none"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => goToPage(p)}
+                      style={{ minHeight: 0 }}
+                      className={cn(
+                        "w-9 h-9 rounded-xl text-xs font-semibold border transition-all",
+                        safePage === p
+                          ? "bg-neutral-900 border-neutral-900 text-white shadow-sm"
+                          : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100",
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ),
+                )}
+
+                {/* Next */}
+                <button
+                  onClick={() => goToPage(safePage + 1)}
+                  disabled={safePage === totalPages}
+                  style={{ minHeight: 0 }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  Next
+                  <FaChevronRight size={9} />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

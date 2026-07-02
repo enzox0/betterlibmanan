@@ -14,7 +14,10 @@ import { useCommunityStore } from "@/modules/admin/store/communityStore";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { UserAuthModal } from "../components/ui/UserAuthModal";
 import SafeImage from "../components/ui/SafeImage";
-import type { CommunityGroup, ProposeGroupPayload } from "@/modules/admin/services/community.api";
+import type {
+  CommunityGroup,
+  ProposeGroupPayload,
+} from "@/modules/admin/services/community.api";
 
 // ─── Group card (same visual as CommunitySection) ─────────────────────────────
 
@@ -77,7 +80,10 @@ function GroupCard({
           </div>
           {isGuest ? (
             <button
-              onClick={(e) => { e.stopPropagation(); onJoin(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onJoin();
+              }}
               style={{ minHeight: 0 }}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0 bg-neutral-200 text-neutral-500 hover:bg-neutral-300 flex items-center gap-1"
             >
@@ -86,7 +92,10 @@ function GroupCard({
             </button>
           ) : (
             <button
-              onClick={(e) => { e.stopPropagation(); onJoin(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onJoin();
+              }}
               style={{ minHeight: 0 }}
               className={cn(
                 "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0",
@@ -111,9 +120,10 @@ export function AllPeerGroupsPage() {
   const { toast } = useToast();
 
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
+  const currentUser = useUserStore((s) => s.user);
+  const userToken = useUserStore((s) => s.token);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [joinedGroups, setJoinedGroups] = useState<Set<string>>(new Set());
 
   const groups = useCommunityStore((s) => s.groups);
   const isGroupsLoading = useCommunityStore((s) => s.isGroupsLoading);
@@ -121,6 +131,7 @@ export function AllPeerGroupsPage() {
   const joinGroup = useCommunityStore((s) => s.joinGroup);
   const leaveGroup = useCommunityStore((s) => s.leaveGroup);
   const proposeGroup = useCommunityStore((s) => s.proposeGroup);
+  const joinedGroupIds = useCommunityStore((s) => s.joinedGroupIds);
 
   const [proposing, setProposing] = useState(false);
 
@@ -137,34 +148,30 @@ export function AllPeerGroupsPage() {
   }, [fetchGroups]);
 
   const handleToggleGroup = async (group: CommunityGroup) => {
-    const isJoined = joinedGroups.has(group._id);
-    setJoinedGroups((prev) => {
-      const next = new Set(prev);
-      isJoined ? next.delete(group._id) : next.add(group._id);
-      return next;
-    });
+    if (!userToken) return;
+    const isJoined = joinedGroupIds.includes(group._id);
     try {
       if (isJoined) {
-        await leaveGroup(group._id);
+        await leaveGroup(group._id, userToken);
         toast(`Left "${group.name}"`, "info");
       } else {
-        await joinGroup(group._id);
+        await joinGroup(
+          group._id,
+          userToken,
+          currentUser?.displayName ?? "Member",
+        );
         toast(`Joined "${group.name}"`, "success");
       }
     } catch {
-      setJoinedGroups((prev) => {
-        const next = new Set(prev);
-        isJoined ? next.add(group._id) : next.delete(group._id);
-        return next;
-      });
       toast("Failed to update membership.", "error");
     }
   };
 
   const handlePropose = async (payload: ProposeGroupPayload) => {
+    if (!userToken) return;
     setProposing(true);
     try {
-      await proposeGroup(payload);
+      await proposeGroup(payload, userToken);
       toast("Your group proposal has been submitted for review!", "success");
     } catch {
       toast("Failed to submit group proposal.", "error");
@@ -246,7 +253,8 @@ export function AllPeerGroupsPage() {
         ) : (
           <>
             <p className="text-xs text-neutral-400 font-medium mb-4 uppercase tracking-wide">
-              {groups.length} {groups.length === 1 ? "group" : "groups"} available
+              {groups.length} {groups.length === 1 ? "group" : "groups"}{" "}
+              available
             </p>
             <div className="flex flex-col gap-3">
               {groups.map((group, i) => (
@@ -254,7 +262,7 @@ export function AllPeerGroupsPage() {
                   key={group._id}
                   group={group}
                   index={i}
-                  isJoined={joinedGroups.has(group._id)}
+                  isJoined={joinedGroupIds.includes(group._id)}
                   onJoin={() => requireAuth(() => handleToggleGroup(group))}
                   isGuest={!isAuthenticated}
                   onClick={() => navigate(`/community/groups/${group._id}`)}

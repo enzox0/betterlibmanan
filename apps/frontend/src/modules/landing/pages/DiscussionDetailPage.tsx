@@ -11,30 +11,22 @@ import {
   FaCalendarAlt,
   FaHashtag,
   FaThumbtack,
-  FaTimes,
   FaFire,
   FaChevronDown,
   FaChevronUp,
+  FaReply,
+  FaTimes,
 } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
 import { useCommunityStore } from "@/modules/admin/store/communityStore";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { UserAuthModal } from "../components/ui/UserAuthModal";
-import type { Discussion } from "@/modules/admin/services/community.api";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Reply {
-  id: string;
-  author: string;
-  initials: string;
-  body: string;
-  likes: number;
-  liked: boolean;
-  createdAt: Date;
-  isOwn: boolean;
-}
+import { Avatar } from "../components/ui/Avatar";
+import type {
+  Discussion,
+  DiscussionReply,
+} from "@/modules/admin/services/community.api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -57,124 +49,259 @@ function timeAgo(date: Date | string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
-}
-
-/** Generate seeded mock replies for a discussion */
-function buildSeedReplies(discussion: Discussion): Reply[] {
-  const names = [
-    ["Maria Santos", "MS"],
-    ["Juan dela Cruz", "JD"],
-    ["Ana Reyes", "AR"],
-    ["Carlos Bautista", "CB"],
-    ["Liza Gonzales", "LG"],
-  ];
-  const bodies = [
-    "This is such an important topic for our community. Thanks for bringing it up!",
-    "I completely agree. We've been dealing with this issue for months now.",
-    "Has anyone reached out to the barangay office about this? They might have resources available.",
-    "Great point. I'd also add that community participation is key to making any real progress here.",
-    "Looking forward to seeing more discussions like this. Keep them coming!",
-  ];
-  const count = Math.min(discussion.replies, 5);
-  const seed = discussion._id.charCodeAt(0) % names.length;
-  return Array.from({ length: count }).map((_, i) => {
-    const idx = (seed + i) % names.length;
-    const [name, initials] = names[idx];
-    const hoursAgo = (i + 1) * 3;
-    return {
-      id: `reply-${discussion._id}-${i}`,
-      author: name,
-      initials,
-      body: bodies[i % bodies.length],
-      likes: Math.floor(Math.random() * 12),
-      liked: false,
-      createdAt: new Date(Date.now() - hoursAgo * 60 * 60 * 1000),
-      isOwn: false,
-    };
+  return d.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+// Build a tree: top-level replies each carry their nested children
+interface ReplyNode {
+  reply: DiscussionReply;
+  children: ReplyNode[];
+}
 
-function Avatar({
-  initials,
-  size = "md",
-  dark = false,
+function buildReplyTree(replies: DiscussionReply[]): ReplyNode[] {
+  const map = new Map<string, ReplyNode>();
+  const roots: ReplyNode[] = [];
+  for (const r of replies) {
+    map.set(r._id, { reply: r, children: [] });
+  }
+  for (const r of replies) {
+    const node = map.get(r._id)!;
+    if (r.parentReplyId && map.has(r.parentReplyId)) {
+      map.get(r.parentReplyId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+  return roots;
+}
+
+// ─── Inline reply composer ────────────────────────────────────────────────────
+
+function InlineReplyComposer({
+  replyingToAuthor,
+  displayName,
+  onPost,
+  onCancel,
+  posting,
 }: {
-  initials: string;
-  size?: "sm" | "md" | "lg";
-  dark?: boolean;
+  replyingToAuthor: string;
+  displayName: string;
+  onPost: (body: string) => Promise<void>;
+  onCancel: () => void;
+  posting: boolean;
 }) {
-  const sizes = { sm: "w-7 h-7 text-[10px]", md: "w-9 h-9 text-xs", lg: "w-11 h-11 text-sm" };
+  const [text, setText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  const handleSubmit = async () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    await onPost(trimmed);
+    setText("");
+  };
+
   return (
-    <div
-      className={cn(
-        "rounded-full flex items-center justify-center font-bold shrink-0",
-        dark ? "bg-neutral-900 text-white" : "bg-neutral-200 text-neutral-700",
-        sizes[size],
-      )}
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.18 }}
+      className="mt-2 ml-10 overflow-hidden"
     >
-      {initials}
-    </div>
+      <div className="flex gap-2.5 items-start">
+        <Avatar initials={getInitials(displayName)} size="sm" dark />
+        <div className="flex-1 flex flex-col gap-2">
+          <div className="text-[11px] text-neutral-400 font-medium">
+            Replying to{" "}
+            <span className="font-semibold text-neutral-600">
+              {replyingToAuthor}
+            </span>
+          </div>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.ctrlKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+              if (e.key === "Escape") onCancel();
+            }}
+            placeholder={`Reply to ${replyingToAuthor}…`}
+            rows={2}
+            maxLength={500}
+            style={{ fontSize: "16px" }}
+            className="w-full px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5 outline-none resize-none text-sm text-neutral-900 placeholder:text-neutral-400 transition-all leading-relaxed"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-neutral-400 flex-1">
+              {text.length}/500
+            </span>
+            <button
+              onClick={onCancel}
+              style={{ minHeight: 0 }}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-500 hover:bg-neutral-100 transition-colors"
+            >
+              <FaTimes size={9} /> Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!text.trim() || posting}
+              style={{ minHeight: 0 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-700 active:bg-black text-white text-xs font-semibold transition-colors disabled:opacity-50"
+            >
+              {posting ? (
+                <FaSpinner className="animate-spin" size={10} />
+              ) : (
+                <FaPaperPlane size={10} />
+              )}
+              Reply
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
-// ─── Reply card ───────────────────────────────────────────────────────────────
+// ─── Reply node (recursive) ───────────────────────────────────────────────────
 
-function ReplyCard({
-  reply,
-  index,
+function ReplyNodeCard({
+  node,
+  depth,
+  currentUserId,
+  displayName,
+  isAuthenticated,
   onLike,
+  onReply,
+  onOpenAuth,
+  replyingToId,
+  postingReplyTo,
+  onPostNestedReply,
+  onCancelReply,
 }: {
-  reply: Reply;
-  index: number;
+  node: ReplyNode;
+  depth: number;
+  currentUserId: string | null;
+  displayName: string;
+  isAuthenticated: boolean;
   onLike: (id: string) => void;
+  onReply: (id: string) => void;
+  onOpenAuth: () => void;
+  replyingToId: string | null;
+  postingReplyTo: string | null;
+  onPostNestedReply: (parentId: string, body: string) => Promise<void>;
+  onCancelReply: () => void;
 }) {
+  const { reply, children } = node;
+  const liked = currentUserId ? reply.likedBy.includes(currentUserId) : false;
+  // Cap indent so it doesn't get too narrow on mobile
+  const indent = Math.min(depth, 3) * 24;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.4) }}
+      transition={{ duration: 0.22 }}
+      style={{ marginLeft: `${indent}px` }}
       className={cn(
-        "flex gap-3",
-        reply.isOwn && "flex-row-reverse",
+        "flex flex-col",
+        depth > 0 && "border-l-2 border-neutral-100 pl-3",
       )}
     >
-      <Avatar initials={reply.initials} size="sm" dark={reply.isOwn} />
-      <div className={cn("flex-1 min-w-0 flex flex-col gap-1", reply.isOwn && "items-end")}>
-        <div className="flex items-center gap-2">
-          <span className={cn("text-xs font-semibold text-neutral-700", reply.isOwn && "order-last")}>
-            {reply.isOwn ? "You" : reply.author}
-          </span>
-          <span className="text-[10px] text-neutral-400">{timeAgo(reply.createdAt)}</span>
+      {/* The reply bubble */}
+      <div className="flex gap-2.5">
+        <Avatar
+          initials={node.reply.avatarInitials}
+          avatarUrl={node.reply.avatarUrl}
+          size="sm"
+        />
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-neutral-800">
+              {reply.author}
+            </span>
+            <span className="text-[10px] text-neutral-400">
+              {timeAgo(reply.createdAt)}
+            </span>
+          </div>
+          <div className="px-3.5 py-2.5 rounded-2xl rounded-tl-sm bg-white border border-neutral-200 text-sm leading-relaxed text-neutral-800">
+            {reply.body}
+          </div>
+          {/* Actions */}
+          <div className="flex items-center gap-3 mt-0.5">
+            <button
+              onClick={() => onLike(reply._id)}
+              style={{ minHeight: 0 }}
+              className={cn(
+                "flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-lg transition-colors",
+                liked
+                  ? "text-neutral-900 bg-neutral-100"
+                  : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100",
+              )}
+            >
+              <FaThumbsUp size={9} />
+              {reply.likes > 0 && <span>{reply.likes}</span>}
+              <span>{liked ? "Liked" : "Like"}</span>
+            </button>
+            <button
+              onClick={() =>
+                isAuthenticated ? onReply(reply._id) : onOpenAuth()
+              }
+              style={{ minHeight: 0 }}
+              className="flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+            >
+              <FaReply size={9} />
+              Reply
+            </button>
+          </div>
         </div>
-        <div
-          className={cn(
-            "px-4 py-3 rounded-2xl text-sm leading-relaxed text-neutral-800 border",
-            reply.isOwn
-              ? "bg-neutral-900 text-white border-transparent rounded-tr-sm"
-              : "bg-white border-neutral-200 rounded-tl-sm",
-          )}
-        >
-          {reply.body}
-        </div>
-        {/* Like button */}
-        <button
-          onClick={() => onLike(reply.id)}
-          style={{ minHeight: 0 }}
-          className={cn(
-            "flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-lg transition-colors mt-0.5",
-            reply.liked
-              ? "text-neutral-900 bg-neutral-100"
-              : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100",
-          )}
-        >
-          <FaThumbsUp size={9} />
-          {reply.likes > 0 && <span>{reply.likes}</span>}
-          <span>{reply.liked ? "Liked" : "Like"}</span>
-        </button>
       </div>
+
+      {/* Inline composer for this reply */}
+      <AnimatePresence>
+        {replyingToId === reply._id && (
+          <InlineReplyComposer
+            replyingToAuthor={reply.author}
+            displayName={displayName}
+            onPost={(body) => onPostNestedReply(reply._id, body)}
+            onCancel={onCancelReply}
+            posting={postingReplyTo === reply._id}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Nested children */}
+      {children.length > 0 && (
+        <div className="mt-2 flex flex-col gap-2">
+          {children.map((child) => (
+            <ReplyNodeCard
+              key={child.reply._id}
+              node={child}
+              depth={depth + 1}
+              currentUserId={currentUserId}
+              displayName={displayName}
+              isAuthenticated={isAuthenticated}
+              onLike={onLike}
+              onReply={onReply}
+              onOpenAuth={onOpenAuth}
+              replyingToId={replyingToId}
+              postingReplyTo={postingReplyTo}
+              onPostNestedReply={onPostNestedReply}
+              onCancelReply={onCancelReply}
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -192,32 +319,27 @@ function DiscussionSidebar({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {/* Discussion info */}
       <div className="bg-white border border-neutral-200 rounded-xl p-5 flex flex-col gap-4">
         <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
           Discussion Info
         </h3>
-
         <div className="flex items-center gap-2 text-xs text-neutral-500">
           <FaCalendarAlt size={10} className="text-neutral-400 shrink-0" />
           <span>Started {timeAgo(discussion.createdAt)}</span>
         </div>
-
         <div className="flex items-center gap-2 text-xs text-neutral-500">
           <FaComment size={10} className="text-neutral-400 shrink-0" />
           <span>
-            {discussion.replies} {discussion.replies === 1 ? "reply" : "replies"}
+            {discussion.replies}{" "}
+            {discussion.replies === 1 ? "reply" : "replies"}
           </span>
         </div>
-
         {discussion.isPinned && (
           <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
             <FaThumbtack size={10} className="shrink-0" />
             <span>Pinned discussion</span>
           </div>
         )}
-
-        {/* Tags */}
         {discussion.tags.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
@@ -239,8 +361,6 @@ function DiscussionSidebar({
           </div>
         )}
       </div>
-
-      {/* Related discussions */}
       {related.length > 0 && (
         <div className="bg-white border border-neutral-200 rounded-xl p-5 flex flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -285,20 +405,29 @@ export function DiscussionDetailPage() {
 
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
   const currentUser = useUserStore((s) => s.user);
-  const displayName = currentUser?.displayName ?? "You";
+  const userToken = useUserStore((s) => s.token);
+  const displayName = currentUser?.displayName ?? "Anonymous";
 
   const discussions = useCommunityStore((s) => s.discussions);
   const isDiscussionsLoading = useCommunityStore((s) => s.isDiscussionsLoading);
   const fetchDiscussions = useCommunityStore((s) => s.fetchDiscussions);
+  const repliesByDiscussion = useCommunityStore((s) => s.repliesByDiscussion);
+  const isRepliesLoading = useCommunityStore((s) => s.isRepliesLoading);
+  const fetchReplies = useCommunityStore((s) => s.fetchReplies);
+  const postReply = useCommunityStore((s) => s.postReply);
+  const toggleLikeReply = useCommunityStore((s) => s.toggleLikeReply);
 
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
-  const [replies, setReplies] = useState<Reply[]>([]);
   const [replyText, setReplyText] = useState("");
   const [posting, setPosting] = useState(false);
+  // replyingToId: which top-level/nested reply has the inline composer open
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  // postingReplyTo: tracks which inline composer is in-flight
+  const [postingReplyTo, setPostingReplyTo] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [showAllReplies, setShowAllReplies] = useState(false);
 
-  const PREVIEW_COUNT = 3;
+  const PREVIEW_COUNT = 5;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -311,12 +440,16 @@ export function DiscussionDetailPage() {
 
   useEffect(() => {
     const found = discussions.find((d) => d._id === id);
-    if (found) {
-      setDiscussion(found);
-      setReplies(buildSeedReplies(found));
-      setShowAllReplies(false);
-    }
+    if (found) setDiscussion(found);
   }, [discussions, id]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetchReplies(id).catch(() => {});
+  }, [id, fetchReplies]);
+
+  const replies = id ? (repliesByDiscussion[id] ?? []) : [];
+  const replyTree = buildReplyTree(replies);
 
   const requireAuth = (action: () => void) => {
     if (!isAuthenticated) {
@@ -327,36 +460,63 @@ export function DiscussionDetailPage() {
   };
 
   const handleLike = (replyId: string) => {
-    requireAuth(() => {
-      setReplies((prev) =>
-        prev.map((r) =>
-          r.id === replyId
-            ? { ...r, liked: !r.liked, likes: r.liked ? r.likes - 1 : r.likes + 1 }
-            : r,
-        ),
-      );
+    requireAuth(async () => {
+      if (!userToken) return;
+      try {
+        await toggleLikeReply(replyId, userToken);
+      } catch {
+        toast("Failed to update like.", "error");
+      }
     });
   };
 
+  /** Post to the discussion (no parent) */
   const handlePost = async () => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || !id || !userToken) return;
     setPosting(true);
-    await new Promise((r) => setTimeout(r, 350));
-    const newReply: Reply = {
-      id: `reply-own-${Date.now()}`,
-      author: displayName,
-      initials: getInitials(displayName),
-      body: replyText.trim(),
-      likes: 0,
-      liked: false,
-      createdAt: new Date(),
-      isOwn: true,
-    };
-    setReplies((prev) => [...prev, newReply]);
-    setReplyText("");
-    setPosting(false);
-    setShowAllReplies(true);
-    toast("Reply posted!", "success");
+    try {
+      await postReply(
+        id,
+        {
+          author: displayName,
+          body: replyText.trim(),
+          avatarUrl: currentUser?.avatarUrl ?? "",
+        },
+        userToken,
+      );
+      setReplyText("");
+      setShowAllReplies(true);
+      toast("Reply posted!", "success");
+    } catch {
+      toast("Failed to post reply.", "error");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  /** Post a nested reply to another reply */
+  const handlePostNestedReply = async (parentId: string, body: string) => {
+    if (!id || !userToken) return;
+    setPostingReplyTo(parentId);
+    try {
+      await postReply(
+        id,
+        {
+          author: displayName,
+          body,
+          parentReplyId: parentId,
+          avatarUrl: currentUser?.avatarUrl ?? "",
+        },
+        userToken,
+      );
+      setReplyingToId(null);
+      setShowAllReplies(true);
+      toast("Reply posted!", "success");
+    } catch {
+      toast("Failed to post reply.", "error");
+    } finally {
+      setPostingReplyTo(null);
+    }
   };
 
   const related = discussions
@@ -369,7 +529,6 @@ export function DiscussionDetailPage() {
     )
     .slice(0, 4);
 
-  // Loading
   if (isDiscussionsLoading || (!discussion && discussions.length === 0)) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -378,7 +537,6 @@ export function DiscussionDetailPage() {
     );
   }
 
-  // Not found
   if (!discussion) {
     return (
       <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center gap-4">
@@ -394,8 +552,10 @@ export function DiscussionDetailPage() {
     );
   }
 
-  const visibleReplies = showAllReplies ? replies : replies.slice(0, PREVIEW_COUNT);
-  const hiddenCount = replies.length - PREVIEW_COUNT;
+  const visibleRoots = showAllReplies
+    ? replyTree
+    : replyTree.slice(0, PREVIEW_COUNT);
+  const hiddenCount = replyTree.length - PREVIEW_COUNT;
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -407,7 +567,7 @@ export function DiscussionDetailPage() {
               onClick={() => navigate("/community/discussions")}
               style={{ minHeight: 0 }}
               className="p-2 rounded-xl hover:bg-neutral-100 active:bg-neutral-200 transition-colors text-neutral-500 shrink-0"
-              aria-label="Back to Discussions"
+              aria-label="Back"
             >
               <FaArrowLeft size={14} />
             </button>
@@ -424,18 +584,15 @@ export function DiscussionDetailPage() {
       {/* ── Content ── */}
       <div className="responsive-container py-8 sm:py-10 lg:py-12">
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-
           {/* ── Main column ── */}
           <div className="flex-1 min-w-0 flex flex-col gap-5">
-
-            {/* ── Original post ── */}
+            {/* Original post */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
               className="bg-white border border-neutral-200 rounded-2xl overflow-hidden"
             >
-              {/* Pinned banner */}
               {discussion.isPinned && (
                 <div className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 border-b border-blue-100">
                   <FaThumbtack size={10} className="text-blue-500" />
@@ -444,11 +601,13 @@ export function DiscussionDetailPage() {
                   </span>
                 </div>
               )}
-
               <div className="p-5 sm:p-6">
-                {/* Author + meta */}
                 <div className="flex items-center gap-3 mb-4">
-                  <Avatar initials={discussion.avatarInitials} size="lg" />
+                  <Avatar
+                    initials={discussion.avatarInitials}
+                    avatarUrl={discussion.avatarUrl}
+                    size="lg"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-neutral-900">
                       {discussion.author}
@@ -458,13 +617,9 @@ export function DiscussionDetailPage() {
                     </p>
                   </div>
                 </div>
-
-                {/* Title / body */}
                 <h1 className="text-lg sm:text-xl font-bold text-neutral-900 leading-snug mb-4">
                   {discussion.title}
                 </h1>
-
-                {/* Tags */}
                 {discussion.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-5">
                     {discussion.tags.map((tag) => (
@@ -477,8 +632,6 @@ export function DiscussionDetailPage() {
                     ))}
                   </div>
                 )}
-
-                {/* Stats bar */}
                 <div className="flex items-center gap-4 pt-4 border-t border-neutral-100">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-400">
                     <FaComment size={11} />
@@ -487,7 +640,6 @@ export function DiscussionDetailPage() {
                       {replies.length === 1 ? "reply" : "replies"}
                     </span>
                   </div>
-                  {/* Reply CTA */}
                   <button
                     onClick={() =>
                       requireAuth(() => replyBoxRef.current?.focus())
@@ -495,42 +647,57 @@ export function DiscussionDetailPage() {
                     style={{ minHeight: 0 }}
                     className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-800 transition-colors"
                   >
-                    <FaComment size={11} />
-                    Reply
+                    <FaComment size={11} /> Reply
                   </button>
                 </div>
               </div>
             </motion.div>
 
-            {/* ── Replies ── */}
-            {replies.length > 0 && (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 px-1 mb-2">
+            {/* Replies */}
+            {isRepliesLoading && replies.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <FaSpinner
+                  className="animate-spin text-neutral-400"
+                  size={20}
+                />
+              </div>
+            ) : replyTree.length > 0 ? (
+              <div className="bg-white border border-neutral-200 rounded-2xl p-5 sm:p-6 flex flex-col gap-1">
+                <div className="flex items-center gap-2 mb-4">
                   <FaComment size={11} className="text-neutral-400" />
                   <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                    {replies.length} {replies.length === 1 ? "Reply" : "Replies"}
+                    {replies.length}{" "}
+                    {replies.length === 1 ? "Reply" : "Replies"}
                   </span>
                 </div>
-
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                   <AnimatePresence initial={false}>
-                    {visibleReplies.map((reply, i) => (
-                      <ReplyCard
-                        key={reply.id}
-                        reply={reply}
-                        index={i}
+                    {visibleRoots.map((node) => (
+                      <ReplyNodeCard
+                        key={node.reply._id}
+                        node={node}
+                        depth={0}
+                        currentUserId={currentUser?._id ?? null}
+                        displayName={displayName}
+                        isAuthenticated={isAuthenticated}
                         onLike={handleLike}
+                        onReply={(rid) =>
+                          setReplyingToId((prev) => (prev === rid ? null : rid))
+                        }
+                        onOpenAuth={() => setAuthModalOpen(true)}
+                        replyingToId={replyingToId}
+                        postingReplyTo={postingReplyTo}
+                        onPostNestedReply={handlePostNestedReply}
+                        onCancelReply={() => setReplyingToId(null)}
                       />
                     ))}
                   </AnimatePresence>
                 </div>
-
-                {/* Show more / less toggle */}
-                {replies.length > PREVIEW_COUNT && (
+                {replyTree.length > PREVIEW_COUNT && (
                   <button
                     onClick={() => setShowAllReplies((v) => !v)}
                     style={{ minHeight: 0 }}
-                    className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-800 transition-colors self-start px-1"
+                    className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-800 transition-colors self-start"
                   >
                     {showAllReplies ? (
                       <>
@@ -538,17 +705,16 @@ export function DiscussionDetailPage() {
                       </>
                     ) : (
                       <>
-                        <FaChevronDown size={10} />
-                        Show {hiddenCount} more{" "}
+                        <FaChevronDown size={10} /> Show {hiddenCount} more{" "}
                         {hiddenCount === 1 ? "reply" : "replies"}
                       </>
                     )}
                   </button>
                 )}
               </div>
-            )}
+            ) : null}
 
-            {/* ── Reply composer ── */}
+            {/* Root reply composer */}
             <div className="bg-white border border-neutral-200 rounded-2xl p-5 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <FaComment size={12} className="text-neutral-400" />
@@ -556,23 +722,23 @@ export function DiscussionDetailPage() {
                   Leave a Reply
                 </h2>
               </div>
-
               {isAuthenticated ? (
                 <div className="flex gap-3 items-start">
                   <Avatar
                     initials={getInitials(displayName)}
+                    avatarUrl={currentUser?.avatarUrl}
                     size="sm"
                     dark
                   />
                   <div className="flex-1 flex flex-col gap-3">
-                    {/* Posting as */}
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-50 border border-neutral-200 w-fit">
-                      <span className="text-[11px] text-neutral-400">Posting as</span>
+                      <span className="text-[11px] text-neutral-400">
+                        Posting as
+                      </span>
                       <span className="text-[11px] font-semibold text-neutral-700">
                         {displayName}
                       </span>
                     </div>
-
                     <textarea
                       ref={replyBoxRef}
                       value={replyText}
@@ -589,7 +755,6 @@ export function DiscussionDetailPage() {
                       style={{ fontSize: "16px" }}
                       className="w-full px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5 outline-none resize-none text-sm text-neutral-900 placeholder:text-neutral-400 transition-all leading-relaxed"
                     />
-
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[11px] text-neutral-400">
                         {replyText.length}/500 · Ctrl+Enter to post
@@ -630,7 +795,7 @@ export function DiscussionDetailPage() {
             </div>
           </div>
 
-          {/* ── Right sidebar ── */}
+          {/* Sidebar */}
           <aside className="w-full lg:w-72 xl:w-80 shrink-0">
             <DiscussionSidebar
               discussion={discussion}
