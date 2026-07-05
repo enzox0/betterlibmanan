@@ -5,9 +5,7 @@ import {
   FaDiscord,
   FaEnvelope,
   FaGithub,
-  FaMoneyBillWave,
 } from "react-icons/fa";
-import { SiReact } from "react-icons/si";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -19,11 +17,13 @@ export function Footer() {
           {/* Logo & Tagline */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <img
-                src="/betterlibmanan.png"
-                alt="Better Libmanan Logo"
-                className="h-12 sm:h-16"
-              />
+              <Link to="/">
+                <img
+                  src="/betterlibmanan.png"
+                  alt="Better Libmanan Logo"
+                  className="h-12 sm:h-16 hover:opacity-80 transition-opacity duration-300"
+                />
+              </Link>
             </div>
             <p className="text-gray-400 mb-6 text-sm sm:text-base">
               Empowering the people of Libmanan with transparent access to the
@@ -31,22 +31,22 @@ export function Footer() {
             </p>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="https://www.facebook.com/profile.php?id=61590902231040"
                 className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
                 <FaFacebook size={18} />
               </a>
               <a
-                href="#"
-                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-              >
-                <FaLinkedin size={18} />
-              </a>
-              <a
-                href="#"
+                href="https://discord.gg/invite/betterlibmanan"
                 className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
                 <FaDiscord size={18} />
+              </a>
+              <a
+                href="https://github.com/enzox0/betterlibmanan"
+                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
+              >
+                <FaGithub size={18} />
               </a>
             </div>
           </div>
@@ -71,14 +71,6 @@ export function Footer() {
                   className="hover:text-white transition-colors text-sm"
                 >
                   Sitemap
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/charter"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  Citizen's Charter
                 </Link>
               </li>
               <li>
@@ -144,23 +136,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  Official LGU Libmanan Portal
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  Sangguniang Bayan
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
+                  href="https://www.facebook.com/localgovernmentunitoflibmanan/"
                   className="hover:text-white transition-colors text-sm"
                 >
                   LGU Libmanan Facebook
@@ -178,7 +154,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://cmci.dti.gov.ph/"
                   className="hover:text-white transition-colors text-sm"
                 >
                   CMCI DTI Portal
@@ -194,11 +170,21 @@ export function Footer() {
               <span className="font-semibold text-emerald-400">₱0</span>
             </div>
             <div className="flex flex-col gap-3 mb-6 w-full">
-              <a href="#" className="flex items-center gap-2 px-4 py-2 text-sm">
+              <a
+                href="https://bettergov.ph/join-us"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 text-sm hover:text-white transition-colors"
+              >
                 <FaEnvelope size={14} />
                 <span>Volunteer with us</span>
               </a>
-              <a href="#" className="flex items-center gap-2 px-4 py-2 text-sm">
+              <a
+                href="https://github.com/enzox0/betterlibmanan"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 text-sm hover:text-white transition-colors"
+              >
                 <FaGithub size={14} />
                 <span>Contribute code with us</span>
               </a>
@@ -229,7 +215,7 @@ export function Footer() {
             information sourced from official government portals.
           </p>
           <div className="flex items-center gap-2 text-gray-500 text-xs sm:text-sm">
-            <span>Ver. 0.0.0</span>
+            <span>Ver. 1.0.0</span>
           </div>
         </div>
       </div>

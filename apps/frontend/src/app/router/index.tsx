@@ -63,6 +63,21 @@ const EnvironmentPage = lazyLoad(() =>
 const ComingSoonPage = lazyLoad(() =>
   import("@/modules/common").then((m) => ({ default: m.ComingSoonPage })),
 );
+const SitemapPage = lazyLoad(() =>
+  import("@/modules/common").then((m) => ({ default: m.SitemapPage })),
+);
+const TermsOfUsePage = lazyLoad(() =>
+  import("@/modules/common").then((m) => ({ default: m.TermsOfUsePage })),
+);
+const PrivacyPolicyPage = lazyLoad(() =>
+  import("@/modules/common").then((m) => ({ default: m.PrivacyPolicyPage })),
+);
+const AccessibilityPage = lazyLoad(() =>
+  import("@/modules/common").then((m) => ({ default: m.AccessibilityPage })),
+);
+const FaqPage = lazyLoad(() =>
+  import("@/modules/common").then((m) => ({ default: m.FaqPage })),
+);
 const AboutPage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.AboutPage })),
 );
@@ -297,6 +312,57 @@ export function AppRouter() {
         element={
           <Layout>
             <QuizPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/sitemap"
+        element={
+          <Layout>
+            <SitemapPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/charter"
+        element={
+          <Layout>
+            <ComingSoonPage
+              title="Citizen's Charter"
+              subtitle="The Citizen's Charter page is under construction. Check back soon!"
+            />
+          </Layout>
+        }
+      />
+      <Route
+        path="/terms"
+        element={
+          <Layout>
+            <TermsOfUsePage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/privacy"
+        element={
+          <Layout>
+            <PrivacyPolicyPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/accessibility"
+        element={
+          <Layout>
+            <AccessibilityPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/faq"
+        element={
+          <Layout>
+            <FaqPage />
           </Layout>
         }
       />

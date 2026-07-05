@@ -156,6 +156,55 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
       "Libmanan quiz, trivia, knowledge test, Bicol, Camarines Sur, interactive quiz",
   },
 
+  // Sitemap
+  "/sitemap": {
+    title: "Sitemap",
+    description:
+      "Complete sitemap of BetterLibmanan.org with all pages and resources for easy navigation.",
+    keywords: "sitemap, navigation, site structure, BetterLibmanan sitemap",
+  },
+  // Privacy Policy
+  "/privacy": {
+    title: "Privacy Policy",
+    description:
+      "Learn how BetterLibmanan.org collects, uses, and protects your personal information in accordance with Philippine Data Privacy Act.",
+    keywords:
+      "privacy policy, data privacy, personal information, BetterLibmanan privacy",
+  },
+
+  // Citizen's Charter
+  "/charter": {
+    title: "Citizen's Charter",
+    description:
+      "Learn about the Citizen's Charter of BetterLibmanan.org and our commitment to quality service.",
+    keywords: "citizen's charter, service commitment, BetterLibmanan charter",
+  },
+
+  // Terms of Use
+  "/terms": {
+    title: "Terms of Use",
+    description: "Review the Terms of Use for BetterLibmanan.org.",
+    keywords: "terms of use, terms, legal, BetterLibmanan terms",
+  },
+
+  // Accessibility
+  "/accessibility": {
+    title: "Accessibility Statement",
+    description:
+      "BetterLibmanan.org accessibility statement - our commitment to WCAG 2.1 AA compliance and inclusive design for all users.",
+    keywords:
+      "accessibility, WCAG, inclusive design, screen reader, keyboard navigation, BetterLibmanan accessibility",
+  },
+
+  // FAQ
+  "/faq": {
+    title: "Frequently Asked Questions",
+    description:
+      "Find answers to common questions about BetterLibmanan.org, municipal services, certificates, permits, and more for Libmanan, Camarines Sur.",
+    keywords:
+      "FAQ, frequently asked questions, Libmanan, municipal services, certificates, permits, BetterLibmanan FAQ",
+  },
+
   // Error Pages
   "/404": {
     title: "Page Not Found",
