@@ -90,7 +90,7 @@ function SearchCard() {
             />
           </svg>
           <span className="text-base font-bold text-neutral-900 sm:text-lg">
-            Find a Service
+            Find a Municipal Service
           </span>
         </div>
 
@@ -438,7 +438,7 @@ export function HeroSection() {
                     onClick={() => navigate("/services")}
                     className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700"
                   >
-                    Browse Services
+                    Browse Municipal Services
                   </button>
                   <button
                     onClick={() => navigate("/contact")}

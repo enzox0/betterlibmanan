@@ -61,7 +61,7 @@ export function PopularServicesSection({
             ) : (
               <>
                 <h2 className="mb-2 text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">
-                  Popular Services
+                  Popular Municipal Services
                 </h2>
                 <p className="text-sm text-neutral-500">
                   Quick access to frequently requested municipal services
