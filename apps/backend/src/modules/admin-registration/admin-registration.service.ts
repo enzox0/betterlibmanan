@@ -36,6 +36,24 @@ export interface ReviewInput {
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 /**
+ * Look up an existing registration by email (public — for duplicate-check modal).
+ * Returns only safe public fields: status, displayName, createdAt, rejectionReason.
+ */
+export async function lookupRegistrationByEmail(
+  email: string,
+): Promise<Pick<
+  IAdminRegistration,
+  "status" | "displayName" | "createdAt" | "rejectionReason"
+> | null> {
+  const reg = await AdminRegistrationModel.findOne({
+    email: email.toLowerCase().trim(),
+  })
+    .select("status displayName createdAt rejectionReason")
+    .lean();
+  return reg as any;
+}
+
+/**
  * Submit a new admin registration request.
  * Checks uniqueness against both existing AdminRegistration records AND the
  * live Admin collection so we don't create duplicate usernames/emails.

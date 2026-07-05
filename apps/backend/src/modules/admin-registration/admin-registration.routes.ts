@@ -8,6 +8,7 @@ import {
   handleApproveRegistration,
   handleRejectRegistration,
   handleDeleteRegistration,
+  handleLookupByEmail,
 } from "./admin-registration.controller";
 
 export const adminRegistrationRouter: Router = Router();
@@ -27,7 +28,10 @@ const submitLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// ─── Public route ─────────────────────────────────────────────────────────────
+// ─── Public routes ────────────────────────────────────────────────────────────
+
+// Lookup by email — for duplicate-check modal (public, light rate-limit via general API limits)
+adminRegistrationRouter.get("/lookup", handleLookupByEmail);
 
 // Anyone can submit an admin registration request
 adminRegistrationRouter.post("/", submitLimiter, handleSubmitRegistration);

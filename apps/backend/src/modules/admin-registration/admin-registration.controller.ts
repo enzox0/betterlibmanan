@@ -7,6 +7,7 @@ import {
   approveRegistration,
   rejectRegistration,
   deleteRegistration,
+  lookupRegistrationByEmail,
 } from "./admin-registration.service";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import { logger } from "@/shared/logger";
@@ -45,6 +46,30 @@ function getClientIp(req: Request): string {
 }
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/admin-registrations/lookup?email=...
+ * Public — returns minimal status info for duplicate-check modal.
+ */
+export async function handleLookupByEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const email = (req.query.email as string | undefined)?.trim();
+    if (!email) {
+      res
+        .status(400)
+        .json({ success: false, message: "email query param is required" });
+      return;
+    }
+    const result = await lookupRegistrationByEmail(email);
+    res.status(200).json({ success: true, data: result ?? null });
+  } catch (err) {
+    next(err);
+  }
+}
 
 /**
  * POST /api/admin-registrations
