@@ -32,7 +32,7 @@ export const mockSections: SectionSchema[] = [
   },
   {
     key: "popular-services",
-    displayName: "Popular Services",
+    displayName: "Popular Municipal Services",
     supportsPreview: true,
     fields: [
       { key: "name", label: "Name", type: "text", required: true },
