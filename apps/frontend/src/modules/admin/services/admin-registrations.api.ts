@@ -66,6 +66,23 @@ export async function submitAdminRegistration(
   return data.data;
 }
 
+export interface RegistrationLookup {
+  status: AdminRegistrationStatus;
+  displayName: string;
+  createdAt: string;
+  rejectionReason?: string;
+}
+
+export async function lookupRegistrationByEmail(
+  email: string,
+): Promise<RegistrationLookup | null> {
+  const { data } = await publicClient.get<{
+    success: boolean;
+    data: RegistrationLookup | null;
+  }>("/lookup", { params: { email } });
+  return data.data;
+}
+
 // ─── Admin API calls (superadmin only) ───────────────────────────────────────
 
 export async function fetchAdminRegistrations(
