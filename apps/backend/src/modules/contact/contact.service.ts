@@ -9,7 +9,10 @@ import {
 export interface ContactInput {
   label: string;
   value: string;
+  href?: string;
+  description?: string;
   type?: ContactType;
+  order?: number;
   status: ContactStatus;
 }
 
@@ -33,7 +36,10 @@ export async function createContact(input: ContactInput): Promise<IContact> {
   const created = await ContactModel.create({
     label: input.label.trim(),
     value: input.value.trim(),
+    href: (input.href ?? "").trim(),
+    description: (input.description ?? "").trim(),
     type: input.type ?? "phone",
+    order: input.order ?? 0,
     status: input.status,
   });
 
@@ -51,7 +57,14 @@ export async function updateContact(
 
   existing.label = input.label.trim();
   existing.value = input.value.trim();
+  existing.href = (input.href ?? existing.href ?? "").trim();
+  existing.description = (
+    input.description ??
+    existing.description ??
+    ""
+  ).trim();
   existing.type = input.type ?? existing.type;
+  if (input.order !== undefined) existing.order = input.order;
   existing.status = input.status;
 
   await existing.save();

@@ -13,7 +13,10 @@ import type { IContact } from "./contact.model";
 const contactSchema = z.object({
   label: z.string().trim().min(1).max(255),
   value: z.string().trim().min(1).max(500),
+  href: z.string().trim().max(500).optional().default(""),
+  description: z.string().trim().max(500).optional().default(""),
   type: z.enum(["phone", "email", "address", "fax"]).optional(),
+  order: z.number().int().optional().default(0),
   status: z.enum(["published", "draft"]).default("draft"),
 });
 
@@ -34,7 +37,10 @@ function toContentRecord(record: IContact | any) {
     fields: {
       label: record.label,
       value: record.value,
+      href: record.href ?? "",
+      description: record.description ?? "",
       type: record.type ?? "phone",
+      order: record.order ?? 0,
     },
     createdAt: new Date(record.createdAt).toISOString(),
     updatedAt: new Date(record.updatedAt).toISOString(),
