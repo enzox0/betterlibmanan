@@ -6,24 +6,20 @@ const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const apiClient = attachAdminUnauthorizedInterceptor(
   axios.create({
-    baseURL: `${BASE_URL}/api/contact`,
+    baseURL: `${BASE_URL}/api/medical-contacts`,
     headers: { "Content-Type": "application/json" },
   }),
 );
 
-export type ContactType = "phone" | "email" | "address" | "fax";
-
-export interface ContactPayload {
-  label: string;
-  value: string;
-  href?: string;
+export interface MedicalContactPayload {
+  name: string;
+  number: string;
   description?: string;
-  type?: ContactType;
   order?: number;
   status: ContentStatus;
 }
 
-export async function listPublicContacts(): Promise<ContentRecord[]> {
+export async function listPublicMedicalContacts(): Promise<ContentRecord[]> {
   const { data } = await apiClient.get<{
     success: boolean;
     data: ContentRecord[];
@@ -31,7 +27,7 @@ export async function listPublicContacts(): Promise<ContentRecord[]> {
   return data.data;
 }
 
-export async function listAdminContacts(
+export async function listAdminMedicalContacts(
   accessToken: string,
 ): Promise<ContentRecord[]> {
   const { data } = await apiClient.get<{
@@ -43,8 +39,8 @@ export async function listAdminContacts(
   return data.data;
 }
 
-export async function createContactRecord(
-  payload: ContactPayload,
+export async function createMedicalContactRecord(
+  payload: MedicalContactPayload,
   accessToken: string,
 ): Promise<ContentRecord> {
   const { data } = await apiClient.post<{
@@ -56,9 +52,9 @@ export async function createContactRecord(
   return data.data;
 }
 
-export async function updateContactRecord(
+export async function updateMedicalContactRecord(
   id: string,
-  payload: ContactPayload,
+  payload: MedicalContactPayload,
   accessToken: string,
 ): Promise<ContentRecord> {
   const { data } = await apiClient.patch<{
@@ -70,7 +66,7 @@ export async function updateContactRecord(
   return data.data;
 }
 
-export async function deleteContactRecord(
+export async function deleteMedicalContactRecord(
   id: string,
   accessToken: string,
 ): Promise<void> {

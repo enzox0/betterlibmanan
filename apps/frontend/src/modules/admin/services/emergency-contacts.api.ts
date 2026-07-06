@@ -11,10 +11,23 @@ const apiClient = attachAdminUnauthorizedInterceptor(
   }),
 );
 
+export type EmergencyContactCategory =
+  | "police"
+  | "disaster"
+  | "fire"
+  | "welfare"
+  | "government"
+  | "traffic"
+  | "medical"
+  | "other";
+
 export interface EmergencyContactPayload {
   name: string;
   number: string;
+  description?: string;
+  category?: EmergencyContactCategory;
   icon?: string;
+  order?: number;
   status: ContentStatus;
 }
 
