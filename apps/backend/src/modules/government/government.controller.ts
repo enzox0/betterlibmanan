@@ -132,12 +132,10 @@ export async function createAdminExecutiveOfficial(
         },
       );
     }
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: toRecord(record, "executive", record.title + " — " + record.name),
-      });
+    res.status(201).json({
+      success: true,
+      data: toRecord(record, "executive", record.title + " — " + record.name),
+    });
   } catch (err) {
     next(err);
   }
@@ -254,12 +252,10 @@ export async function createAdminLegislativeMember(
         },
       );
     }
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: toRecord(record, "legislative", record.name),
-      });
+    res.status(201).json({
+      success: true,
+      data: toRecord(record, "legislative", record.name),
+    });
   } catch (err) {
     next(err);
   }
@@ -492,12 +488,10 @@ export async function createAdminBarangay(
         },
       );
     }
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: toRecord(record, "barangays", record.name),
-      });
+    res.status(201).json({
+      success: true,
+      data: toRecord(record, "barangays", record.name),
+    });
   } catch (err) {
     next(err);
   }
