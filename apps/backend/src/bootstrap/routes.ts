@@ -25,6 +25,7 @@ import { governmentRouter } from "@/modules/government";
 import { medicalContactsRouter } from "@/modules/medical-contacts";
 import { officeDirectoryRouter } from "@/modules/office-directory";
 import { socialLinksRouter } from "@/modules/social-links";
+import { legislativeRouter } from "@/modules/legislative";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -115,6 +116,9 @@ apiRouter.use("/office-directory", officeDirectoryRouter);
 
 // Social Links — Facebook, Twitter, Instagram, YouTube, etc.
 apiRouter.use("/social-links", socialLinksRouter);
+
+// Legislative — ordinances, resolutions, process steps, about points
+apiRouter.use("/legislative", legislativeRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
