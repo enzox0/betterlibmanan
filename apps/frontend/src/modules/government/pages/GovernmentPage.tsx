@@ -1,12 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaEnvelope,
   FaPhone,
   FaClock,
-  FaExternalLinkAlt,
   FaBuilding,
-  FaUsers,
   FaSearch,
   FaTimes,
   FaArrowRight,
@@ -14,8 +12,22 @@ import {
   FaGavel,
   FaMapMarkerAlt,
 } from "react-icons/fa";
-import { mockGovernmentData } from "../data/mockData";
+import { LuInfo, LuCirclePlus } from "react-icons/lu";
 import { Link } from "react-router-dom";
+import { useGovernmentStore } from "@/modules/admin/store/governmentStore";
+import type { ContentRecord } from "@/modules/admin/types/admin.types";
+
+// ─── Field accessor helpers ───────────────────────────────────────────────────
+
+function f(record: ContentRecord, key: string, fallback = ""): string {
+  return (record.fields as any)[key] ?? fallback;
+}
+
+function fArr(record: ContentRecord, key: string): string[] {
+  return (record.fields as any)[key] ?? [];
+}
+
+// ─── Section constants ────────────────────────────────────────────────────────
 
 const SECTIONS = [
   { id: "executive", label: "Executive", icon: FaLandmark },
@@ -23,6 +35,8 @@ const SECTIONS = [
   { id: "offices", label: "Offices", icon: FaBuilding },
   { id: "barangays", label: "Barangays", icon: FaMapMarkerAlt },
 ];
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
 
 function SectionHeader({
   title,
@@ -45,17 +59,80 @@ function SectionHeader({
   );
 }
 
+function SectionSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="h-32 rounded-2xl bg-gray-100 animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+// ─── No-data nudge ────────────────────────────────────────────────────────────
+
+function NoDataNudge({ context }: { context: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-10 text-center"
+    >
+      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+        <LuInfo className="h-6 w-6 text-blue-500" />
+      </div>
+      <p className="text-sm font-semibold text-blue-800 mb-1">
+        No {context} available yet
+      </p>
+      <p className="text-xs text-blue-600 max-w-xs mx-auto leading-relaxed mb-4">
+        This section doesn't have any data yet. Would you like to contribute or
+        add information?
+      </p>
+      <Link
+        to="/admin/register"
+        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+      >
+        <LuCirclePlus className="h-3.5 w-3.5" />
+        Add Information
+      </Link>
+    </motion.div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export function GovernmentPage() {
-  const data = mockGovernmentData;
+  const {
+    executive,
+    legislative,
+    offices,
+    barangays,
+    isExecutiveLoading,
+    isLegislativeLoading,
+    isOfficesLoading,
+    isBarangaysLoading,
+    fetchExecutive,
+    fetchLegislative,
+    fetchOffices,
+    fetchBarangays,
+  } = useGovernmentStore();
+
   const [barangaySearch, setBarangaySearch] = useState("");
 
+  useEffect(() => {
+    fetchExecutive();
+    fetchLegislative();
+    fetchOffices();
+    fetchBarangays();
+  }, []);
+
   const filteredBarangays = barangaySearch.trim()
-    ? data.barangays.filter(
+    ? barangays.filter(
         (b) =>
-          b.name.toLowerCase().includes(barangaySearch.toLowerCase()) ||
-          b.captain.toLowerCase().includes(barangaySearch.toLowerCase()),
+          f(b, "name").toLowerCase().includes(barangaySearch.toLowerCase()) ||
+          f(b, "captain").toLowerCase().includes(barangaySearch.toLowerCase()),
       )
-    : data.barangays;
+    : barangays;
 
   const scrollTo = (id: string) => {
     document
@@ -113,10 +190,10 @@ export function GovernmentPage() {
           {/* Stats strip */}
           <div className="mt-8 flex justify-center gap-8 sm:gap-12">
             {[
-              { label: "Exec. Officials", value: data.executive.length },
-              { label: "SB Members", value: data.legislative.length },
-              { label: "Offices", value: data.offices.length },
-              { label: "Barangays", value: data.barangays.length },
+              { label: "Exec. Officials", value: executive.length },
+              { label: "SB Members", value: legislative.length },
+              { label: "Offices", value: offices.length },
+              { label: "Barangays", value: barangays.length },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-xl font-bold text-white">{stat.value}</p>
@@ -136,65 +213,74 @@ export function GovernmentPage() {
             title="Executive Branch"
             subtitle="The executive officials leading Libmanan's governance"
           />
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            {data.executive.map((official, index) => (
-              <motion.div
-                key={official.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:border-blue-200 hover:shadow-lg"
-              >
-                {/* Accent bar */}
-                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500 to-blue-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                <div className="p-6">
-                  {/* Badge */}
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
-                    <FaLandmark size={9} />
-                    {official.title}
-                  </span>
-
-                  <h3 className="mt-3 text-xl font-bold text-gray-900">
-                    {official.name}
-                  </h3>
-
-                  <div className="mt-4 space-y-2.5 text-sm text-gray-600">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
-                        <FaEnvelope size={12} className="text-gray-400" />
-                      </div>
-                      <a
-                        href={`mailto:${official.email}`}
-                        className="truncate transition-colors hover:text-blue-600"
-                      >
-                        {official.email}
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
-                        <FaPhone size={12} className="text-gray-400" />
-                      </div>
-                      <a
-                        href={`tel:${official.phone}`}
-                        className="transition-colors hover:text-blue-600"
-                      >
-                        {official.phone}
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
-                        <FaClock size={12} className="text-gray-400" />
-                      </div>
-                      <span>{official.hours}</span>
+          {isExecutiveLoading ? (
+            <SectionSkeleton count={2} />
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2">
+              {executive.map((official, index) => (
+                <motion.div
+                  key={official.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:border-blue-200 hover:shadow-lg"
+                >
+                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500 to-blue-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="p-6">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
+                      <FaLandmark size={9} />
+                      {f(official, "title")}
+                    </span>
+                    <h3 className="mt-3 text-xl font-bold text-gray-900">
+                      {f(official, "name")}
+                    </h3>
+                    <div className="mt-4 space-y-2.5 text-sm text-gray-600">
+                      {f(official, "email") && (
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
+                            <FaEnvelope size={12} className="text-gray-400" />
+                          </div>
+                          <a
+                            href={`mailto:${f(official, "email")}`}
+                            className="truncate transition-colors hover:text-blue-600"
+                          >
+                            {f(official, "email")}
+                          </a>
+                        </div>
+                      )}
+                      {f(official, "phone") && (
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
+                            <FaPhone size={12} className="text-gray-400" />
+                          </div>
+                          <a
+                            href={`tel:${f(official, "phone")}`}
+                            className="transition-colors hover:text-blue-600"
+                          >
+                            {f(official, "phone")}
+                          </a>
+                        </div>
+                      )}
+                      {f(official, "hours") && (
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100">
+                            <FaClock size={12} className="text-gray-400" />
+                          </div>
+                          <span>{f(official, "hours")}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+                </motion.div>
+              ))}
+              {!isExecutiveLoading && executive.length === 0 && (
+                <div className="col-span-full">
+                  <NoDataNudge context="executive officials" />
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -208,37 +294,44 @@ export function GovernmentPage() {
             title="Legislative Branch"
             subtitle="Sangguniang Bayan members of Libmanan"
           />
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.legislative.map((official, index) => (
-              <motion.div
-                key={official.name}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.04 }}
-                className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
-              >
-                {/* Numbered avatar */}
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-xs font-bold text-neutral-600">
-                  {String(index + 1).padStart(2, "0")}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 mb-0.5">
-                    {official.position}
-                  </p>
-                  <h3 className="text-sm font-bold text-gray-900 truncate">
-                    {official.name}
-                  </h3>
-                  {official.committees.length > 0 && (
-                    <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
-                      {official.committees.join(" · ")}
+          {isLegislativeLoading ? (
+            <SectionSkeleton count={6} />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {legislative.map((member, index) => (
+                <motion.div
+                  key={member.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.04 }}
+                  className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-xs font-bold text-neutral-600">
+                    {String(index + 1).padStart(2, "0")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 mb-0.5">
+                      {f(member, "position")}
                     </p>
-                  )}
+                    <h3 className="text-sm font-bold text-gray-900 truncate">
+                      {f(member, "name")}
+                    </h3>
+                    {fArr(member, "committees").length > 0 && (
+                      <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+                        {fArr(member, "committees").join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+              {!isLegislativeLoading && legislative.length === 0 && (
+                <div className="col-span-full">
+                  <NoDataNudge context="legislative members" />
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -249,80 +342,82 @@ export function GovernmentPage() {
             title="Municipal Offices"
             subtitle="Department heads and key offices of Libmanan"
           />
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {data.offices.map((office, index) => (
-              <motion.div
-                key={office.name}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.03 }}
-                className="group flex flex-col rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
-              >
-                <div className="flex items-start gap-3">
-                  {/* Icon */}
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600 transition-colors group-hover:border-neutral-900 group-hover:bg-neutral-900 group-hover:text-white">
-                    <FaBuilding size={14} />
+          {isOfficesLoading ? (
+            <SectionSkeleton count={9} />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {offices.map((office, index) => (
+                <motion.div
+                  key={office.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.03 }}
+                  className="group flex flex-col rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600 transition-colors group-hover:border-neutral-900 group-hover:bg-neutral-900 group-hover:text-white">
+                      <FaBuilding size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-gray-900 leading-snug">
+                        {f(office, "name")}
+                      </h3>
+                      <p className="mt-1 text-xs text-gray-500 leading-relaxed">
+                        {f(office, "description")}
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-gray-900 leading-snug">
-                      {office.name}
-                    </h3>
-                    <p className="mt-1 text-xs text-gray-500 leading-relaxed">
-                      {office.description}
-                    </p>
+                  <div className="mt-3 space-y-1 text-xs text-gray-500">
+                    {f(office, "phone") && (
+                      <div className="flex items-center gap-1.5">
+                        <FaPhone className="shrink-0 text-gray-400" size={10} />
+                        <a
+                          href={`tel:${f(office, "phone")}`}
+                          className="hover:text-blue-600 transition-colors"
+                        >
+                          {f(office, "phone")}
+                        </a>
+                      </div>
+                    )}
+                    {f(office, "email") && (
+                      <div className="flex items-center gap-1.5">
+                        <FaEnvelope
+                          className="shrink-0 text-gray-400"
+                          size={10}
+                        />
+                        <a
+                          href={`mailto:${f(office, "email")}`}
+                          className="truncate hover:text-blue-600 transition-colors"
+                        >
+                          {f(office, "email")}
+                        </a>
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                {/* Contact row */}
-                <div className="mt-3 space-y-1 text-xs text-gray-500">
-                  {office.phone && (
-                    <div className="flex items-center gap-1.5">
-                      <FaPhone className="shrink-0 text-gray-400" size={10} />
-                      <a
-                        href={`tel:${office.phone}`}
-                        className="hover:text-blue-600 transition-colors"
+                  {f(office, "link") && (
+                    <div className="mt-auto pt-3">
+                      <Link
+                        to={f(office, "link")}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                       >
-                        {office.phone}
-                      </a>
+                        View Services
+                        <FaArrowRight
+                          size={9}
+                          className="transition-transform group-hover:translate-x-0.5"
+                        />
+                      </Link>
                     </div>
                   )}
-                  {office.email && (
-                    <div className="flex items-center gap-1.5">
-                      <FaEnvelope
-                        className="shrink-0 text-gray-400"
-                        size={10}
-                      />
-                      <a
-                        href={`mailto:${office.email}`}
-                        className="truncate hover:text-blue-600 transition-colors"
-                      >
-                        {office.email}
-                      </a>
-                    </div>
-                  )}
+                </motion.div>
+              ))}
+              {!isOfficesLoading && offices.length === 0 && (
+                <div className="col-span-full">
+                  <NoDataNudge context="municipal offices" />
                 </div>
-
-                {/* CTA */}
-                {office.link && (
-                  <div className="mt-auto pt-3">
-                    <Link
-                      to={office.link}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                    >
-                      View Services
-                      <FaArrowRight
-                        size={9}
-                        className="transition-transform group-hover:translate-x-0.5"
-                      />
-                    </Link>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -342,11 +437,9 @@ export function GovernmentPage() {
                 Barangay Units
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                {data.barangays.length} barangays of Libmanan
+                {barangays.length} barangays of Libmanan
               </p>
             </div>
-
-            {/* Search */}
             <div className="relative w-full sm:w-64">
               <FaSearch
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -376,74 +469,83 @@ export function GovernmentPage() {
             </div>
           </motion.div>
 
-          <AnimatePresence mode="wait">
-            {filteredBarangays.length > 0 ? (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-              >
-                {filteredBarangays.map((barangay, index) => (
-                  <motion.div
-                    key={barangay.name}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.02 }}
-                    className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
-                  >
-                    <div className="flex items-start gap-2 mb-2">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100">
-                        <FaMapMarkerAlt
-                          className="text-neutral-500"
-                          size={11}
-                        />
-                      </div>
-                      <h3 className="text-sm font-bold text-gray-900 leading-snug">
-                        {barangay.name}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-1.5">
-                      {barangay.captain}
-                    </p>
-                    <a
-                      href={`tel:${barangay.phone}`}
-                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-600 transition-colors"
-                    >
-                      <FaPhone size={9} />
-                      {barangay.phone}
-                    </a>
-                  </motion.div>
-                ))}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="rounded-xl border border-neutral-200 bg-white p-10 text-center"
-              >
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
-                  <FaSearch size={12} className="text-neutral-400" />
-                </div>
-                <p className="text-sm font-semibold text-neutral-700 mb-1">
-                  No barangays matched
-                </p>
-                <p className="text-xs text-neutral-400">
-                  Try a different name or captain.
-                </p>
-                <button
-                  onClick={() => setBarangaySearch("")}
-                  className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          {isBarangaysLoading ? (
+            <SectionSkeleton count={8} />
+          ) : (
+            <AnimatePresence mode="wait">
+              {filteredBarangays.length > 0 ? (
+                <motion.div
+                  key="results"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
                 >
-                  Show all barangays
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  {filteredBarangays.map((barangay, index) => (
+                    <motion.div
+                      key={barangay.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.02 }}
+                      className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
+                    >
+                      <div className="flex items-start gap-2 mb-2">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100">
+                          <FaMapMarkerAlt
+                            className="text-neutral-500"
+                            size={11}
+                          />
+                        </div>
+                        <h3 className="text-sm font-bold text-gray-900 leading-snug">
+                          {f(barangay, "name")}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-1.5">
+                        {f(barangay, "captain")}
+                      </p>
+                      <a
+                        href={`tel:${f(barangay, "phone")}`}
+                        className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-600 transition-colors"
+                      >
+                        <FaPhone size={9} />
+                        {f(barangay, "phone")}
+                      </a>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {barangaySearch ? (
+                    <div className="rounded-xl border border-neutral-200 bg-white p-10 text-center">
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
+                        <FaSearch size={12} className="text-neutral-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-neutral-700 mb-1">
+                        No barangays matched
+                      </p>
+                      <p className="text-xs text-neutral-400">
+                        Try a different name or captain.
+                      </p>
+                      <button
+                        onClick={() => setBarangaySearch("")}
+                        className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                      >
+                        Show all barangays
+                      </button>
+                    </div>
+                  ) : (
+                    <NoDataNudge context="barangays" />
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
         </div>
       </section>
     </div>
@@ -451,5 +553,4 @@ export function GovernmentPage() {
 }
 
 GovernmentPage.displayName = "GovernmentPage";
-
 export default GovernmentPage;
