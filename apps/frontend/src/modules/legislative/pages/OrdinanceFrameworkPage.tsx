@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -9,29 +9,82 @@ import {
   FaArrowLeft,
   FaCheckCircle,
 } from "react-icons/fa";
-import { mockLegislativeData } from "../data/mockData";
+import { LuInfo, LuCirclePlus } from "react-icons/lu";
+import {
+  fetchLegislativeSettings,
+  fetchOrdinances,
+  type PublicLegislativeSettings,
+  type PublicLegislativeDoc,
+} from "../api/legislative.public.api";
 import { ListRowSkeleton, Pagination } from "@/shared/ui";
 
 const PAGE_SIZE = 20;
 
+function NoDataNudge({ context }: { context: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-8 text-center"
+    >
+      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+        <LuInfo className="h-6 w-6 text-blue-500" />
+      </div>
+      <p className="text-sm font-semibold text-blue-800 mb-1">
+        No {context} available yet
+      </p>
+      <p className="text-xs text-blue-600 max-w-xs mx-auto leading-relaxed mb-4">
+        This section doesn't have any data yet. Would you like to contribute or
+        add information?
+      </p>
+      <Link
+        to="/admin/register"
+        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+      >
+        <LuCirclePlus className="h-3.5 w-3.5" />
+        Add Information
+      </Link>
+    </motion.div>
+  );
+}
+
 export function OrdinanceFrameworkPage() {
-  const data = mockLegislativeData.ordinance;
+  const [settings, setSettings] = useState<PublicLegislativeSettings | null>(
+    null,
+  );
+  const [docs, setDocs] = useState<PublicLegislativeDoc[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  const filtered = data.documents.filter((doc) => {
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([fetchLegislativeSettings(), fetchOrdinances()])
+      .then(([s, ords]) => {
+        if (cancelled) return;
+        setSettings(s);
+        setDocs(ords);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = docs.filter((doc) => {
     const matchesSearch =
       !search.trim() ||
-      doc.title.toLowerCase().includes(search.toLowerCase()) ||
-      doc.number.toLowerCase().includes(search.toLowerCase());
+      doc.fields.title.toLowerCase().includes(search.toLowerCase()) ||
+      doc.fields.number.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
       !activeCategory ||
-      doc.title.toLowerCase().includes(activeCategory.toLowerCase());
+      doc.fields.title.toLowerCase().includes(activeCategory.toLowerCase());
     return matchesSearch && matchesCategory;
   });
 
-  // Reset page on filter changes
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -45,9 +98,11 @@ export function OrdinanceFrameworkPage() {
     setPage(1);
   }
 
+  const categories = settings?.ordinanceCategories ?? [];
+
   return (
     <div className="min-h-screen bg-neutral-100">
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section className="relative bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
         <div
@@ -58,14 +113,12 @@ export function OrdinanceFrameworkPage() {
             backgroundSize: "28px 28px",
           }}
         />
-
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-14 sm:pt-16 sm:pb-20"
         >
-          {/* Back link */}
           <Link
             to="/legislative"
             className="mb-6 inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 transition-colors hover:text-white"
@@ -122,8 +175,8 @@ export function OrdinanceFrameworkPage() {
           {/* Stats */}
           <div className="mt-6 flex flex-wrap justify-center gap-8 sm:gap-12">
             {[
-              { label: "Total Ordinances", value: data.documents.length },
-              { label: "Categories", value: data.categories.length },
+              { label: "Total Ordinances", value: docs.length },
+              { label: "Categories", value: categories.length },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-xl font-bold text-white">{stat.value}</p>
@@ -136,7 +189,7 @@ export function OrdinanceFrameworkPage() {
         </motion.div>
       </section>
 
-      {/* ── Definition + Categories ───────────────────────────────────── */}
+      {/* ── Definition + Categories ──────────────────────────────────── */}
       <section className="py-10 sm:py-14">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-2">
@@ -155,9 +208,17 @@ export function OrdinanceFrameworkPage() {
               <h2 className="text-base font-bold text-gray-900 mb-2">
                 What is an Ordinance?
               </h2>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                {data.definition}
-              </p>
+              {loading ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-2.5 w-full rounded bg-gray-200" />
+                  <div className="h-2.5 w-full rounded bg-gray-100" />
+                  <div className="h-2.5 w-4/5 rounded bg-gray-100" />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  {settings?.ordinanceDefinition ?? "—"}
+                </p>
+              )}
             </motion.div>
 
             {/* Categories */}
@@ -175,7 +236,7 @@ export function OrdinanceFrameworkPage() {
                 Filter documents by ordinance category
               </p>
               <div className="flex flex-wrap gap-2">
-                {data.categories.map((cat, index) => {
+                {categories.map((cat, index) => {
                   const isActive = activeCategory === cat;
                   return (
                     <motion.button
@@ -212,7 +273,7 @@ export function OrdinanceFrameworkPage() {
         </div>
       </section>
 
-      {/* ── Documents ─────────────────────────────────────────────────── */}
+      {/* ── Documents ────────────────────────────────────────────────── */}
       <section className="py-10 sm:py-14 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -224,7 +285,7 @@ export function OrdinanceFrameworkPage() {
           >
             <div>
               <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
-                2025 Ordinances
+                Ordinances
               </h2>
               <p className="mt-1 text-sm text-gray-500">
                 {filtered.length > 0
@@ -232,19 +293,33 @@ export function OrdinanceFrameworkPage() {
                   : "No ordinances matched"}
               </p>
             </div>
-            <a
-              href={data.externalLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              View all on official portal
-              <FaExternalLinkAlt size={9} />
-            </a>
+            {settings?.ordinanceExternalLink && (
+              <a
+                href={settings.ordinanceExternalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                View all on official portal
+                <FaExternalLinkAlt size={9} />
+              </a>
+            )}
           </motion.div>
 
           <AnimatePresence mode="wait">
-            {filtered.length > 0 ? (
+            {loading ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-2"
+              >
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <ListRowSkeleton key={i} />
+                ))}
+              </motion.div>
+            ) : filtered.length > 0 ? (
               <motion.div
                 key="results"
                 initial={{ opacity: 0 }}
@@ -255,7 +330,7 @@ export function OrdinanceFrameworkPage() {
               >
                 {paginated.map((doc, index) => (
                   <motion.div
-                    key={doc.number}
+                    key={doc.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.04 }}
@@ -268,20 +343,24 @@ export function OrdinanceFrameworkPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
                         <span className="text-[11px] font-bold text-blue-600 tabular-nums">
-                          #{doc.number}
+                          #{doc.fields.number}
                         </span>
                         <span className="text-[11px] text-gray-400">
-                          {doc.sessionDate}
+                          {doc.fields.sessionDate}
                         </span>
                       </div>
                       <p className="text-sm text-gray-700 leading-relaxed">
-                        {doc.title}
+                        {doc.fields.title}
                       </p>
                     </div>
                   </motion.div>
                 ))}
               </motion.div>
+            ) : docs.length === 0 ? (
+              /* ── No content yet (backend has no ordinances) ── */
+              <NoDataNudge context="ordinances" />
             ) : (
+              /* ── No search / filter match ── */
               <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
@@ -312,7 +391,6 @@ export function OrdinanceFrameworkPage() {
             )}
           </AnimatePresence>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-6 flex justify-center">
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
