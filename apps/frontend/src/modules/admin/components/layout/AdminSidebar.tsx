@@ -15,6 +15,7 @@ import {
   LuClipboardList,
   LuTriangleAlert,
   LuMessageSquare,
+  LuMapPin,
 } from "react-icons/lu";
 import { useState } from "react";
 import { useAdminStore } from "../../store/adminStore";
@@ -65,6 +66,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Community",
     to: "/admin/community",
     icon: <LuMessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />,
+  },
+  {
+    label: "Tourism",
+    to: "/admin/tourism",
+    icon: <LuMapPin className="h-4 w-4 shrink-0" aria-hidden="true" />,
   },
 ];
 
