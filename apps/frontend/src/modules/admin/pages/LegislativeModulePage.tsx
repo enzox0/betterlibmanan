@@ -17,7 +17,16 @@ import {
   LuTag,
   LuCalendar,
   LuHash,
+  LuRefreshCw,
+  LuTriangleAlert,
 } from "react-icons/lu";
+import { useLegislativeStore } from "../store/legislativeStore";
+import { useAdminStore } from "../store/adminStore";
+import type {
+  LegislativeDocRecord,
+  ProcessStepRecord,
+  AboutPointRecord,
+} from "../services/legislative.api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -663,6 +672,10 @@ function DocumentsPanel({
   setExternalLink,
   description,
   setDescription,
+  onCreateDoc,
+  onUpdateDoc,
+  onDeleteDoc,
+  onSaveSettings,
 }: {
   variant: "ordinance" | "resolution";
   docs: LegislativeDocument[];
@@ -673,6 +686,21 @@ function DocumentsPanel({
   setExternalLink: React.Dispatch<React.SetStateAction<string>>;
   description: string;
   setDescription: React.Dispatch<React.SetStateAction<string>>;
+  onCreateDoc?: (payload: {
+    number: string;
+    title: string;
+    sessionDate: string;
+  }) => Promise<LegislativeDocRecord>;
+  onUpdateDoc?: (
+    id: string,
+    payload: { number: string; title: string; sessionDate: string },
+  ) => Promise<LegislativeDocRecord>;
+  onDeleteDoc?: (id: string) => Promise<void>;
+  onSaveSettings?: (settings: {
+    description: string;
+    tags: string[];
+    externalLink: string;
+  }) => Promise<void>;
 }) {
   const isOrd = variant === "ordinance";
   const accent = isOrd ? "blue" : "neutral";
@@ -757,30 +785,61 @@ function DocumentsPanel({
       return;
     }
 
+    const payload = {
+      number: number.trim(),
+      title: title.trim(),
+      sessionDate: sessionDate.trim(),
+    };
+
     if (panelMode === "create") {
-      setDocs((p) => [
-        ...p,
-        {
-          id: `${variant}-${crypto.randomUUID().slice(0, 8)}`,
-          number: number.trim(),
-          title: title.trim(),
-          sessionDate: sessionDate.trim(),
-        },
-      ]);
+      if (onCreateDoc) {
+        onCreateDoc(payload)
+          .then((record) => {
+            setDocs((p) => [
+              ...p,
+              {
+                id: record.id,
+                number: record.fields.number,
+                title: record.fields.title,
+                sessionDate: record.fields.sessionDate,
+              },
+            ]);
+          })
+          .catch(() => {});
+      } else {
+        setDocs((p) => [
+          ...p,
+          {
+            id: `${variant}-${crypto.randomUUID().slice(0, 8)}`,
+            ...payload,
+          },
+        ]);
+      }
     } else if (editTarget) {
-      setDocs((p) =>
-        p.map((d) =>
-          d.id === editTarget.id
-            ? {
-                ...d,
-                number: number.trim(),
-                title: title.trim(),
-                sessionDate: sessionDate.trim(),
-              }
-            : d,
-        ),
-      );
-      markSaved(editTarget.id);
+      if (onUpdateDoc) {
+        onUpdateDoc(editTarget.id, payload)
+          .then((record) => {
+            setDocs((p) =>
+              p.map((d) =>
+                d.id === editTarget.id
+                  ? {
+                      ...d,
+                      number: record.fields.number,
+                      title: record.fields.title,
+                      sessionDate: record.fields.sessionDate,
+                    }
+                  : d,
+              ),
+            );
+            markSaved(editTarget.id);
+          })
+          .catch(() => {});
+      } else {
+        setDocs((p) =>
+          p.map((d) => (d.id === editTarget.id ? { ...d, ...payload } : d)),
+        );
+        markSaved(editTarget.id);
+      }
     }
     closePanel();
   }
@@ -865,6 +924,23 @@ function DocumentsPanel({
               )}
             </div>
           </div>
+          {onSaveSettings && (
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() =>
+                  onSaveSettings({
+                    description,
+                    tags,
+                    externalLink,
+                  }).catch(() => {})
+                }
+                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all ${accentBtn}`}
+              >
+                <LuCheck className="h-4 w-4" /> Save Settings
+              </button>
+            </div>
+          )}
         </div>
       </SectionCard>
 
@@ -1081,9 +1157,17 @@ function DocumentsPanel({
           <DeleteConfirmDialog
             label={`#${deleteTarget.number}`}
             onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setDocs((p) => p.filter((d) => d.id !== deleteTarget.id))
-            }
+            onConfirm={() => {
+              if (onDeleteDoc) {
+                onDeleteDoc(deleteTarget.id)
+                  .then(() =>
+                    setDocs((p) => p.filter((d) => d.id !== deleteTarget.id)),
+                  )
+                  .catch(() => {});
+              } else {
+                setDocs((p) => p.filter((d) => d.id !== deleteTarget.id));
+              }
+            }}
           />
         )}
       </AnimatePresence>
@@ -1097,10 +1181,39 @@ function ProcessStepsPanel({
   variant,
   steps,
   setSteps,
+  onCreateStep,
+  onUpdateStep,
+  onDeleteStep,
+  onReplaceSteps,
 }: {
   variant: "ordinance" | "resolution";
   steps: ProcessStep[];
   setSteps: React.Dispatch<React.SetStateAction<ProcessStep[]>>;
+  onCreateStep?: (payload: {
+    variant: "ordinance" | "resolution";
+    step: number;
+    title: string;
+    description: string;
+  }) => Promise<ProcessStepRecord>;
+  onUpdateStep?: (
+    id: string,
+    payload: {
+      variant: "ordinance" | "resolution";
+      step: number;
+      title: string;
+      description: string;
+    },
+  ) => Promise<ProcessStepRecord>;
+  onDeleteStep?: (id: string) => Promise<void>;
+  onReplaceSteps?: (payload: {
+    variant: "ordinance" | "resolution";
+    steps: Array<{
+      id?: string;
+      step: number;
+      title: string;
+      description: string;
+    }>;
+  }) => Promise<ProcessStepRecord[]>;
 }) {
   const isOrd = variant === "ordinance";
   const accentGradient = isOrd
@@ -1174,46 +1287,111 @@ function ProcessStepsPanel({
       return;
     }
 
+    const payload = {
+      variant,
+      step: panelMode === "create" ? steps.length + 1 : (editTarget?.step ?? 1),
+      title: stepTitle.trim(),
+      description: stepDesc.trim(),
+    };
+
     if (panelMode === "create") {
-      const nextStep = steps.length + 1;
-      setSteps((p) => [
-        ...p,
-        {
-          id: `${variant}-step-${crypto.randomUUID().slice(0, 8)}`,
-          step: nextStep,
-          title: stepTitle.trim(),
-          description: stepDesc.trim(),
-        },
-      ]);
+      if (onCreateStep) {
+        onCreateStep(payload)
+          .then((record) => {
+            setSteps((p) => [
+              ...p,
+              {
+                id: record.id,
+                step: record.fields.step,
+                title: record.fields.title,
+                description: record.fields.description,
+              },
+            ]);
+          })
+          .catch(() => {});
+      } else {
+        setSteps((p) => [
+          ...p,
+          {
+            id: `${variant}-step-${crypto.randomUUID().slice(0, 8)}`,
+            ...payload,
+          },
+        ]);
+      }
     } else if (editTarget) {
-      setSteps((p) =>
-        p.map((s) =>
-          s.id === editTarget.id
-            ? { ...s, title: stepTitle.trim(), description: stepDesc.trim() }
-            : s,
-        ),
-      );
-      markSaved(editTarget.id);
+      if (onUpdateStep) {
+        onUpdateStep(editTarget.id, payload)
+          .then((record) => {
+            setSteps((p) =>
+              p.map((s) =>
+                s.id === editTarget.id
+                  ? {
+                      ...s,
+                      title: record.fields.title,
+                      description: record.fields.description,
+                    }
+                  : s,
+              ),
+            );
+            markSaved(editTarget.id);
+          })
+          .catch(() => {});
+      } else {
+        setSteps((p) =>
+          p.map((s) =>
+            s.id === editTarget.id
+              ? { ...s, title: stepTitle.trim(), description: stepDesc.trim() }
+              : s,
+          ),
+        );
+        markSaved(editTarget.id);
+      }
     }
     closePanel();
   }
 
   function moveUp(index: number) {
     if (index === 0) return;
-    setSteps((p) => {
-      const arr = [...p];
-      [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
-      return arr.map((s, i) => ({ ...s, step: i + 1 }));
-    });
+    const reordered = [...steps];
+    [reordered[index - 1], reordered[index]] = [
+      reordered[index],
+      reordered[index - 1],
+    ];
+    const renumbered = reordered.map((s, i) => ({ ...s, step: i + 1 }));
+    setSteps(renumbered);
+    if (onReplaceSteps) {
+      onReplaceSteps({
+        variant,
+        steps: renumbered.map((s) => ({
+          id: s.id,
+          step: s.step,
+          title: s.title,
+          description: s.description,
+        })),
+      }).catch(() => {});
+    }
   }
 
   function moveDown(index: number) {
     if (index === steps.length - 1) return;
-    setSteps((p) => {
-      const arr = [...p];
-      [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
-      return arr.map((s, i) => ({ ...s, step: i + 1 }));
-    });
+    const reordered = [...steps];
+    [reordered[index], reordered[index + 1]] = [
+      reordered[index + 1],
+      reordered[index],
+    ];
+    const renumbered = reordered.map((s, i) => ({ ...s, step: i + 1 }));
+    setSteps(renumbered);
+    if (onReplaceSteps) {
+      onReplaceSteps({
+        variant,
+        steps: renumbered.map((s) => ({
+          id: s.id,
+          step: s.step,
+          title: s.title,
+          description: s.description,
+        })),
+      }).catch(() => {});
+    }
   }
 
   const label = isOrd ? "Ordinance" : "Resolution";
@@ -1402,11 +1580,20 @@ function ProcessStepsPanel({
             label={`Step ${deleteTarget.step}: ${deleteTarget.title}`}
             onClose={() => setDeleteTarget(null)}
             onConfirm={() => {
-              setSteps((p) =>
-                p
-                  .filter((s) => s.id !== deleteTarget.id)
-                  .map((s, i) => ({ ...s, step: i + 1 })),
-              );
+              const doDelete = () => {
+                setSteps((p) =>
+                  p
+                    .filter((s) => s.id !== deleteTarget.id)
+                    .map((s, i) => ({ ...s, step: i + 1 })),
+                );
+              };
+              if (onDeleteStep) {
+                onDeleteStep(deleteTarget.id)
+                  .then(doDelete)
+                  .catch(() => {});
+              } else {
+                doDelete();
+              }
             }}
           />
         )}
@@ -1420,9 +1607,21 @@ function ProcessStepsPanel({
 function AboutPointsPanel({
   points,
   setPoints,
+  onCreatePoint,
+  onUpdatePoint,
+  onDeletePoint,
 }: {
   points: AboutPoint[];
   setPoints: React.Dispatch<React.SetStateAction<AboutPoint[]>>;
+  onCreatePoint?: (payload: {
+    title: string;
+    description: string;
+  }) => Promise<AboutPointRecord>;
+  onUpdatePoint?: (
+    id: string,
+    payload: { title: string; description: string },
+  ) => Promise<AboutPointRecord>;
+  onDeletePoint?: (id: string) => Promise<void>;
 }) {
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
   const [editTarget, setEditTarget] = useState<AboutPoint | null>(null);
@@ -1486,24 +1685,52 @@ function AboutPointsPanel({
       return;
     }
 
+    const payload = { title: ptTitle.trim(), description: ptDesc.trim() };
+
     if (panelMode === "create") {
-      setPoints((p) => [
-        ...p,
-        {
-          id: `ap-${crypto.randomUUID().slice(0, 8)}`,
-          title: ptTitle.trim(),
-          description: ptDesc.trim(),
-        },
-      ]);
+      if (onCreatePoint) {
+        onCreatePoint(payload)
+          .then((record) => {
+            setPoints((p) => [
+              ...p,
+              {
+                id: record.id,
+                title: record.fields.title,
+                description: record.fields.description,
+              },
+            ]);
+          })
+          .catch(() => {});
+      } else {
+        setPoints((p) => [
+          ...p,
+          { id: `ap-${crypto.randomUUID().slice(0, 8)}`, ...payload },
+        ]);
+      }
     } else if (editTarget) {
-      setPoints((p) =>
-        p.map((pt) =>
-          pt.id === editTarget.id
-            ? { ...pt, title: ptTitle.trim(), description: ptDesc.trim() }
-            : pt,
-        ),
-      );
-      markSaved(editTarget.id);
+      if (onUpdatePoint) {
+        onUpdatePoint(editTarget.id, payload)
+          .then((record) => {
+            setPoints((p) =>
+              p.map((pt) =>
+                pt.id === editTarget.id
+                  ? {
+                      ...pt,
+                      title: record.fields.title,
+                      description: record.fields.description,
+                    }
+                  : pt,
+              ),
+            );
+            markSaved(editTarget.id);
+          })
+          .catch(() => {});
+      } else {
+        setPoints((p) =>
+          p.map((pt) => (pt.id === editTarget.id ? { ...pt, ...payload } : pt)),
+        );
+        markSaved(editTarget.id);
+      }
     }
     closePanel();
   }
@@ -1664,9 +1891,17 @@ function AboutPointsPanel({
           <DeleteConfirmDialog
             label={deleteTarget.title}
             onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setPoints((p) => p.filter((pt) => pt.id !== deleteTarget.id))
-            }
+            onConfirm={() => {
+              const doDelete = () =>
+                setPoints((p) => p.filter((pt) => pt.id !== deleteTarget.id));
+              if (onDeletePoint) {
+                onDeletePoint(deleteTarget.id)
+                  .then(doDelete)
+                  .catch(() => {});
+              } else {
+                doDelete();
+              }
+            }}
           />
         )}
       </AnimatePresence>
@@ -1705,39 +1940,151 @@ function SummaryCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function LegislativeModulePage() {
+  const accessToken = useAdminStore((s) => s.accessToken) ?? "";
+  const store = useLegislativeStore();
   const [activeTab, setActiveTab] = useState<LegTab>("ordinances");
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
-  // Ordinance state
-  const [ordDocs, setOrdDocs] =
-    useState<LegislativeDocument[]>(INITIAL_ORD_DOCS);
-  const [ordCategories, setOrdCategories] = useState<string[]>(
-    INITIAL_ORD_CATEGORIES,
-  );
-  const [ordExternalLink, setOrdExternalLink] = useState(
-    "https://sangguniangbayan.libmanan.gov.ph/",
-  );
-  const [ordDescription, setOrdDescription] = useState(
-    "Municipal ordinances enacted by the Sangguniang Bayan — local laws that govern the municipality and its residents.",
+  // ── Bootstrap from backend on mount ───────────────────────────────────────
+  useEffect(() => {
+    Promise.all([
+      store.fetchSettings(),
+      store.fetchOrdinances(),
+      store.fetchResolutions(),
+      store.fetchOrdSteps(),
+      store.fetchResSteps(),
+      store.fetchAboutPoints(),
+    ]).catch((err) => {
+      setGlobalError(err?.message ?? "Failed to load legislative data.");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Derive local UI state from store ──────────────────────────────────────
+  const [ordDocs, setOrdDocs] = useState<LegislativeDocument[]>([]);
+  const [resDocs, setResDocs] = useState<LegislativeDocument[]>([]);
+  const [ordSteps, setOrdSteps] = useState<ProcessStep[]>([]);
+  const [resSteps, setResSteps] = useState<ProcessStep[]>([]);
+  const [aboutPoints, setAboutPoints] = useState<AboutPoint[]>([]);
+
+  // Settings fields
+  const [ordDescription, setOrdDescription] = useState("");
+  const [ordCategories, setOrdCategories] = useState<string[]>([]);
+  const [ordExternalLink, setOrdExternalLink] = useState("");
+  const [resDescription, setResDescription] = useState("");
+  const [resTypes, setResTypes] = useState<string[]>([]);
+  const [resExternalLink, setResExternalLink] = useState("");
+
+  // Sync store → local UI state whenever store updates
+  useEffect(() => {
+    setOrdDocs(
+      store.ordinances.map((r) => ({
+        id: r.id,
+        number: r.fields.number,
+        title: r.fields.title,
+        sessionDate: r.fields.sessionDate,
+      })),
+    );
+  }, [store.ordinances]);
+
+  useEffect(() => {
+    setResDocs(
+      store.resolutions.map((r) => ({
+        id: r.id,
+        number: r.fields.number,
+        title: r.fields.title,
+        sessionDate: r.fields.sessionDate,
+      })),
+    );
+  }, [store.resolutions]);
+
+  useEffect(() => {
+    setOrdSteps(
+      store.ordSteps.map((r) => ({
+        id: r.id,
+        step: r.fields.step,
+        title: r.fields.title,
+        description: r.fields.description,
+      })),
+    );
+  }, [store.ordSteps]);
+
+  useEffect(() => {
+    setResSteps(
+      store.resSteps.map((r) => ({
+        id: r.id,
+        step: r.fields.step,
+        title: r.fields.title,
+        description: r.fields.description,
+      })),
+    );
+  }, [store.resSteps]);
+
+  useEffect(() => {
+    setAboutPoints(
+      store.aboutPoints.map((r) => ({
+        id: r.id,
+        title: r.fields.title,
+        description: r.fields.description,
+      })),
+    );
+  }, [store.aboutPoints]);
+
+  useEffect(() => {
+    if (!store.settings) return;
+    const s = store.settings;
+    setOrdDescription(s.ordinanceDescription);
+    setOrdCategories(s.ordinanceCategories);
+    setOrdExternalLink(s.ordinanceExternalLink);
+    setResDescription(s.resolutionDescription);
+    setResTypes(s.resolutionTypes);
+    setResExternalLink(s.resolutionExternalLink);
+  }, [store.settings]);
+
+  // ── Settings save helper ───────────────────────────────────────────────────
+  const handleSaveOrdSettings = useCallback(
+    async (cfg: {
+      description: string;
+      tags: string[];
+      externalLink: string;
+    }) => {
+      await store.saveSettings(
+        {
+          ordinanceDescription: cfg.description,
+          ordinanceCategories: cfg.tags,
+          ordinanceExternalLink: cfg.externalLink,
+        },
+        accessToken,
+      );
+    },
+    [store, accessToken],
   );
 
-  // Resolution state
-  const [resDocs, setResDocs] =
-    useState<LegislativeDocument[]>(INITIAL_RES_DOCS);
-  const [resTypes, setResTypes] = useState<string[]>(INITIAL_RES_TYPES);
-  const [resExternalLink, setResExternalLink] = useState(
-    "https://sangguniangbayan.libmanan.gov.ph/",
-  );
-  const [resDescription, setResDescription] = useState(
-    "Resolutions passed by the Sangguniang Bayan expressing the will or opinion of the legislative body on various matters.",
+  const handleSaveResSettings = useCallback(
+    async (cfg: {
+      description: string;
+      tags: string[];
+      externalLink: string;
+    }) => {
+      await store.saveSettings(
+        {
+          resolutionDescription: cfg.description,
+          resolutionTypes: cfg.tags,
+          resolutionExternalLink: cfg.externalLink,
+        },
+        accessToken,
+      );
+    },
+    [store, accessToken],
   );
 
-  // Process steps state
-  const [ordSteps, setOrdSteps] = useState<ProcessStep[]>(INITIAL_ORD_STEPS);
-  const [resSteps, setResSteps] = useState<ProcessStep[]>(INITIAL_RES_STEPS);
-
-  // About points state
-  const [aboutPoints, setAboutPoints] =
-    useState<AboutPoint[]>(INITIAL_ABOUT_POINTS);
+  const isLoading =
+    store.isOrdinancesLoading ||
+    store.isResolutionsLoading ||
+    store.isOrdStepsLoading ||
+    store.isResStepsLoading ||
+    store.isAboutLoading ||
+    store.isSettingsLoading;
 
   const tabCounts: Record<LegTab, number> = {
     ordinances: ordDocs.length,
@@ -1755,15 +2102,41 @@ export function LegislativeModulePage() {
       transition={{ duration: 0.3, ease: EASE }}
     >
       {/* Page header */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">
-          Legislative Management
-        </h1>
-        <p className="mt-0.5 text-sm text-gray-400">
-          Manage ordinances, resolutions, process steps, and about content
-          displayed on the public Legislative page.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">
+            Legislative Management
+          </h1>
+          <p className="mt-0.5 text-sm text-gray-400">
+            Manage ordinances, resolutions, process steps, and about content
+            displayed on the public Legislative page.
+          </p>
+        </div>
+        {isLoading && (
+          <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
+            <LuRefreshCw className="h-3.5 w-3.5 animate-spin" />
+            Loading…
+          </div>
+        )}
       </div>
+
+      {/* Global error banner */}
+      {(globalError || store.error) && (
+        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <LuTriangleAlert className="h-4 w-4 shrink-0 text-red-500" />
+          <span>{globalError ?? store.error}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setGlobalError(null);
+              store.clearError();
+            }}
+            className="ml-auto text-red-400 hover:text-red-600"
+          >
+            <LuX className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1869,6 +2242,12 @@ export function LegislativeModulePage() {
                   setExternalLink={setOrdExternalLink}
                   description={ordDescription}
                   setDescription={setOrdDescription}
+                  onCreateDoc={(p) => store.createOrdinance(p, accessToken)}
+                  onUpdateDoc={(id, p) =>
+                    store.updateOrdinance(id, p, accessToken)
+                  }
+                  onDeleteDoc={(id) => store.deleteOrdinance(id, accessToken)}
+                  onSaveSettings={handleSaveOrdSettings}
                 />
               )}
               {activeTab === "resolutions" && (
@@ -1882,6 +2261,12 @@ export function LegislativeModulePage() {
                   setExternalLink={setResExternalLink}
                   description={resDescription}
                   setDescription={setResDescription}
+                  onCreateDoc={(p) => store.createResolution(p, accessToken)}
+                  onUpdateDoc={(id, p) =>
+                    store.updateResolution(id, p, accessToken)
+                  }
+                  onDeleteDoc={(id) => store.deleteResolution(id, accessToken)}
+                  onSaveSettings={handleSaveResSettings}
                 />
               )}
               {activeTab === "ord-process" && (
@@ -1889,6 +2274,16 @@ export function LegislativeModulePage() {
                   variant="ordinance"
                   steps={ordSteps}
                   setSteps={setOrdSteps}
+                  onCreateStep={(p) => store.createProcessStep(p, accessToken)}
+                  onUpdateStep={(id, p) =>
+                    store.updateProcessStep(id, p, accessToken)
+                  }
+                  onDeleteStep={(id) =>
+                    store.deleteProcessStep(id, accessToken)
+                  }
+                  onReplaceSteps={(p) =>
+                    store.replaceProcessSteps(p, accessToken)
+                  }
                 />
               )}
               {activeTab === "res-process" && (
@@ -1896,12 +2291,29 @@ export function LegislativeModulePage() {
                   variant="resolution"
                   steps={resSteps}
                   setSteps={setResSteps}
+                  onCreateStep={(p) => store.createProcessStep(p, accessToken)}
+                  onUpdateStep={(id, p) =>
+                    store.updateProcessStep(id, p, accessToken)
+                  }
+                  onDeleteStep={(id) =>
+                    store.deleteProcessStep(id, accessToken)
+                  }
+                  onReplaceSteps={(p) =>
+                    store.replaceProcessSteps(p, accessToken)
+                  }
                 />
               )}
               {activeTab === "about" && (
                 <AboutPointsPanel
                   points={aboutPoints}
                   setPoints={setAboutPoints}
+                  onCreatePoint={(p) => store.createAboutPoint(p, accessToken)}
+                  onUpdatePoint={(id, p) =>
+                    store.updateAboutPoint(id, p, accessToken)
+                  }
+                  onDeletePoint={(id) =>
+                    store.deleteAboutPoint(id, accessToken)
+                  }
                 />
               )}
             </motion.div>
