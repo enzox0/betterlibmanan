@@ -2,13 +2,17 @@ import { Types } from "mongoose";
 import {
   EmergencyContactModel,
   type EmergencyContactStatus,
+  type EmergencyContactCategory,
   type IEmergencyContact,
 } from "./emergency-contacts.model";
 
 export interface EmergencyContactInput {
   name: string;
   number: string;
+  description?: string;
+  category?: EmergencyContactCategory;
   icon?: string;
+  order?: number;
   status: EmergencyContactStatus;
 }
 
@@ -22,12 +26,14 @@ export async function listPublishedEmergencyContacts(): Promise<
   IEmergencyContact[]
 > {
   return EmergencyContactModel.find({ status: "published" })
-    .sort({ createdAt: 1 })
+    .sort({ order: 1, createdAt: 1 })
     .lean() as any;
 }
 
 export async function listAllEmergencyContacts(): Promise<IEmergencyContact[]> {
-  return EmergencyContactModel.find().sort({ createdAt: 1 }).lean() as any;
+  return EmergencyContactModel.find()
+    .sort({ order: 1, createdAt: 1 })
+    .lean() as any;
 }
 
 export async function createEmergencyContact(
@@ -36,10 +42,12 @@ export async function createEmergencyContact(
   const created = await EmergencyContactModel.create({
     name: input.name.trim(),
     number: input.number.trim(),
-    icon: input.icon ?? "",
+    description: (input.description ?? "").trim(),
+    category: input.category ?? "other",
+    icon: (input.icon ?? "").trim(),
+    order: input.order ?? 0,
     status: input.status,
   });
-
   return EmergencyContactModel.findById(created._id).lean() as any;
 }
 
@@ -56,11 +64,17 @@ export async function updateEmergencyContact(
 
   existing.name = input.name.trim();
   existing.number = input.number.trim();
-  existing.icon = input.icon ?? existing.icon;
+  existing.description = (
+    input.description ??
+    existing.description ??
+    ""
+  ).trim();
+  existing.category = input.category ?? existing.category;
+  existing.icon = (input.icon ?? existing.icon ?? "").trim();
+  if (input.order !== undefined) existing.order = input.order;
   existing.status = input.status;
 
   await existing.save();
-
   return EmergencyContactModel.findById(id).lean() as any;
 }
 

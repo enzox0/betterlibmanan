@@ -9,10 +9,25 @@ import {
 } from "./emergency-contacts.service";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import type { IEmergencyContact } from "./emergency-contacts.model";
+
+const CATEGORIES = [
+  "police",
+  "disaster",
+  "fire",
+  "welfare",
+  "government",
+  "traffic",
+  "medical",
+  "other",
+] as const;
+
 const emergencyContactSchema = z.object({
   name: z.string().trim().min(1).max(255),
   number: z.string().trim().min(1).max(60),
-  icon: z.string().trim().max(100).optional(),
+  description: z.string().trim().max(255).optional().default(""),
+  category: z.enum(CATEGORIES).optional().default("other"),
+  icon: z.string().trim().max(100).optional().default(""),
+  order: z.number().int().optional().default(0),
   status: z.enum(["published", "draft"]).default("draft"),
 });
 
@@ -33,7 +48,10 @@ function toContentRecord(record: IEmergencyContact | any) {
     fields: {
       name: record.name,
       number: record.number,
-      icon: record.icon ?? "shield",
+      description: record.description ?? "",
+      category: record.category ?? "other",
+      icon: record.icon ?? "",
+      order: record.order ?? 0,
     },
     createdAt: new Date(record.createdAt).toISOString(),
     updatedAt: new Date(record.updatedAt).toISOString(),
@@ -60,7 +78,6 @@ export async function getAdminEmergencyContacts(
 ): Promise<void> {
   try {
     const records = await listAllEmergencyContacts();
-
     if (req.admin) {
       writeAuditLog(
         {
@@ -75,7 +92,6 @@ export async function getAdminEmergencyContacts(
         },
       );
     }
-
     res.json({ success: true, data: records.map(toContentRecord) });
   } catch (err) {
     next(err);
@@ -94,9 +110,7 @@ export async function createAdminEmergencyContact(
       res.status(400).json({ success: false, message: errors[0], errors });
       return;
     }
-
     const record = await createEmergencyContact(parsed.data);
-
     if (req.admin) {
       writeAuditLog(
         {
@@ -112,7 +126,6 @@ export async function createAdminEmergencyContact(
         },
       );
     }
-
     res.status(201).json({ success: true, data: toContentRecord(record) });
   } catch (err) {
     next(err);
@@ -131,9 +144,7 @@ export async function updateAdminEmergencyContact(
       res.status(400).json({ success: false, message: errors[0], errors });
       return;
     }
-
     const record = await updateEmergencyContact(req.params.id, parsed.data);
-
     if (req.admin) {
       writeAuditLog(
         {
@@ -149,7 +160,6 @@ export async function updateAdminEmergencyContact(
         },
       );
     }
-
     res.json({ success: true, data: toContentRecord(record) });
   } catch (err: any) {
     if (err.statusCode) {
@@ -167,7 +177,6 @@ export async function deleteAdminEmergencyContact(
 ): Promise<void> {
   try {
     await deleteEmergencyContact(req.params.id);
-
     if (req.admin) {
       writeAuditLog(
         {
@@ -183,7 +192,6 @@ export async function deleteAdminEmergencyContact(
         },
       );
     }
-
     res.json({ success: true, message: "Emergency contact deleted" });
   } catch (err: any) {
     if (err.statusCode) {
