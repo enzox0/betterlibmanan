@@ -119,6 +119,13 @@ export function InfoFloatingButton({
                   </div>
 
                   <p className="text-sm text-neutral-600 leading-relaxed">
+                    We apologize for the lack of information. Due to limited
+                    sources, we cannot provide full information about our
+                    municipalities, but we're doing our best to provide what is
+                    available.
+                  </p>
+
+                  <p className="text-sm text-neutral-600 leading-relaxed">
                     This system is maintained by dedicated volunteers and relies
                     on community contributions to keep information accurate and
                     up to date.
@@ -148,17 +155,20 @@ export function InfoFloatingButton({
                     <button
                       onClick={() => {
                         setIsModalOpen(false);
+                        navigate("/about");
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                    >
+                      About Page
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsModalOpen(false);
                         navigate("/admin/register");
                       }}
                       className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors"
                     >
                       Contribute Info
-                    </button>
-                    <button
-                      onClick={() => setIsModalOpen(false)}
-                      className="flex-1 rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 hover:border-neutral-400 transition-colors"
-                    >
-                      Close
                     </button>
                   </div>
                 </div>

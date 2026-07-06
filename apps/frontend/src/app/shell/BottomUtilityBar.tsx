@@ -136,7 +136,7 @@ export function BottomUtilityBar() {
   const MarqueeItems = () => (
     <div className="flex items-center gap-8 text-xs">
       <a
-        href="#"
+        href="https://www.facebook.com/profile.php?id=61590902231040"
         className="flex items-center gap-2 whitespace-nowrap hover:text-blue-200 transition-colors"
         target="_blank"
         rel="noopener noreferrer"
@@ -145,7 +145,7 @@ export function BottomUtilityBar() {
         <span>BetterLibmanan Facebook</span>
       </a>
       <a
-        href="#"
+        href="https://github.com/enzox0/betterlibmanan"
         className="flex items-center gap-2 whitespace-nowrap hover:text-blue-200 transition-colors"
         target="_blank"
         rel="noopener noreferrer"
@@ -179,7 +179,7 @@ export function BottomUtilityBar() {
         <div className="hidden sm:flex justify-between items-center gap-6 text-xs">
           <div className="flex items-center gap-6">
             <a
-              href="#"
+              href="https://www.facebook.com/profile.php?id=61590902231040"
               className="flex items-center gap-2 hover:text-blue-200 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
