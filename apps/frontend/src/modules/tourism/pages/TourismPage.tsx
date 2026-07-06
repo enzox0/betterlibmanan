@@ -104,12 +104,6 @@ const faqs = [
     answer:
       "Yes, Libmanan is generally safe for visitors. As with any travel, take normal precautions with your belongings and follow local guidelines when exploring natural areas.",
   },
-  {
-    id: 5,
-    question: "Can I hire a local guide?",
-    answer:
-      "Local guides can be arranged through the Municipal Tourism Office or by coordinating with the barangay offices near major attractions. It is highly recommended for river and nature tours.",
-  },
 ];
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -685,42 +679,6 @@ export function TourismPage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── Accommodation CTA ───────────────────────────────────────────────── */}
-      <section className="py-12 sm:py-16 bg-gray-900 border-t border-white/5">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <h2 className="text-2xl font-bold text-white sm:text-3xl">
-              Plan Your Stay
-            </h2>
-            <p className="mt-3 text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
-              Contact the Municipal Tourism Office for accommodation
-              recommendations, guided tours, and travel assistance.
-            </p>
-            <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
-              <a
-                href="/contact"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-neutral-900 px-6 py-3 text-sm font-semibold hover:bg-neutral-100 transition-colors"
-              >
-                Contact Tourism Office
-                <FaChevronRight className="text-xs" />
-              </a>
-              <a
-                href="/government"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 text-white px-6 py-3 text-sm font-semibold hover:bg-white/10 transition-colors"
-              >
-                View Government Offices
-              </a>
-            </div>
-          </motion.div>
         </div>
       </section>
 
