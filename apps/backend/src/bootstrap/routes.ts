@@ -20,6 +20,11 @@ import { communityRouter } from "@/modules/community";
 import { servicesRouter } from "@/modules/services";
 import { userRouter } from "@/modules/users";
 import { adminRegistrationRouter } from "@/modules/admin-registration";
+import { tourismRouter } from "@/modules/tourism";
+import { governmentRouter } from "@/modules/government";
+import { medicalContactsRouter } from "@/modules/medical-contacts";
+import { officeDirectoryRouter } from "@/modules/office-directory";
+import { socialLinksRouter } from "@/modules/social-links";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -95,6 +100,21 @@ apiRouter.use("/users", userRouter);
 
 // Admin registration requests — public submit + superadmin review
 apiRouter.use("/admin-registrations", adminRegistrationRouter);
+
+// Tourism — public listing plus admin CRUD + R2 image uploads
+apiRouter.use("/tourism", tourismRouter);
+
+// Government — executive, legislative, offices, and barangay management
+apiRouter.use("/government", governmentRouter);
+
+// Medical Contacts — RHU, hospitals, medical emergency hotlines
+apiRouter.use("/medical-contacts", medicalContactsRouter);
+
+// Office Directory — municipal office name + number listing
+apiRouter.use("/office-directory", officeDirectoryRouter);
+
+// Social Links — Facebook, Twitter, Instagram, YouTube, etc.
+apiRouter.use("/social-links", socialLinksRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
