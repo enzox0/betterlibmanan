@@ -16,6 +16,7 @@ import { ServicesModulePage } from "../pages/ServicesModulePage";
 import { StatisticsModulePage } from "../pages/StatisticsModulePage";
 import { AuditLogsPage } from "../pages/AuditLogsPage";
 import { CommunityModulePage } from "../pages/CommunityModulePage";
+import { TourismModulePage } from "../pages/TourismModulePage";
 
 export const adminRoutes: RouteObject[] = [
   // Public login page — no auth guard
@@ -82,6 +83,10 @@ export const adminRoutes: RouteObject[] = [
           {
             path: "community",
             element: <CommunityModulePage />,
+          },
+          {
+            path: "tourism",
+            element: <TourismModulePage />,
           },
           {
             path: ":module",
