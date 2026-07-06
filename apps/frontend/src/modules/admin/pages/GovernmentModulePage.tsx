@@ -16,222 +16,14 @@ import {
   LuClock,
   LuLink,
   LuCheck,
+  LuLoader,
+  LuTriangleAlert,
+  LuRefreshCw,
 } from "react-icons/lu";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface ExecutiveOfficial {
-  id: string;
-  title: string;
-  name: string;
-  email: string;
-  phone: string;
-  hours: string;
-}
-
-interface LegislativeMember {
-  id: string;
-  name: string;
-  position: string;
-  committees: string[];
-}
-
-interface MunicipalOffice {
-  id: string;
-  name: string;
-  description: string;
-  phone: string;
-  email: string;
-  link: string;
-}
-
-interface Barangay {
-  id: string;
-  name: string;
-  captain: string;
-  phone: string;
-}
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const INITIAL_EXECUTIVE: ExecutiveOfficial[] = [
-  {
-    id: "exec-001",
-    title: "Municipal Mayor",
-    name: "Hon. [Mayor Name]",
-    email: "mayor@libmanan.gov.ph",
-    phone: "(054) [Phone Number]",
-    hours: "Mon-Fri: 8:00 AM - 5:00 PM",
-  },
-  {
-    id: "exec-002",
-    title: "Municipal Vice Mayor",
-    name: "Hon. [Vice Mayor Name]",
-    email: "vicemayor@libmanan.gov.ph",
-    phone: "(054) [Phone Number]",
-    hours: "Mon-Fri: 8:00 AM - 5:00 PM",
-  },
-];
-
-const INITIAL_LEGISLATIVE: LegislativeMember[] = [
-  {
-    id: "leg-001",
-    name: "Hon. [Councilor Name 1]",
-    position: "SB Member",
-    committees: ["Committee 1", "Committee 2"],
-  },
-  {
-    id: "leg-002",
-    name: "Hon. [Councilor Name 2]",
-    position: "SB Member",
-    committees: ["Committee 3", "Committee 4"],
-  },
-  {
-    id: "leg-003",
-    name: "Hon. [Councilor Name 3]",
-    position: "SB Member",
-    committees: ["Committee 5", "Committee 6"],
-  },
-  {
-    id: "leg-004",
-    name: "Hon. [Councilor Name 4]",
-    position: "SB Member",
-    committees: ["Committee 7", "Committee 8"],
-  },
-  {
-    id: "leg-005",
-    name: "Hon. [Councilor Name 5]",
-    position: "SB Member",
-    committees: ["Committee 9", "Committee 10"],
-  },
-  {
-    id: "leg-006",
-    name: "Hon. [Councilor Name 6]",
-    position: "SB Member",
-    committees: ["Committee 11", "Committee 12"],
-  },
-  {
-    id: "leg-007",
-    name: "Hon. [Councilor Name 7]",
-    position: "SB Member",
-    committees: ["Committee 13", "Committee 14"],
-  },
-  {
-    id: "leg-008",
-    name: "Hon. [Councilor Name 8]",
-    position: "SB Member",
-    committees: ["Committee 15", "Committee 16"],
-  },
-  {
-    id: "leg-009",
-    name: "Hon. [Liga President Name]",
-    position: "Liga ng mga Barangay President",
-    committees: ["Barangay Affairs"],
-  },
-  {
-    id: "leg-010",
-    name: "Hon. [SK President Name]",
-    position: "SK Federation President",
-    committees: ["Youth & Sports Development"],
-  },
-];
-
-const INITIAL_OFFICES: MunicipalOffice[] = [
-  {
-    id: "off-001",
-    name: "Municipal Civil Registrar",
-    description: "Birth, death, marriage certificates, CENOMAR",
-    phone: "(054) [Phone Number]",
-    email: "civilreg@libmanan.gov.ph",
-    link: "/services/certificates",
-  },
-  {
-    id: "off-002",
-    name: "Municipal Treasurer's Office",
-    description: "Tax payments, real property tax, revenue collection",
-    phone: "(054) [Phone Number]",
-    email: "treasurer@libmanan.gov.ph",
-    link: "/services/tax-payments",
-  },
-  {
-    id: "off-003",
-    name: "Municipal Engineering Office",
-    description: "Building permits, construction permits, infrastructure",
-    phone: "(054) [Phone Number]",
-    email: "engineer@libmanan.gov.ph",
-    link: "/services/infrastructure",
-  },
-  {
-    id: "off-004",
-    name: "MSWDO",
-    description:
-      "Social services, PWD & senior citizen IDs, financial assistance",
-    phone: "(054) [Phone Number]",
-    email: "mswdo@libmanan.gov.ph",
-    link: "/services/social-services",
-  },
-  {
-    id: "off-005",
-    name: "Municipal Agriculture Office",
-    description: "Agricultural loans, crop insurance, fertilizer assistance",
-    phone: "(054) [Phone Number]",
-    email: "agri@libmanan.gov.ph",
-    link: "/services/agriculture",
-  },
-  {
-    id: "off-006",
-    name: "Municipal Planning & Development",
-    description: "Development planning, project monitoring, zoning",
-    phone: "(054) [Phone Number]",
-    email: "mpdo@libmanan.gov.ph",
-    link: "",
-  },
-  {
-    id: "off-007",
-    name: "Municipal Health Office",
-    description: "Vaccination, health certificates, medical assistance",
-    phone: "(054) [Phone Number]",
-    email: "mho@libmanan.gov.ph",
-    link: "/services/health",
-  },
-  {
-    id: "off-008",
-    name: "Business Permits & Licensing",
-    description: "Business permits, Mayor's clearance, licensing",
-    phone: "(054) [Phone Number]",
-    email: "bpls@libmanan.gov.ph",
-    link: "/services/business",
-  },
-  {
-    id: "off-009",
-    name: "MDRRMO",
-    description: "Disaster preparedness, emergency response, risk reduction",
-    phone: "(054) [Phone Number]",
-    email: "mdrrmo@libmanan.gov.ph",
-    link: "/services/public-safety",
-  },
-];
-
-const INITIAL_BARANGAYS: Barangay[] = [
-  {
-    id: "brgy-001",
-    name: "Barangay 1",
-    captain: "Kap. [Name]",
-    phone: "[Phone Number]",
-  },
-  {
-    id: "brgy-002",
-    name: "Barangay 2",
-    captain: "Kap. [Name]",
-    phone: "[Phone Number]",
-  },
-  {
-    id: "brgy-003",
-    name: "Barangay 3",
-    captain: "Kap. [Name]",
-    phone: "[Phone Number]",
-  },
-];
+import { useGovernmentStore } from "../store/governmentStore";
+import { useAdminStore } from "../store/adminStore";
+import { useToast } from "@/context/ToastContext";
+import type { ContentRecord } from "../types/admin.types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -286,7 +78,7 @@ const GOV_TABS: { key: GovTab; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-// ─── Shared helpers ───────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function FieldError({ id, msg }: { id: string; msg?: string }) {
   if (!msg) return null;
@@ -294,6 +86,136 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
     <p id={id} role="alert" className="mt-1 text-xs text-red-600">
       {msg}
     </p>
+  );
+}
+
+function f(record: ContentRecord, key: string, fallback = ""): string {
+  return (record.fields as any)[key] ?? fallback;
+}
+function fArr(record: ContentRecord, key: string): string[] {
+  return (record.fields as any)[key] ?? [];
+}
+
+// ─── Shared UI primitives ─────────────────────────────────────────────────────
+
+function SkeletonRows({ count = 4 }: { count?: number }) {
+  return (
+    <div className="flex flex-col divide-y divide-gray-50">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-4 px-6 py-4 animate-pulse"
+        >
+          <div className="h-10 w-10 rounded-xl bg-gray-200 shrink-0" />
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="h-3.5 w-1/3 rounded bg-gray-200" />
+            <div className="h-3 w-1/2 rounded bg-gray-100" />
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <div className="h-7 w-16 rounded-lg bg-gray-100" />
+            <div className="h-7 w-16 rounded-lg bg-gray-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TableSkeletonRows({
+  cols = 4,
+  count = 4,
+}: {
+  cols?: number;
+  count?: number;
+}) {
+  return (
+    <tbody className="divide-y divide-gray-50">
+      {Array.from({ length: count }).map((_, i) => (
+        <tr key={i} className="animate-pulse">
+          {Array.from({ length: cols }).map((__, j) => (
+            <td key={j} className="px-4 py-3">
+              <div
+                className="h-3.5 rounded bg-gray-100"
+                style={{
+                  width: j === 0 ? "2rem" : j === cols - 1 ? "5rem" : "60%",
+                }}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+}
+
+function ErrorBanner({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-6 py-4 bg-red-50 border-b border-red-100">
+      <LuTriangleAlert className="h-4 w-4 text-red-500 shrink-0" />
+      <p className="text-sm text-red-700 flex-1">{message}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors shrink-0"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  sub,
+  onAdd,
+  addLabel,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  sub: string;
+  onAdd?: () => void;
+  addLabel?: string;
+}) {
+  return (
+    <div className="py-14 text-center">
+      <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+        {icon}
+      </div>
+      <p className="text-sm font-semibold text-gray-700 mb-1">{title}</p>
+      <p className="text-xs text-gray-400 mb-4">{sub}</p>
+      {onAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+        >
+          <LuPlus className="h-4 w-4" /> {addLabel ?? "Add"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SearchEmptyState({ query }: { query: string }) {
+  return (
+    <div className="py-14 text-center">
+      <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+        <LuSearch className="h-6 w-6 text-gray-300" />
+      </div>
+      <p className="text-sm font-semibold text-gray-700 mb-1">
+        No results for "{query}"
+      </p>
+      <p className="text-xs text-gray-400">Try a different search term.</p>
+    </div>
   );
 }
 
@@ -307,6 +229,7 @@ interface SlidePanelProps {
   returnFocusRef?: React.RefObject<HTMLButtonElement>;
   formId: string;
   submitLabel: string;
+  isSubmitting?: boolean;
   submitColorClass?: string;
   children: React.ReactNode;
 }
@@ -319,6 +242,7 @@ function SlidePanel({
   returnFocusRef,
   formId,
   submitLabel,
+  isSubmitting = false,
   submitColorClass = "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500",
   children,
 }: SlidePanelProps) {
@@ -400,8 +324,10 @@ function SlidePanel({
           <button
             type="submit"
             form={formId}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all ${submitColorClass}`}
+            disabled={isSubmitting}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-60 ${submitColorClass}`}
           >
+            {isSubmitting && <LuLoader className="h-3.5 w-3.5 animate-spin" />}
             {submitLabel}
           </button>
         </div>
@@ -416,10 +342,12 @@ function DeleteConfirmDialog({
   label,
   onClose,
   onConfirm,
+  isDeleting,
 }: {
   label: string;
   onClose: () => void;
   onConfirm: () => void;
+  isDeleting?: boolean;
 }) {
   return ReactDOM.createPortal(
     <AnimatePresence>
@@ -479,12 +407,13 @@ function DeleteConfirmDialog({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  onConfirm();
-                  onClose();
-                }}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all"
+                onClick={onConfirm}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all disabled:opacity-60"
               >
+                {isDeleting && (
+                  <LuLoader className="h-3.5 w-3.5 animate-spin" />
+                )}
                 Remove
               </button>
             </div>
@@ -496,7 +425,7 @@ function DeleteConfirmDialog({
   );
 }
 
-// ─── Section Card wrapper ─────────────────────────────────────────────────────
+// ─── Section Card ─────────────────────────────────────────────────────────────
 
 function SectionCard({
   title,
@@ -525,35 +454,41 @@ function SectionCard({
 
 // ─── Executive Panel ──────────────────────────────────────────────────────────
 
-function ExecutivePanel({
-  officials,
-  setOfficials,
-}: {
-  officials: ExecutiveOfficial[];
-  setOfficials: React.Dispatch<React.SetStateAction<ExecutiveOfficial[]>>;
-}) {
+function ExecutivePanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const officials = useGovernmentStore((s) => s.executive);
+  const isLoading = useGovernmentStore((s) => s.isExecutiveLoading);
+  const error = useGovernmentStore((s) => s.error);
+  const { fetchExecutive, createExecutive, updateExecutive, deleteExecutive } =
+    useGovernmentStore();
+
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<ExecutiveOfficial | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ExecutiveOfficial | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
+
+  const [execTitle, setExecTitle] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [hours, setHours] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function getEditRef(id: string) {
     if (!editRefs.current[id]) editRefs.current[id] = { current: null };
     return editRefs.current[id];
   }
 
-  const [title, setTitle] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [hours, setHours] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  useEffect(() => {
+    fetchExecutive();
+  }, []);
 
   function markSaved(id: string) {
     setSavedIds((prev) => new Set([...prev, id]));
@@ -569,7 +504,7 @@ function ExecutivePanel({
   }
 
   function openCreate() {
-    setTitle("");
+    setExecTitle("");
     setName("");
     setEmail("");
     setPhone("");
@@ -578,27 +513,25 @@ function ExecutivePanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-
-  function openEdit(o: ExecutiveOfficial) {
-    setTitle(o.title);
-    setName(o.name);
-    setEmail(o.email);
-    setPhone(o.phone);
-    setHours(o.hours);
+  function openEdit(o: ContentRecord) {
+    setExecTitle(f(o, "title"));
+    setName(f(o, "name"));
+    setEmail(f(o, "email"));
+    setPhone(f(o, "phone"));
+    setHours(f(o, "hours"));
     setErrors({});
     setEditTarget(o);
     setPanelMode("edit");
   }
-
   function closePanel() {
     setPanelMode(null);
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
-    if (!title.trim()) e.title = "Title is required.";
+    if (!execTitle.trim()) e.title = "Title is required.";
     if (!name.trim()) e.name = "Name is required.";
     if (!email.trim()) e.email = "Email is required.";
     if (!phone.trim()) e.phone = "Phone is required.";
@@ -606,37 +539,54 @@ function ExecutivePanel({
       setErrors(e);
       return;
     }
-
-    if (panelMode === "create") {
-      setOfficials((prev) => [
-        ...prev,
-        {
-          id: `exec-${crypto.randomUUID().slice(0, 8)}`,
-          title: title.trim(),
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          hours: hours.trim(),
-        },
-      ]);
-    } else if (editTarget) {
-      setOfficials((prev) =>
-        prev.map((o) =>
-          o.id === editTarget.id
-            ? {
-                ...o,
-                title: title.trim(),
-                name: name.trim(),
-                email: email.trim(),
-                phone: phone.trim(),
-                hours: hours.trim(),
-              }
-            : o,
-        ),
-      );
-      markSaved(editTarget.id);
+    setIsSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await createExecutive(
+          {
+            title: execTitle.trim(),
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            hours: hours.trim(),
+          },
+          accessToken!,
+        );
+        toast("Executive official added.", "success");
+      } else if (editTarget) {
+        await updateExecutive(
+          editTarget.id,
+          {
+            title: execTitle.trim(),
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            hours: hours.trim(),
+          },
+          accessToken!,
+        );
+        markSaved(editTarget.id);
+        toast("Executive official saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    closePanel();
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteExecutive(record.id, accessToken!);
+      toast("Executive official removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const returnFocusRef = (
@@ -652,93 +602,128 @@ function ExecutivePanel({
       title="Executive Branch"
       description="Mayor, Vice Mayor, and other executive officials"
       action={
-        <button
-          ref={addBtnRef}
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
-        >
-          <LuPlus className="h-4 w-4" aria-hidden="true" /> Add Official
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fetchExecutive()}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            ref={addBtnRef}
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+          >
+            <LuPlus className="h-4 w-4" aria-hidden="true" /> Add Official
+          </button>
+        </div>
       }
     >
-      <div className="divide-y divide-gray-50">
-        {officials.length === 0 && (
-          <p className="py-10 text-center text-sm text-gray-400">
-            No executive officials yet. Add one above.
-          </p>
-        )}
-        {officials.map((o) => (
-          <div
-            key={o.id}
-            className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-6"
-          >
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 border border-blue-100">
-                <LuLandmark
-                  className="h-5 w-5 text-blue-600"
-                  aria-hidden="true"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                    {o.title}
-                  </span>
-                  <AnimatePresence>
-                    {savedIds.has(o.id) && (
-                      <motion.span
-                        key="saved"
-                        className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
-                        initial={{ opacity: 0, scale: 0.85 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.85 }}
-                        transition={{ duration: 0.2, ease: EASE }}
-                      >
-                        <LuCheck className="h-3 w-3" /> Saved
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <p className="mt-1 text-sm font-bold text-gray-900">{o.name}</p>
-                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <LuMail className="h-3 w-3 text-gray-400" />
-                    {o.email}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <LuPhone className="h-3 w-3 text-gray-400" />
-                    {o.phone}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <LuClock className="h-3 w-3 text-gray-400" />
-                    {o.hours}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 sm:shrink-0 sm:ml-auto">
-              <button
-                ref={getEditRef(o.id) as React.RefObject<HTMLButtonElement>}
-                type="button"
-                onClick={() => openEdit(o)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
-                aria-label={`Edit ${o.name}`}
+      {error && (
+        <ErrorBanner message={error} onRetry={() => fetchExecutive()} />
+      )}
+
+      {isLoading && officials.length === 0 ? (
+        <SkeletonRows />
+      ) : officials.length === 0 && !isLoading ? (
+        <EmptyState
+          icon={<LuLandmark className="h-6 w-6 text-gray-300" />}
+          title="No executive officials yet"
+          sub="Add the Mayor, Vice Mayor, and other executive officials."
+          onAdd={openCreate}
+          addLabel="Add Official"
+        />
+      ) : (
+        <div className="divide-y divide-gray-50">
+          <AnimatePresence>
+            {officials.map((o) => (
+              <motion.div
+                key={o.id}
+                variants={rowVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
               >
-                <LuPencil className="h-3.5 w-3.5" /> Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(o)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
-                aria-label={`Remove ${o.name}`}
-              >
-                <LuTrash2 className="h-3.5 w-3.5" /> Remove
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+                <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 border border-blue-100">
+                    <LuLandmark
+                      className="h-5 w-5 text-blue-600"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        {f(o, "title")}
+                      </span>
+                      <AnimatePresence>
+                        {savedIds.has(o.id) && (
+                          <motion.span
+                            key="saved"
+                            className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.2, ease: EASE }}
+                          >
+                            <LuCheck className="h-3 w-3" /> Saved
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <p className="mt-1 text-sm font-bold text-gray-900">
+                      {f(o, "name")}
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                      {f(o, "email") && (
+                        <span className="flex items-center gap-1">
+                          <LuMail className="h-3 w-3 text-gray-400" />
+                          {f(o, "email")}
+                        </span>
+                      )}
+                      {f(o, "phone") && (
+                        <span className="flex items-center gap-1">
+                          <LuPhone className="h-3 w-3 text-gray-400" />
+                          {f(o, "phone")}
+                        </span>
+                      )}
+                      {f(o, "hours") && (
+                        <span className="flex items-center gap-1">
+                          <LuClock className="h-3 w-3 text-gray-400" />
+                          {f(o, "hours")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 sm:shrink-0">
+                  <button
+                    ref={getEditRef(o.id) as React.RefObject<HTMLButtonElement>}
+                    type="button"
+                    onClick={() => openEdit(o)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
+                    aria-label={`Edit ${f(o, "name")}`}
+                  >
+                    <LuPencil className="h-3.5 w-3.5" /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(o)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                    aria-label={`Remove ${f(o, "name")}`}
+                  >
+                    <LuTrash2 className="h-3.5 w-3.5" /> Remove
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
 
       <AnimatePresence>
         {panelMode && (
@@ -756,6 +741,7 @@ function ExecutivePanel({
             submitLabel={
               panelMode === "create" ? "Add Official" : "Save Changes"
             }
+            isSubmitting={isSubmitting}
           >
             <form
               id="exec-form"
@@ -774,9 +760,9 @@ function ExecutivePanel({
                   <input
                     id="exec-title"
                     type="text"
-                    value={title}
+                    value={execTitle}
                     onChange={(e) => {
-                      setTitle(e.target.value);
+                      setExecTitle(e.target.value);
                       setErrors((p) => ({ ...p, title: "" }));
                     }}
                     className={errors.title ? inputError : inputNormal}
@@ -868,13 +854,12 @@ function ExecutivePanel({
         )}
         {deleteTarget && (
           <DeleteConfirmDialog
-            label={deleteTarget.name}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setOfficials((prev) =>
-                prev.filter((o) => o.id !== deleteTarget.id),
-              )
-            }
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
           />
         )}
       </AnimatePresence>
@@ -884,39 +869,48 @@ function ExecutivePanel({
 
 // ─── Legislative Panel ────────────────────────────────────────────────────────
 
-function LegislativePanel({
-  members,
-  setMembers,
-}: {
-  members: LegislativeMember[];
-  setMembers: React.Dispatch<React.SetStateAction<LegislativeMember[]>>;
-}) {
+function LegislativePanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const members = useGovernmentStore((s) => s.legislative);
+  const isLoading = useGovernmentStore((s) => s.isLegislativeLoading);
+  const {
+    fetchLegislative,
+    createLegislative,
+    updateLegislative,
+    deleteLegislative,
+  } = useGovernmentStore();
+
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<LegislativeMember | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<LegislativeMember | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
   const [search, setSearch] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
-
-  function getEditRef(id: string) {
-    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
-    return editRefs.current[id];
-  }
 
   const [name, setName] = useState("");
   const [position, setPosition] = useState("SB Member");
   const [committeesRaw, setCommitteesRaw] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  function getEditRef(id: string) {
+    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
+    return editRefs.current[id];
+  }
+
+  useEffect(() => {
+    fetchLegislative();
+  }, []);
+
   const filtered = members.filter(
     (m) =>
       search.trim() === "" ||
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
-      m.position.toLowerCase().includes(search.toLowerCase()),
+      f(m, "name").toLowerCase().includes(search.toLowerCase()) ||
+      f(m, "position").toLowerCase().includes(search.toLowerCase()),
   );
 
   function openCreate() {
@@ -927,22 +921,20 @@ function LegislativePanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-
-  function openEdit(m: LegislativeMember) {
-    setName(m.name);
-    setPosition(m.position);
-    setCommitteesRaw(m.committees.join(", "));
+  function openEdit(m: ContentRecord) {
+    setName(f(m, "name"));
+    setPosition(f(m, "position"));
+    setCommitteesRaw(fArr(m, "committees").join(", "));
     setErrors({});
     setEditTarget(m);
     setPanelMode("edit");
   }
-
   function closePanel() {
     setPanelMode(null);
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Name is required.";
@@ -951,32 +943,45 @@ function LegislativePanel({
       setErrors(e);
       return;
     }
-
     const committees = committeesRaw
       .split(",")
       .map((c) => c.trim())
       .filter(Boolean);
-
-    if (panelMode === "create") {
-      setMembers((prev) => [
-        ...prev,
-        {
-          id: `leg-${crypto.randomUUID().slice(0, 8)}`,
-          name: name.trim(),
-          position: position.trim(),
-          committees,
-        },
-      ]);
-    } else if (editTarget) {
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === editTarget.id
-            ? { ...m, name: name.trim(), position: position.trim(), committees }
-            : m,
-        ),
-      );
+    setIsSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await createLegislative(
+          { name: name.trim(), position: position.trim(), committees },
+          accessToken!,
+        );
+        toast("SB member added.", "success");
+      } else if (editTarget) {
+        await updateLegislative(
+          editTarget.id,
+          { name: name.trim(), position: position.trim(), committees },
+          accessToken!,
+        );
+        toast("SB member saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    closePanel();
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteLegislative(record.id, accessToken!);
+      toast("SB member removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const returnFocusRef = (
@@ -1005,6 +1010,14 @@ function LegislativePanel({
             />
           </div>
           <button
+            type="button"
+            onClick={() => fetchLegislative()}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
             ref={addBtnRef}
             type="button"
             onClick={openCreate}
@@ -1029,97 +1042,125 @@ function LegislativePanel({
         </div>
       </div>
 
-      <div className="p-5 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                #
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Position
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Committees
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <motion.tbody
-            className="divide-y divide-gray-50"
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
-          >
-            <AnimatePresence>
-              {filtered.map((m, idx) => (
-                <motion.tr
-                  key={m.id}
-                  variants={rowVariants}
-                  exit="exit"
-                  className="hover:bg-gray-50/50 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 text-xs font-bold text-gray-500">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
-                    {m.name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
-                      {m.position}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px]">
-                    {m.committees.length > 0 ? (
-                      m.committees.join(" · ")
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        ref={
-                          getEditRef(m.id) as React.RefObject<HTMLButtonElement>
-                        }
-                        type="button"
-                        onClick={() => openEdit(m)}
-                        className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                        aria-label={`Edit ${m.name}`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(m)}
-                        className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
-                        aria-label={`Remove ${m.name}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </AnimatePresence>
-          </motion.tbody>
-        </table>
-        {filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-gray-400">
-            {search
-              ? "No members matched your search."
-              : "No members yet. Add one above."}
-          </p>
-        )}
-      </div>
+      {isLoading && members.length === 0 ? (
+        <div className="p-5 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["#", "Name", "Position", "Committees", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 4 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <TableSkeletonRows cols={5} />
+          </table>
+        </div>
+      ) : members.length === 0 && !isLoading ? (
+        <EmptyState
+          icon={<LuGavel className="h-6 w-6 text-gray-300" />}
+          title="No SB members yet"
+          sub="Add Sangguniang Bayan members and their committee assignments."
+          onAdd={openCreate}
+          addLabel="Add Member"
+        />
+      ) : (
+        <div className="p-5 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  #
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Position
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Committees
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <motion.tbody
+              className="divide-y divide-gray-50"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
+            >
+              <AnimatePresence>
+                {filtered.map((m, idx) => (
+                  <motion.tr
+                    key={m.id}
+                    variants={rowVariants}
+                    exit="exit"
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 text-xs font-bold text-gray-500">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
+                      {f(m, "name")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-700">
+                        {f(m, "position")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px]">
+                      {fArr(m, "committees").length > 0 ? (
+                        fArr(m, "committees").join(" · ")
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          ref={
+                            getEditRef(
+                              m.id,
+                            ) as React.RefObject<HTMLButtonElement>
+                          }
+                          type="button"
+                          onClick={() => openEdit(m)}
+                          className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                          aria-label={`Edit ${f(m, "name")}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(m)}
+                          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                          aria-label={`Remove ${f(m, "name")}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </motion.tbody>
+          </table>
+          {filtered.length === 0 && search && (
+            <SearchEmptyState query={search} />
+          )}
+        </div>
+      )}
 
       <AnimatePresence>
         {panelMode && (
@@ -1131,6 +1172,7 @@ function LegislativePanel({
             returnFocusRef={returnFocusRef}
             formId="leg-form"
             submitLabel={panelMode === "create" ? "Add Member" : "Save Changes"}
+            isSubmitting={isSubmitting}
             submitColorClass="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
           >
             <form
@@ -1206,11 +1248,12 @@ function LegislativePanel({
         )}
         {deleteTarget && (
           <DeleteConfirmDialog
-            label={deleteTarget.name}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setMembers((prev) => prev.filter((m) => m.id !== deleteTarget.id))
-            }
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
           />
         )}
       </AnimatePresence>
@@ -1220,28 +1263,24 @@ function LegislativePanel({
 
 // ─── Offices Panel ────────────────────────────────────────────────────────────
 
-function OfficesPanel({
-  offices,
-  setOffices,
-}: {
-  offices: MunicipalOffice[];
-  setOffices: React.Dispatch<React.SetStateAction<MunicipalOffice[]>>;
-}) {
+function OfficesPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const offices = useGovernmentStore((s) => s.offices);
+  const isLoading = useGovernmentStore((s) => s.isOfficesLoading);
+  const { fetchOffices, createOffice, updateOffice, deleteOffice } =
+    useGovernmentStore();
+
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<MunicipalOffice | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<MunicipalOffice | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
   const [search, setSearch] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
-
-  function getEditRef(id: string) {
-    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
-    return editRefs.current[id];
-  }
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -1250,11 +1289,20 @@ function OfficesPanel({
   const [link, setLink] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  function getEditRef(id: string) {
+    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
+    return editRefs.current[id];
+  }
+
+  useEffect(() => {
+    fetchOffices();
+  }, []);
+
   const filtered = offices.filter(
     (o) =>
       search.trim() === "" ||
-      o.name.toLowerCase().includes(search.toLowerCase()) ||
-      o.description.toLowerCase().includes(search.toLowerCase()),
+      f(o, "name").toLowerCase().includes(search.toLowerCase()) ||
+      f(o, "description").toLowerCase().includes(search.toLowerCase()),
   );
 
   function openCreate() {
@@ -1267,24 +1315,22 @@ function OfficesPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-
-  function openEdit(o: MunicipalOffice) {
-    setName(o.name);
-    setDescription(o.description);
-    setPhone(o.phone);
-    setEmail(o.email);
-    setLink(o.link);
+  function openEdit(o: ContentRecord) {
+    setName(f(o, "name"));
+    setDescription(f(o, "description"));
+    setPhone(f(o, "phone"));
+    setEmail(f(o, "email"));
+    setLink(f(o, "link"));
     setErrors({});
     setEditTarget(o);
     setPanelMode("edit");
   }
-
   function closePanel() {
     setPanelMode(null);
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Office name is required.";
@@ -1293,36 +1339,53 @@ function OfficesPanel({
       setErrors(e);
       return;
     }
-
-    if (panelMode === "create") {
-      setOffices((prev) => [
-        ...prev,
-        {
-          id: `off-${crypto.randomUUID().slice(0, 8)}`,
-          name: name.trim(),
-          description: description.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          link: link.trim(),
-        },
-      ]);
-    } else if (editTarget) {
-      setOffices((prev) =>
-        prev.map((o) =>
-          o.id === editTarget.id
-            ? {
-                ...o,
-                name: name.trim(),
-                description: description.trim(),
-                phone: phone.trim(),
-                email: email.trim(),
-                link: link.trim(),
-              }
-            : o,
-        ),
-      );
+    setIsSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await createOffice(
+          {
+            name: name.trim(),
+            description: description.trim(),
+            phone: phone.trim(),
+            email: email.trim(),
+            link: link.trim(),
+          },
+          accessToken!,
+        );
+        toast("Office added.", "success");
+      } else if (editTarget) {
+        await updateOffice(
+          editTarget.id,
+          {
+            name: name.trim(),
+            description: description.trim(),
+            phone: phone.trim(),
+            email: email.trim(),
+            link: link.trim(),
+          },
+          accessToken!,
+        );
+        toast("Office saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    closePanel();
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteOffice(record.id, accessToken!);
+      toast("Office removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const returnFocusRef = (
@@ -1350,6 +1413,14 @@ function OfficesPanel({
             />
           </div>
           <button
+            type="button"
+            onClick={() => fetchOffices()}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
             ref={addBtnRef}
             type="button"
             onClick={openCreate}
@@ -1360,82 +1431,94 @@ function OfficesPanel({
         </div>
       }
     >
-      <motion.div
-        className="grid gap-3 p-4 sm:p-5 sm:grid-cols-2 lg:grid-cols-3"
-        initial="hidden"
-        animate="visible"
-        variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
-      >
-        <AnimatePresence>
-          {filtered.map((o) => (
-            <motion.div
-              key={o.id}
-              variants={rowVariants}
-              exit="exit"
-              className="group relative rounded-xl border border-gray-100 bg-gray-50/50 p-4 hover:border-gray-200 hover:bg-white hover:shadow-sm transition-all"
-            >
-              <div className="flex items-start gap-2.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors">
-                  <LuBuilding2 className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0 pb-8">
-                  <p className="text-sm font-bold text-gray-900 leading-tight">
-                    {o.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">
-                    {o.description}
-                  </p>
-                  <div className="mt-2 space-y-0.5">
-                    {o.phone && (
-                      <p className="flex items-center gap-1.5 text-xs text-gray-400">
-                        <LuPhone className="h-3 w-3 shrink-0" />
-                        {o.phone}
+      {isLoading && offices.length === 0 ? (
+        <SkeletonRows count={3} />
+      ) : offices.length === 0 && !isLoading ? (
+        <EmptyState
+          icon={<LuBuilding2 className="h-6 w-6 text-gray-300" />}
+          title="No offices yet"
+          sub="Add municipal offices, departments, and their contact information."
+          onAdd={openCreate}
+          addLabel="Add Office"
+        />
+      ) : (
+        <>
+          <motion.div
+            className="grid gap-3 p-4 sm:p-5 sm:grid-cols-2 lg:grid-cols-3"
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
+          >
+            <AnimatePresence>
+              {filtered.map((o) => (
+                <motion.div
+                  key={o.id}
+                  variants={rowVariants}
+                  exit="exit"
+                  className="group relative rounded-xl border border-gray-100 bg-gray-50/50 p-4 hover:border-gray-200 hover:bg-white hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                      <LuBuilding2 className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0 pb-8">
+                      <p className="text-sm font-bold text-gray-900 leading-tight">
+                        {f(o, "name")}
                       </p>
-                    )}
-                    {o.email && (
-                      <p className="flex items-center gap-1.5 text-xs text-gray-400 truncate">
-                        <LuMail className="h-3 w-3 shrink-0" />
-                        {o.email}
+                      <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">
+                        {f(o, "description")}
                       </p>
-                    )}
-                    {o.link && (
-                      <p className="flex items-center gap-1.5 text-xs text-blue-500 truncate">
-                        <LuLink className="h-3 w-3 shrink-0" />
-                        {o.link}
-                      </p>
-                    )}
+                      <div className="mt-2 space-y-0.5">
+                        {f(o, "phone") && (
+                          <p className="flex items-center gap-1.5 text-xs text-gray-400">
+                            <LuPhone className="h-3 w-3 shrink-0" />
+                            {f(o, "phone")}
+                          </p>
+                        )}
+                        {f(o, "email") && (
+                          <p className="flex items-center gap-1.5 text-xs text-gray-400 truncate">
+                            <LuMail className="h-3 w-3 shrink-0" />
+                            {f(o, "email")}
+                          </p>
+                        )}
+                        {f(o, "link") && (
+                          <p className="flex items-center gap-1.5 text-xs text-blue-500 truncate">
+                            <LuLink className="h-3 w-3 shrink-0" />
+                            {f(o, "link")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 px-3 py-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                <button
-                  ref={getEditRef(o.id) as React.RefObject<HTMLButtonElement>}
-                  type="button"
-                  onClick={() => openEdit(o)}
-                  className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-                  aria-label={`Edit ${o.name}`}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(o)}
-                  className="rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
-                  aria-label={`Remove ${o.name}`}
-                >
-                  Remove
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </motion.div>
-      {filtered.length === 0 && (
-        <p className="py-10 text-center text-sm text-gray-400">
-          {search
-            ? "No offices matched your search."
-            : "No offices yet. Add one above."}
-        </p>
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 px-3 py-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <button
+                      ref={
+                        getEditRef(o.id) as React.RefObject<HTMLButtonElement>
+                      }
+                      type="button"
+                      onClick={() => openEdit(o)}
+                      className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                      aria-label={`Edit ${f(o, "name")}`}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(o)}
+                      className="rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                      aria-label={`Remove ${f(o, "name")}`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+          {filtered.length === 0 && search && (
+            <SearchEmptyState query={search} />
+          )}
+        </>
       )}
 
       <AnimatePresence>
@@ -1452,6 +1535,7 @@ function OfficesPanel({
             returnFocusRef={returnFocusRef}
             formId="off-form"
             submitLabel={panelMode === "create" ? "Add Office" : "Save Changes"}
+            isSubmitting={isSubmitting}
             submitColorClass="bg-gray-900 hover:bg-gray-800 focus:ring-gray-700"
           >
             <form
@@ -1562,11 +1646,12 @@ function OfficesPanel({
         )}
         {deleteTarget && (
           <DeleteConfirmDialog
-            label={deleteTarget.name}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setOffices((prev) => prev.filter((o) => o.id !== deleteTarget.id))
-            }
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
           />
         )}
       </AnimatePresence>
@@ -1576,37 +1661,44 @@ function OfficesPanel({
 
 // ─── Barangays Panel ──────────────────────────────────────────────────────────
 
-function BarangaysPanel({
-  barangays,
-  setBarangays,
-}: {
-  barangays: Barangay[];
-  setBarangays: React.Dispatch<React.SetStateAction<Barangay[]>>;
-}) {
+function BarangaysPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const barangays = useGovernmentStore((s) => s.barangays);
+  const isLoading = useGovernmentStore((s) => s.isBarangaysLoading);
+  const { fetchBarangays, createBarangay, updateBarangay, deleteBarangay } =
+    useGovernmentStore();
+
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<Barangay | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Barangay | null>(null);
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
   const [search, setSearch] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
-
-  function getEditRef(id: string) {
-    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
-    return editRefs.current[id];
-  }
 
   const [brgyName, setBrgyName] = useState("");
   const [captain, setCaptain] = useState("");
   const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  function getEditRef(id: string) {
+    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
+    return editRefs.current[id];
+  }
+
+  useEffect(() => {
+    fetchBarangays();
+  }, []);
+
   const filtered = barangays.filter(
     (b) =>
       search.trim() === "" ||
-      b.name.toLowerCase().includes(search.toLowerCase()) ||
-      b.captain.toLowerCase().includes(search.toLowerCase()),
+      f(b, "name").toLowerCase().includes(search.toLowerCase()) ||
+      f(b, "captain").toLowerCase().includes(search.toLowerCase()),
   );
 
   function openCreate() {
@@ -1617,22 +1709,20 @@ function BarangaysPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-
-  function openEdit(b: Barangay) {
-    setBrgyName(b.name);
-    setCaptain(b.captain);
-    setPhone(b.phone);
+  function openEdit(b: ContentRecord) {
+    setBrgyName(f(b, "name"));
+    setCaptain(f(b, "captain"));
+    setPhone(f(b, "phone"));
     setErrors({});
     setEditTarget(b);
     setPanelMode("edit");
   }
-
   function closePanel() {
     setPanelMode(null);
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!brgyName.trim()) e.name = "Barangay name is required.";
@@ -1642,32 +1732,49 @@ function BarangaysPanel({
       setErrors(e);
       return;
     }
-
-    if (panelMode === "create") {
-      setBarangays((prev) => [
-        ...prev,
-        {
-          id: `brgy-${crypto.randomUUID().slice(0, 8)}`,
-          name: brgyName.trim(),
-          captain: captain.trim(),
-          phone: phone.trim(),
-        },
-      ]);
-    } else if (editTarget) {
-      setBarangays((prev) =>
-        prev.map((b) =>
-          b.id === editTarget.id
-            ? {
-                ...b,
-                name: brgyName.trim(),
-                captain: captain.trim(),
-                phone: phone.trim(),
-              }
-            : b,
-        ),
-      );
+    setIsSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await createBarangay(
+          {
+            name: brgyName.trim(),
+            captain: captain.trim(),
+            phone: phone.trim(),
+          },
+          accessToken!,
+        );
+        toast("Barangay added.", "success");
+      } else if (editTarget) {
+        await updateBarangay(
+          editTarget.id,
+          {
+            name: brgyName.trim(),
+            captain: captain.trim(),
+            phone: phone.trim(),
+          },
+          accessToken!,
+        );
+        toast("Barangay saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    closePanel();
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteBarangay(record.id, accessToken!);
+      toast("Barangay removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const returnFocusRef = (
@@ -1695,6 +1802,14 @@ function BarangaysPanel({
             />
           </div>
           <button
+            type="button"
+            onClick={() => fetchBarangays()}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
             ref={addBtnRef}
             type="button"
             onClick={openCreate}
@@ -1719,94 +1834,124 @@ function BarangaysPanel({
         </div>
       </div>
 
-      <div className="p-5 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Barangay
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Barangay Captain
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Phone
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <motion.tbody
-            className="divide-y divide-gray-50"
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.02 } } }}
-          >
-            <AnimatePresence>
-              {filtered.map((b) => (
-                <motion.tr
-                  key={b.id}
-                  variants={rowVariants}
-                  exit="exit"
-                  className="hover:bg-emerald-50/20 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50">
-                        <LuMapPin className="h-3.5 w-3.5 text-emerald-600" />
+      {isLoading && barangays.length === 0 ? (
+        <div className="p-5 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["Barangay", "Barangay Captain", "Phone", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 3 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <TableSkeletonRows cols={4} />
+          </table>
+        </div>
+      ) : barangays.length === 0 && !isLoading ? (
+        <EmptyState
+          icon={<LuMapPin className="h-6 w-6 text-gray-300" />}
+          title="No barangays yet"
+          sub="Add barangay units with their captains and contact numbers."
+          onAdd={openCreate}
+          addLabel="Add Barangay"
+        />
+      ) : (
+        <div className="p-5 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Barangay
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Barangay Captain
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Phone
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <motion.tbody
+              className="divide-y divide-gray-50"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.02 } } }}
+            >
+              <AnimatePresence>
+                {filtered.map((b) => (
+                  <motion.tr
+                    key={b.id}
+                    variants={rowVariants}
+                    exit="exit"
+                    className="hover:bg-emerald-50/20 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50">
+                          <LuMapPin className="h-3.5 w-3.5 text-emerald-600" />
+                        </div>
+                        <span className="font-semibold text-gray-900">
+                          {f(b, "name")}
+                        </span>
                       </div>
-                      <span className="font-semibold text-gray-900">
-                        {b.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{b.captain}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                    {b.phone}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        ref={
-                          getEditRef(b.id) as React.RefObject<HTMLButtonElement>
-                        }
-                        type="button"
-                        onClick={() => openEdit(b)}
-                        className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                        aria-label={`Edit ${b.name}`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(b)}
-                        className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
-                        aria-label={`Remove ${b.name}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </AnimatePresence>
-          </motion.tbody>
-        </table>
-        {filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-gray-400">
-            {search
-              ? "No barangays matched your search."
-              : "No barangays yet. Add one above."}
-          </p>
-        )}
-        {filtered.length > 0 && (
-          <p className="mt-3 text-xs text-gray-400">
-            Showing {filtered.length} of {barangays.length} barangay
-            {barangays.length !== 1 ? "s" : ""}
-          </p>
-        )}
-      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {f(b, "captain")}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                      {f(b, "phone")}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          ref={
+                            getEditRef(
+                              b.id,
+                            ) as React.RefObject<HTMLButtonElement>
+                          }
+                          type="button"
+                          onClick={() => openEdit(b)}
+                          className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                          aria-label={`Edit ${f(b, "name")}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(b)}
+                          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                          aria-label={`Remove ${f(b, "name")}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </motion.tbody>
+          </table>
+          {filtered.length === 0 && search && (
+            <SearchEmptyState query={search} />
+          )}
+          {filtered.length > 0 && (
+            <p className="mt-3 text-xs text-gray-400">
+              Showing {filtered.length} of {barangays.length} barangay
+              {barangays.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+      )}
 
       <AnimatePresence>
         {panelMode && (
@@ -1820,6 +1965,7 @@ function BarangaysPanel({
             submitLabel={
               panelMode === "create" ? "Add Barangay" : "Save Changes"
             }
+            isSubmitting={isSubmitting}
             submitColorClass="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
           >
             <form
@@ -1893,13 +2039,12 @@ function BarangaysPanel({
         )}
         {deleteTarget && (
           <DeleteConfirmDialog
-            label={deleteTarget.name}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setBarangays((prev) =>
-                prev.filter((b) => b.id !== deleteTarget.id),
-              )
-            }
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
           />
         )}
       </AnimatePresence>
@@ -1907,44 +2052,14 @@ function BarangaysPanel({
   );
 }
 
-// ─── Stats Summary Card ───────────────────────────────────────────────────────
-
-function SummaryCard({
-  label,
-  value,
-  color,
-  icon,
-}: {
-  label: string;
-  value: number;
-  color: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex items-center gap-3">
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
-        <p className="mt-0.5 text-xs font-medium text-gray-400">{label}</p>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function GovernmentModulePage() {
   const [activeTab, setActiveTab] = useState<GovTab>("executive");
-  const [executive, setExecutive] =
-    useState<ExecutiveOfficial[]>(INITIAL_EXECUTIVE);
-  const [legislative, setLegislative] =
-    useState<LegislativeMember[]>(INITIAL_LEGISLATIVE);
-  const [offices, setOffices] = useState<MunicipalOffice[]>(INITIAL_OFFICES);
-  const [barangays, setBarangays] = useState<Barangay[]>(INITIAL_BARANGAYS);
+  const executive = useGovernmentStore((s) => s.executive);
+  const legislative = useGovernmentStore((s) => s.legislative);
+  const offices = useGovernmentStore((s) => s.offices);
+  const barangays = useGovernmentStore((s) => s.barangays);
 
   const tabCounts: Record<GovTab, number> = {
     executive: executive.length,
@@ -1953,54 +2068,66 @@ export function GovernmentModulePage() {
     barangays: barangays.length,
   };
 
-  return (
-    <motion.div
-      className="space-y-6"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: EASE }}
-    >
-      {/* Page header */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">
-          Government Management
-        </h1>
-        <p className="mt-0.5 text-sm text-gray-400">
-          Manage all government officials, offices, and barangay units displayed
-          on the public Government page.
-        </p>
-      </div>
+  const total =
+    executive.length + legislative.length + offices.length + barangays.length;
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <SummaryCard
-          label="Executive Officials"
-          value={executive.length}
-          color="bg-blue-50"
-          icon={<LuLandmark className="h-5 w-5 text-blue-600" />}
-        />
-        <SummaryCard
-          label="SB Members"
-          value={legislative.length}
-          color="bg-indigo-50"
-          icon={<LuGavel className="h-5 w-5 text-indigo-600" />}
-        />
-        <SummaryCard
-          label="Municipal Offices"
-          value={offices.length}
-          color="bg-gray-100"
-          icon={<LuBuilding2 className="h-5 w-5 text-gray-600" />}
-        />
-        <SummaryCard
-          label="Barangays"
-          value={barangays.length}
-          color="bg-emerald-50"
-          icon={<LuMapPin className="h-5 w-5 text-emerald-600" />}
-        />
+  return (
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+            Government
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Manage officials, offices, and barangay units for the public
+            Government page
+          </p>
+        </div>
+
+        {/* Quick stat chips */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-gray-900">{total}</p>
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-0.5">
+              Total
+            </p>
+          </div>
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-blue-700">
+              {executive.length}
+            </p>
+            <p className="text-[10px] uppercase tracking-wider text-blue-500 mt-0.5">
+              Executive
+            </p>
+          </div>
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-indigo-700">
+              {legislative.length}
+            </p>
+            <p className="text-[10px] uppercase tracking-wider text-indigo-500 mt-0.5">
+              SB Members
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-gray-700">{offices.length}</p>
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-0.5">
+              Offices
+            </p>
+          </div>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-emerald-700">
+              {barangays.length}
+            </p>
+            <p className="text-[10px] uppercase tracking-wider text-emerald-500 mt-0.5">
+              Barangays
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Tab panel */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         {/* Tab bar */}
         <div className="border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <nav
@@ -2048,7 +2175,7 @@ export function GovernmentModulePage() {
           </nav>
         </div>
 
-        {/* Tab panel content */}
+        {/* Tab content */}
         <div
           key={activeTab}
           id={`gov-tabpanel-${activeTab}`}
@@ -2064,32 +2191,15 @@ export function GovernmentModulePage() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: EASE }}
             >
-              {activeTab === "executive" && (
-                <ExecutivePanel
-                  officials={executive}
-                  setOfficials={setExecutive}
-                />
-              )}
-              {activeTab === "legislative" && (
-                <LegislativePanel
-                  members={legislative}
-                  setMembers={setLegislative}
-                />
-              )}
-              {activeTab === "offices" && (
-                <OfficesPanel offices={offices} setOffices={setOffices} />
-              )}
-              {activeTab === "barangays" && (
-                <BarangaysPanel
-                  barangays={barangays}
-                  setBarangays={setBarangays}
-                />
-              )}
+              {activeTab === "executive" && <ExecutivePanel />}
+              {activeTab === "legislative" && <LegislativePanel />}
+              {activeTab === "offices" && <OfficesPanel />}
+              {activeTab === "barangays" && <BarangaysPanel />}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

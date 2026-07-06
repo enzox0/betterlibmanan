@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import ReactDOM from "react-dom";
 import {
   LuX,
   LuTrash2,
@@ -10,179 +11,48 @@ import {
   LuPhone,
   LuBuilding2,
   LuTriangleAlert,
+  LuRefreshCw,
+  LuLoader,
+  LuLink,
+  LuShare2,
 } from "react-icons/lu";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type ContactType = "phone" | "email" | "address" | "fax";
-
-interface ContactEntry {
-  id: string;
-  type: ContactType;
-  title: string;
-  value: string;
-  href: string;
-  description: string;
-}
-
-type EmergencyCategory =
-  | "police"
-  | "disaster"
-  | "fire"
-  | "welfare"
-  | "government"
-  | "traffic";
-
-interface EmergencyContact {
-  id: string;
-  name: string;
-  number: string;
-  description: string;
-  category: EmergencyCategory;
-}
-
-interface MedicalContact {
-  id: string;
-  name: string;
-  number: string;
-  description: string;
-}
-
-interface MunicipalOffice {
-  id: string;
-  name: string;
-  number: string;
-}
-
-// ─── Initial Data ─────────────────────────────────────────────────────────────
-
-const INITIAL_CONTACTS: ContactEntry[] = [
-  {
-    id: "c-phone",
-    type: "phone",
-    title: "Phone",
-    value: "09000000000",
-    href: "tel:09000000000",
-    description: "Mon-Fri: 8:00 AM - 5:00 PM",
-  },
-  {
-    id: "c-fax",
-    type: "fax",
-    title: "Fax",
-    value: "(000) 000-0000",
-    href: "#",
-    description: "Available 24/7",
-  },
-  {
-    id: "c-email",
-    type: "email",
-    title: "Email",
-    value: "lgulibmanan@gmail.com",
-    href: "mailto:lgulibmanan@gmail.com",
-    description: "We'll respond within 24 hours",
-  },
-  {
-    id: "c-address",
-    type: "address",
-    title: "Address",
-    value: "Municipal Hall, Poblacion, Libmanan, Camarines Sur 4407",
-    href: "#",
-    description: "Visit us during office hours",
-  },
-];
-
-const INITIAL_EMERGENCY: EmergencyContact[] = [
-  {
-    id: "e-1",
-    name: "PNP Libmanan",
-    number: "09000000000",
-    description: "Police Emergency",
-    category: "police",
-  },
-  {
-    id: "e-2",
-    name: "MDRRMO Libmanan",
-    number: "09000000000",
-    description: "Disaster Response",
-    category: "disaster",
-  },
-  {
-    id: "e-3",
-    name: "MSWDO Libmanan",
-    number: "09000000000",
-    description: "Social Welfare",
-    category: "welfare",
-  },
-  {
-    id: "e-4",
-    name: "BFP Libmanan",
-    number: "09000000000",
-    description: "Fire Emergency",
-    category: "fire",
-  },
-  {
-    id: "e-5",
-    name: "DILG Libmanan",
-    number: "09000000000",
-    description: "Local Government",
-    category: "government",
-  },
-  {
-    id: "e-6",
-    name: "R2TMC",
-    number: "09000000000",
-    description: "Traffic Management",
-    category: "traffic",
-  },
-];
-
-const INITIAL_MEDICAL: MedicalContact[] = [
-  {
-    id: "m-1",
-    name: "RHU Libmanan",
-    number: "09000000000",
-    description: "Rural Health Unit",
-  },
-  {
-    id: "m-2",
-    name: "Libmanan District Hospital",
-    number: "09000000000",
-    description: "District Hospital",
-  },
-  {
-    id: "m-3",
-    name: "Red Cross Libmanan",
-    number: "09000000000",
-    description: "Red Cross Services",
-  },
-];
-
-const INITIAL_OFFICES: MunicipalOffice[] = [
-  { id: "o-01", name: "Mayor's Office", number: "09000000000" },
-  { id: "o-02", name: "Vice Mayor's Office", number: "09000000000" },
-  { id: "o-03", name: "Sangguniang Bayan", number: "09000000000" },
-  { id: "o-04", name: "Municipal Secretary", number: "09000000000" },
-  { id: "o-05", name: "Municipal Treasurer", number: "09000000000" },
-  { id: "o-06", name: "Municipal Assessor", number: "09000000000" },
-  { id: "o-07", name: "Municipal Accountant", number: "09000000000" },
-  { id: "o-08", name: "Municipal Budget Officer", number: "09000000000" },
-  { id: "o-09", name: "Municipal Planning Officer", number: "09000000000" },
-  { id: "o-10", name: "Municipal Engineer", number: "09000000000" },
-  { id: "o-11", name: "Municipal Agriculturist", number: "09000000000" },
-  { id: "o-12", name: "Municipal Civil Registrar", number: "09000000000" },
-  {
-    id: "o-13",
-    name: "Municipal Social Welfare Officer",
-    number: "09000000000",
-  },
-  { id: "o-14", name: "Municipal Health Officer", number: "09000000000" },
-  { id: "o-15", name: "HRMO", number: "09000000000" },
-  { id: "o-16", name: "Business Permits & Licensing", number: "09000000000" },
-];
+import { useContactStore } from "../store/contactStore";
+import { useEmergencyContactsStore } from "../store/emergencyContactsStore";
+import { useMedicalContactsStore } from "../store/medicalContactsStore";
+import { useOfficeDirectoryStore } from "../store/officeDirectoryStore";
+import { useSocialLinksStore } from "../store/socialLinksStore";
+import { useAdminStore } from "../store/adminStore";
+import { useToast } from "@/context/ToastContext";
+import type { ContentRecord } from "../types/admin.types";
+import type { EmergencyContactCategory } from "../services/emergency-contacts.api";
+import type { SocialLinkPlatform } from "../services/social-links.api";
+import type { ContactType } from "../services/contact.api";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const slideVariants = {
+  hidden: { x: "100%" },
+  visible: { x: 0 },
+  exit: { x: "100%" },
+};
+const backdropVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+const rowVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: EASE } },
+  exit: { opacity: 0, x: -16, transition: { duration: 0.18, ease: EASE } },
+};
+
+const inputBase =
+  "w-full rounded-lg border px-3 py-2 text-sm text-gray-800 placeholder-gray-400 " +
+  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all";
+const inputNormal = `${inputBase} border-gray-200 bg-gray-50`;
+const inputError = `${inputBase} border-red-300 bg-red-50`;
 
 const CONTACT_TYPE_META: Record<
   ContactType,
@@ -214,8 +84,18 @@ const CONTACT_TYPE_META: Record<
   },
 };
 
+const EMERGENCY_CATEGORIES: EmergencyContactCategory[] = [
+  "police",
+  "disaster",
+  "fire",
+  "welfare",
+  "government",
+  "traffic",
+  "medical",
+  "other",
+];
 const EMERGENCY_CATEGORY_META: Record<
-  EmergencyCategory,
+  EmergencyContactCategory,
   { label: string; color: string; bg: string }
 > = {
   police: { label: "Police", color: "text-blue-700", bg: "bg-blue-50" },
@@ -228,33 +108,39 @@ const EMERGENCY_CATEGORY_META: Record<
     bg: "bg-indigo-50",
   },
   traffic: { label: "Traffic", color: "text-amber-700", bg: "bg-amber-50" },
+  medical: { label: "Medical", color: "text-emerald-700", bg: "bg-emerald-50" },
+  other: { label: "Other", color: "text-gray-600", bg: "bg-gray-100" },
 };
 
-const slideVariants = {
-  hidden: { x: "100%" },
-  visible: { x: 0 },
-  exit: { x: "100%" },
+const SOCIAL_PLATFORMS: SocialLinkPlatform[] = [
+  "facebook",
+  "twitter",
+  "instagram",
+  "youtube",
+  "tiktok",
+  "other",
+];
+const SOCIAL_PLATFORM_META: Record<
+  SocialLinkPlatform,
+  { label: string; color: string; bg: string }
+> = {
+  facebook: { label: "Facebook", color: "text-blue-700", bg: "bg-blue-50" },
+  twitter: { label: "X/Twitter", color: "text-gray-800", bg: "bg-gray-100" },
+  instagram: { label: "Instagram", color: "text-pink-700", bg: "bg-pink-50" },
+  youtube: { label: "YouTube", color: "text-red-700", bg: "bg-red-50" },
+  tiktok: { label: "TikTok", color: "text-gray-800", bg: "bg-gray-100" },
+  other: { label: "Other", color: "text-gray-600", bg: "bg-gray-100" },
 };
 
-const backdropVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 },
-};
+type DirectoryTab = "emergency" | "medical" | "offices" | "social";
 
-const rowVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: EASE } },
-  exit: { opacity: 0, x: -16, transition: { duration: 0.18, ease: EASE } },
-};
+// ─── Field helpers ────────────────────────────────────────────────────────────
 
-// ─── Shared input styles ──────────────────────────────────────────────────────
+function f(record: ContentRecord, key: string, fallback = ""): string {
+  return (record.fields as any)[key] ?? fallback;
+}
 
-const inputBase =
-  "w-full rounded-lg border px-3 py-2 text-sm text-gray-800 placeholder-gray-400 " +
-  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all";
-const inputNormal = `${inputBase} border-gray-200 bg-gray-50`;
-const inputError = `${inputBase} border-red-300 bg-red-50`;
+// ─── Shared UI ────────────────────────────────────────────────────────────────
 
 function FieldError({ id, msg }: { id: string; msg?: string }) {
   if (!msg) return null;
@@ -265,16 +151,136 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
   );
 }
 
+function SkeletonRows({ count = 4 }: { count?: number }) {
+  return (
+    <div className="flex flex-col divide-y divide-gray-50">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-4 px-5 py-3 animate-pulse"
+        >
+          <div className="h-8 w-8 rounded-lg bg-gray-200 shrink-0" />
+          <div className="flex-1 flex flex-col gap-1.5">
+            <div className="h-3 w-1/3 rounded bg-gray-200" />
+            <div className="h-2.5 w-1/2 rounded bg-gray-100" />
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <div className="h-6 w-12 rounded-lg bg-gray-100" />
+            <div className="h-6 w-14 rounded-lg bg-gray-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TableSkeleton({
+  cols = 4,
+  count = 4,
+}: {
+  cols?: number;
+  count?: number;
+}) {
+  return (
+    <tbody className="divide-y divide-gray-50">
+      {Array.from({ length: count }).map((_, i) => (
+        <tr key={i} className="animate-pulse">
+          {Array.from({ length: cols }).map((__, j) => (
+            <td key={j} className="px-5 py-3">
+              <div
+                className="h-3 rounded bg-gray-100"
+                style={{ width: j === cols - 1 ? "5rem" : "60%" }}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+}
+
+function ErrorBanner({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-6 py-3 bg-red-50 border-b border-red-100">
+      <LuTriangleAlert className="h-4 w-4 text-red-500 shrink-0" />
+      <p className="text-sm text-red-700 flex-1">{message}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  sub,
+  onAdd,
+  addLabel,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  sub: string;
+  onAdd?: () => void;
+  addLabel?: string;
+}) {
+  return (
+    <div className="py-14 text-center">
+      <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+        {icon}
+      </div>
+      <p className="text-sm font-semibold text-gray-700 mb-1">{title}</p>
+      <p className="text-xs text-gray-400 mb-4">{sub}</p>
+      {onAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+        >
+          <LuPlus className="h-4 w-4" /> {addLabel ?? "Add"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SearchEmpty({ query }: { query: string }) {
+  return (
+    <div className="py-14 text-center">
+      <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+        <LuSearch className="h-6 w-6 text-gray-300" />
+      </div>
+      <p className="text-sm font-semibold text-gray-700 mb-1">
+        No results for "{query}"
+      </p>
+      <p className="text-xs text-gray-400">Try a different search term.</p>
+    </div>
+  );
+}
+
 // ─── Slide Panel ──────────────────────────────────────────────────────────────
 
 interface SlidePanelProps {
   title: string;
   subtitle?: string;
-  accentColor?: string; // tailwind gradient class pair e.g. 'from-blue-600 to-blue-800'
+  accentColor?: string;
   onClose: () => void;
   returnFocusRef?: React.RefObject<HTMLButtonElement>;
   formId: string;
   submitLabel: string;
+  isSubmitting?: boolean;
   submitColorClass?: string;
   children: React.ReactNode;
 }
@@ -287,33 +293,30 @@ function SlidePanel({
   returnFocusRef,
   formId,
   submitLabel,
+  isSubmitting = false,
   submitColorClass = "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500",
   children,
 }: SlidePanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
-
   const handleClose = useCallback(() => {
     onClose();
     setTimeout(() => returnFocusRef?.current?.focus(), 0);
   }, [onClose, returnFocusRef]);
-
   useEffect(() => {
     closeRef.current?.focus();
   }, []);
-
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose();
-    }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [handleClose]);
 
   return (
     <AnimatePresence>
-      {/* Backdrop */}
       <motion.div
-        key="sp-backdrop"
+        key="sp-bd"
         variants={backdropVariants}
         initial="hidden"
         animate="visible"
@@ -323,8 +326,6 @@ function SlidePanel({
         onClick={handleClose}
         aria-hidden="true"
       />
-
-      {/* Panel */}
       <motion.aside
         key="sp-panel"
         role="dialog"
@@ -337,13 +338,10 @@ function SlidePanel({
         transition={{ duration: 0.4, ease: EASE }}
         className="fixed right-0 top-0 z-50 flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl !mt-0"
       >
-        {/* Top accent stripe */}
         <div
           className={`h-1 bg-gradient-to-r ${accentColor} shrink-0`}
           aria-hidden="true"
         />
-
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/80 px-6 py-4 shrink-0">
           <div>
             <h2 className="text-base font-bold text-gray-900">{title}</h2>
@@ -358,16 +356,12 @@ function SlidePanel({
             aria-label="Close panel"
             className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-colors"
           >
-            <LuX className="h-5 w-5" aria-hidden="true" />
+            <LuX className="h-5 w-5" />
           </button>
         </div>
-
-        {/* Body — scrollable */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {children}
         </div>
-
-        {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/80 px-6 py-4 shrink-0">
           <button
             type="button"
@@ -379,8 +373,10 @@ function SlidePanel({
           <button
             type="submit"
             form={formId}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all ${submitColorClass}`}
+            disabled={isSubmitting}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-60 ${submitColorClass}`}
           >
+            {isSubmitting && <LuLoader className="h-3.5 w-3.5 animate-spin" />}
             {submitLabel}
           </button>
         </div>
@@ -389,18 +385,20 @@ function SlidePanel({
   );
 }
 
-// ─── Delete Confirm Dialog (portal-less, inline) ──────────────────────────────
+// ─── Delete Confirm Dialog ────────────────────────────────────────────────────
 
-function DeleteConfirmDialog({
+function DeleteDialog({
   label,
   onClose,
   onConfirm,
+  isDeleting,
 }: {
   label: string;
   onClose: () => void;
   onConfirm: () => void;
+  isDeleting?: boolean;
 }) {
-  return (
+  return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 z-[60] flex items-center justify-center p-4 !mt-0"
@@ -432,7 +430,7 @@ function DeleteConfirmDialog({
           <div className="p-6">
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
-                <LuTrash2 className="h-5 w-5 text-red-600" aria-hidden="true" />
+                <LuTrash2 className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <h2 id="del-title" className="text-sm font-bold text-gray-900">
@@ -455,33 +453,39 @@ function DeleteConfirmDialog({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  onConfirm();
-                  onClose();
-                }}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all"
+                onClick={onConfirm}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all disabled:opacity-60"
               >
+                {isDeleting && (
+                  <LuLoader className="h-3.5 w-3.5 animate-spin" />
+                )}
                 Remove
               </button>
             </div>
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
-// ─── Shared section wrapper ───────────────────────────────────────────────────
+// ─── Section Card ─────────────────────────────────────────────────────────────
 
 function SectionCard({
   title,
   description,
   action,
+  error,
+  onRetry,
   children,
 }: {
   title: string;
   description: string;
   action?: React.ReactNode;
+  error?: string | null;
+  onRetry?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -493,26 +497,42 @@ function SectionCard({
         </div>
         {action}
       </div>
+      {error && <ErrorBanner message={error} onRetry={onRetry} />}
       {children}
     </div>
   );
 }
 
-// ─── Section 1: Main Contact Info ─────────────────────────────────────────────
+// ─── Contact Info Section ─────────────────────────────────────────────────────
 
 function ContactInfoSection() {
-  const [contacts, setContacts] = useState<ContactEntry[]>(INITIAL_CONTACTS);
-  const [editTarget, setEditTarget] = useState<ContactEntry | null>(null);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const adminRecords = useContactStore((s) => s.adminRecords);
+  const isLoading = useContactStore((s) => s.isAdminLoading);
+  const error = useContactStore((s) => s.error);
+  const { fetchAdminRecords, updateContact } = useContactStore();
 
-  // per-row edit button refs for focus return
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
+
+  const [value, setValue] = useState("");
+  const [href, setHref] = useState("");
+  const [description, setDescription] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   function getEditRef(id: string) {
     if (!editRefs.current[id]) editRefs.current[id] = { current: null };
     return editRefs.current[id];
   }
+
+  useEffect(() => {
+    if (accessToken) fetchAdminRecords(accessToken);
+  }, []);
 
   function markSaved(id: string) {
     setSavedIds((prev) => new Set([...prev, id]));
@@ -527,120 +547,149 @@ function ContactInfoSection() {
     );
   }
 
-  // form state
-  const [value, setValue] = useState("");
-  const [href, setHref] = useState("");
-  const [description, setDescription] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  function openEdit(c: ContactEntry) {
-    setValue(c.value);
-    setHref(c.href);
-    setDescription(c.description);
+  function openEdit(c: ContentRecord) {
+    setValue(f(c, "value"));
+    setHref(f(c, "href"));
+    setDescription(f(c, "description"));
     setErrors({});
     setEditTarget(c);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
-    if (!value.trim())
-      e.value = `${editTarget ? CONTACT_TYPE_META[editTarget.type].label : "Value"} is required.`;
-    if (!href.trim()) e.href = "Link/href is required.";
+    if (!value.trim()) e.value = "Value is required.";
+    if (!href.trim()) e.href = "Link / href is required.";
     if (!description.trim()) e.description = "Description is required.";
     if (Object.keys(e).length) {
       setErrors(e);
       return;
     }
     if (!editTarget) return;
-    setContacts((prev) =>
-      prev.map((c) =>
-        c.id === editTarget.id
-          ? {
-              ...c,
-              value: value.trim(),
-              href: href.trim(),
-              description: description.trim(),
-            }
-          : c,
-      ),
-    );
-    markSaved(editTarget.id);
-    setEditTarget(null);
+    setIsSubmitting(true);
+    try {
+      await updateContact(
+        editTarget.id,
+        {
+          label: f(editTarget, "label"),
+          value: value.trim(),
+          href: href.trim(),
+          description: description.trim(),
+          type: (f(editTarget, "type") as ContactType) || "phone",
+          status: editTarget.status,
+        },
+        accessToken!,
+      );
+      markSaved(editTarget.id);
+      toast("Contact info saved.", "success");
+      setEditTarget(null);
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
+
+  // Only published records are shown on admin (they're all published — no draft logic for contact info)
+  const contacts = adminRecords.length > 0 ? adminRecords : [];
 
   return (
     <SectionCard
       title="Main Contact Information"
       description="Phone, fax, email, and address shown at the top of the Contact page"
+      error={error}
+      onRetry={() => accessToken && fetchAdminRecords(accessToken)}
+      action={
+        <button
+          type="button"
+          onClick={() => accessToken && fetchAdminRecords(accessToken)}
+          className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+          aria-label="Refresh"
+        >
+          <LuRefreshCw className="h-3.5 w-3.5" />
+        </button>
+      }
     >
-      <div className="divide-y divide-gray-50">
-        {contacts.map((c) => {
-          const meta = CONTACT_TYPE_META[c.type];
-          return (
-            <div
-              key={c.id}
-              className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
-            >
+      {isLoading && contacts.length === 0 ? (
+        <SkeletonRows count={4} />
+      ) : contacts.length === 0 ? (
+        <EmptyState
+          icon={<LuPhone className="h-6 w-6 text-gray-300" />}
+          title="No contact info yet"
+          sub="Contact records are managed through this section."
+        />
+      ) : (
+        <div className="divide-y divide-gray-50">
+          {contacts.map((c) => {
+            const type = (f(c, "type") || "phone") as ContactType;
+            const meta = CONTACT_TYPE_META[type];
+            return (
               <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.bg}`}
+                key={c.id}
+                className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
               >
-                <span className={`text-xs font-bold ${meta.color}`}>
-                  {meta.label[0]}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900">{c.title}</p>
-                <p className="text-sm text-gray-500 truncate">{c.value}</p>
-                <p className="text-xs text-gray-400 truncate font-mono">
-                  {c.href}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 sm:shrink-0 sm:ml-auto">
-                <AnimatePresence>
-                  {savedIds.has(c.id) && (
-                    <motion.span
-                      key="saved"
-                      className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-600 ring-1 ring-green-200"
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.85 }}
-                      transition={{ duration: 0.2, ease: EASE }}
-                    >
-                      <LuCheck className="h-3 w-3" aria-hidden="true" />
-                      Saved
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                <button
-                  ref={getEditRef(c.id) as React.RefObject<HTMLButtonElement>}
-                  type="button"
-                  onClick={() => openEdit(c)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
-                  aria-label={`Edit ${c.title}`}
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.bg}`}
                 >
-                  <LuPencil className="h-3.5 w-3.5" aria-hidden="true" />
-                  Edit
-                </button>
+                  <span className={`text-xs font-bold ${meta.color}`}>
+                    {meta.label[0]}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {f(c, "label")}
+                  </p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {f(c, "value")}
+                  </p>
+                  <p className="text-xs text-gray-400 font-mono truncate">
+                    {f(c, "href")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 sm:shrink-0 sm:ml-auto">
+                  <AnimatePresence>
+                    {savedIds.has(c.id) && (
+                      <motion.span
+                        key="saved"
+                        className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-600 ring-1 ring-green-200"
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{ duration: 0.2, ease: EASE }}
+                      >
+                        <LuCheck className="h-3 w-3" /> Saved
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  <button
+                    ref={getEditRef(c.id) as React.RefObject<HTMLButtonElement>}
+                    type="button"
+                    onClick={() => openEdit(c)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
+                    aria-label={`Edit ${f(c, "label")}`}
+                  >
+                    <LuPencil className="h-3.5 w-3.5" /> Edit
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Slide panel */}
       <AnimatePresence>
         {editTarget && (
           <SlidePanel
-            title={`Edit ${CONTACT_TYPE_META[editTarget.type].label}`}
+            title={`Edit ${CONTACT_TYPE_META[(f(editTarget, "type") as ContactType) || "phone"].label}`}
             subtitle="Update public-facing contact info"
-            accentColor={`from-blue-600 to-blue-800`}
+            accentColor="from-blue-600 to-blue-800"
             onClose={() => setEditTarget(null)}
             returnFocusRef={
               getEditRef(editTarget.id) as React.RefObject<HTMLButtonElement>
             }
             formId="ci-form"
             submitLabel="Save Changes"
+            isSubmitting={isSubmitting}
           >
             <form
               id="ci-form"
@@ -648,36 +697,35 @@ function ContactInfoSection() {
               noValidate
               className="space-y-4"
             >
-              {/* Current values preview */}
-              <div
-                className={`flex items-center gap-3 rounded-xl p-3 ${CONTACT_TYPE_META[editTarget.type].bg}`}
-              >
-                <div
-                  className={`h-8 w-8 rounded-lg flex items-center justify-center bg-white/70`}
-                >
-                  <span
-                    className={`text-xs font-bold ${CONTACT_TYPE_META[editTarget.type].color}`}
+              {(() => {
+                const type = (f(editTarget, "type") as ContactType) || "phone";
+                const meta = CONTACT_TYPE_META[type];
+                return (
+                  <div
+                    className={`flex items-center gap-3 rounded-xl p-3 ${meta.bg}`}
                   >
-                    {CONTACT_TYPE_META[editTarget.type].label[0]}
-                  </span>
-                </div>
-                <div>
-                  <p
-                    className={`text-xs font-bold ${CONTACT_TYPE_META[editTarget.type].color}`}
-                  >
-                    {CONTACT_TYPE_META[editTarget.type].label}
-                  </p>
-                  <p className="text-xs text-gray-500">{editTarget.title}</p>
-                </div>
-              </div>
-
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-white/70">
+                      <span className={`text-xs font-bold ${meta.color}`}>
+                        {meta.label[0]}
+                      </span>
+                    </div>
+                    <div>
+                      <p className={`text-xs font-bold ${meta.color}`}>
+                        {meta.label}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {f(editTarget, "label")}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
               <div>
                 <label
                   htmlFor="ci-value"
                   className="block text-sm font-medium text-gray-700 mb-1.5"
                 >
-                  {CONTACT_TYPE_META[editTarget.type].label}{" "}
-                  <span className="text-red-500">*</span>
+                  Value <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="ci-value"
@@ -688,12 +736,9 @@ function ContactInfoSection() {
                     setErrors((p) => ({ ...p, value: "" }));
                   }}
                   className={errors.value ? inputError : inputNormal}
-                  aria-invalid={!!errors.value}
-                  aria-describedby="ci-value-err"
                 />
                 <FieldError id="ci-value-err" msg={errors.value} />
               </div>
-
               <div>
                 <label
                   htmlFor="ci-href"
@@ -710,18 +755,14 @@ function ContactInfoSection() {
                     setErrors((p) => ({ ...p, href: "" }));
                   }}
                   className={errors.href ? inputError : inputNormal}
-                  aria-invalid={!!errors.href}
-                  aria-describedby="ci-href-err"
-                  placeholder={CONTACT_TYPE_META[editTarget.type].hint}
+                  placeholder={
+                    CONTACT_TYPE_META[
+                      (f(editTarget, "type") as ContactType) || "phone"
+                    ].hint
+                  }
                 />
                 <FieldError id="ci-href-err" msg={errors.href} />
-                <p
-                  className={`mt-1 text-xs ${CONTACT_TYPE_META[editTarget.type].color}`}
-                >
-                  {CONTACT_TYPE_META[editTarget.type].hint}
-                </p>
               </div>
-
               <div>
                 <label
                   htmlFor="ci-desc"
@@ -738,8 +779,6 @@ function ContactInfoSection() {
                     setErrors((p) => ({ ...p, description: "" }));
                   }}
                   className={errors.description ? inputError : inputNormal}
-                  aria-invalid={!!errors.description}
-                  aria-describedby="ci-desc-err"
                   placeholder="e.g. Mon-Fri: 8:00 AM - 5:00 PM"
                 />
                 <FieldError id="ci-desc-err" msg={errors.description} />
@@ -752,152 +791,45 @@ function ContactInfoSection() {
   );
 }
 
-// ─── Tabbed Hotlines + Offices Panel ─────────────────────────────────────────
+// ─── Emergency Panel ──────────────────────────────────────────────────────────
 
-type DirectoryTab = "emergency" | "medical" | "offices";
+function EmergencyPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const records = useEmergencyContactsStore((s) => s.adminRecords);
+  const isLoading = useEmergencyContactsStore((s) => s.isAdminLoading);
+  const error = useEmergencyContactsStore((s) => s.error);
+  const {
+    fetchAdminRecords,
+    createEmergencyContact,
+    updateEmergencyContact,
+    deleteEmergencyContact,
+  } = useEmergencyContactsStore();
 
-const DIRECTORY_TABS: {
-  key: DirectoryTab;
-  label: string;
-  getCount: (s: DirectoryTabState) => number;
-}[] = [
-  {
-    key: "emergency",
-    label: "Emergency Hotlines",
-    getCount: (s) => s.emergency.length,
-  },
-  {
-    key: "medical",
-    label: "Medical Hotlines",
-    getCount: (s) => s.medical.length,
-  },
-  {
-    key: "offices",
-    label: "Municipal Offices",
-    getCount: (s) => s.offices.length,
-  },
-];
-
-interface DirectoryTabState {
-  emergency: EmergencyContact[];
-  medical: MedicalContact[];
-  offices: MunicipalOffice[];
-}
-
-// ─── Tabbed Directory Panel ───────────────────────────────────────────────────
-
-// ─── Tabbed Directory Panel ───────────────────────────────────────────────────
-
-function DirectoryPanel() {
-  const [activeTab, setActiveTab] = useState<DirectoryTab>("emergency");
-
-  // Shared state for all three tabs — kept here so counts in the tab bar stay live
-  const [emergency, setEmergency] =
-    useState<EmergencyContact[]>(INITIAL_EMERGENCY);
-  const [medical, setMedical] = useState<MedicalContact[]>(INITIAL_MEDICAL);
-  const [offices, setOffices] = useState<MunicipalOffice[]>(INITIAL_OFFICES);
-
-  const tabState: DirectoryTabState = { emergency, medical, offices };
-
-  return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-      {/* ── Tab bar ── */}
-      <div className="border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <nav
-          className="flex min-w-max px-4 pt-3 gap-1"
-          role="tablist"
-          aria-label="Directory sections"
-        >
-          {DIRECTORY_TABS.map(({ key, label, getCount }) => {
-            const isActive = key === activeTab;
-            const count = getCount(tabState);
-            return (
-              <button
-                key={key}
-                role="tab"
-                type="button"
-                aria-selected={isActive}
-                aria-controls={`dir-tabpanel-${key}`}
-                id={`dir-tab-${key}`}
-                onClick={() => setActiveTab(key)}
-                className={[
-                  "relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1",
-                  isActive
-                    ? "text-blue-600 bg-blue-50/60"
-                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-50",
-                ].join(" ")}
-              >
-                {label}
-                <span
-                  className={[
-                    "inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold min-w-[18px]",
-                    isActive
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-gray-100 text-gray-500",
-                  ].join(" ")}
-                >
-                  {count}
-                </span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* ── Tab panels ── */}
-      <div
-        key={activeTab}
-        id={`dir-tabpanel-${activeTab}`}
-        role="tabpanel"
-        aria-labelledby={`dir-tab-${activeTab}`}
-      >
-        {activeTab === "emergency" && (
-          <EmergencyPanel contacts={emergency} setContacts={setEmergency} />
-        )}
-        {activeTab === "medical" && (
-          <MedicalPanel contacts={medical} setContacts={setMedical} />
-        )}
-        {activeTab === "offices" && (
-          <OfficesPanel offices={offices} setOffices={setOffices} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Emergency panel (tab body) ───────────────────────────────────────────────
-
-function EmergencyPanel({
-  contacts,
-  setContacts,
-}: {
-  contacts: EmergencyContact[];
-  setContacts: React.Dispatch<React.SetStateAction<EmergencyContact[]>>;
-}) {
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<EmergencyContact | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<EmergencyContact | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
+
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<EmergencyContactCategory>("police");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function getEditRef(id: string) {
     if (!editRefs.current[id]) editRefs.current[id] = { current: null };
     return editRefs.current[id];
   }
 
-  const [name, setName] = useState("");
-  const [number, setNumber] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<EmergencyCategory>("police");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (accessToken) fetchAdminRecords(accessToken);
+  }, []);
 
   function openCreate() {
     setName("");
@@ -908,11 +840,11 @@ function EmergencyPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(c: EmergencyContact) {
-    setName(c.name);
-    setNumber(c.number);
-    setDescription(c.description);
-    setCategory(c.category);
+  function openEdit(c: ContentRecord) {
+    setName(f(c, "name"));
+    setNumber(f(c, "number"));
+    setDescription(f(c, "description"));
+    setCategory((f(c, "category") as EmergencyContactCategory) || "police");
     setErrors({});
     setEditTarget(c);
     setPanelMode("edit");
@@ -922,7 +854,7 @@ function EmergencyPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Name is required.";
@@ -932,33 +864,41 @@ function EmergencyPanel({
       setErrors(e);
       return;
     }
-    if (panelMode === "create") {
-      setContacts((prev) => [
-        ...prev,
-        {
-          id: `e-${crypto.randomUUID().slice(0, 8)}`,
-          name: name.trim(),
-          number: number.trim(),
-          description: description.trim(),
-          category,
-        },
-      ]);
-    } else if (editTarget) {
-      setContacts((prev) =>
-        prev.map((c) =>
-          c.id === editTarget.id
-            ? {
-                ...c,
-                name: name.trim(),
-                number: number.trim(),
-                description: description.trim(),
-                category,
-              }
-            : c,
-        ),
-      );
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: name.trim(),
+        number: number.trim(),
+        description: description.trim(),
+        category,
+        status: "published" as const,
+      };
+      if (panelMode === "create") {
+        await createEmergencyContact(payload, accessToken!);
+        toast("Emergency hotline added.", "success");
+      } else if (editTarget) {
+        await updateEmergencyContact(editTarget.id, payload, accessToken!);
+        toast("Emergency hotline saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    closePanel();
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteEmergencyContact(record.id, accessToken!);
+      toast("Hotline removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const returnFocusRef = (
@@ -970,119 +910,156 @@ function EmergencyPanel({
   ) as React.RefObject<HTMLButtonElement>;
 
   return (
-    <div className="p-5">
-      {/* Sub-header */}
-      <div className="flex items-center justify-between mb-4">
+    <div>
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div>
           <p className="text-sm font-semibold text-gray-800">
             Emergency Hotlines
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            {contacts.length === 0
-              ? "No hotlines yet"
-              : `${contacts.length} entr${contacts.length === 1 ? "y" : "ies"}`}
+            {records.length} entr{records.length === 1 ? "y" : "ies"}
           </p>
         </div>
-        <button
-          ref={addBtnRef}
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 transition-all"
-        >
-          <LuPlus className="h-4 w-4" aria-hidden="true" />
-          Add Hotline
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => accessToken && fetchAdminRecords(accessToken)}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            ref={addBtnRef}
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 transition-all"
+          >
+            <LuPlus className="h-4 w-4" /> Add Hotline
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-100">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Name
-              </th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Number
-              </th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Description
-              </th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Category
-              </th>
-              <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <motion.tbody
-            className="divide-y divide-gray-50"
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
-          >
-            <AnimatePresence>
-              {contacts.map((c) => {
-                const cat = EMERGENCY_CATEGORY_META[c.category];
-                return (
-                  <motion.tr
-                    key={c.id}
-                    variants={rowVariants}
-                    exit="exit"
-                    className="hover:bg-gray-50/50 transition-colors"
-                  >
-                    <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">
-                      {c.name}
-                    </td>
-                    <td className="px-5 py-3 font-mono text-gray-700 whitespace-nowrap">
-                      {c.number}
-                    </td>
-                    <td className="px-5 py-3 text-gray-500">{c.description}</td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cat.color} ${cat.bg}`}
-                      >
-                        {cat.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button
-                          ref={
-                            getEditRef(
-                              c.id,
-                            ) as React.RefObject<HTMLButtonElement>
-                          }
-                          type="button"
-                          onClick={() => openEdit(c)}
-                          className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                          aria-label={`Edit ${c.name}`}
+      {error && (
+        <ErrorBanner
+          message={error}
+          onRetry={() => accessToken && fetchAdminRecords(accessToken)}
+        />
+      )}
+
+      {isLoading && records.length === 0 ? (
+        <div className="overflow-x-auto px-5 pb-5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["Name", "Number", "Description", "Category", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 4 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <TableSkeleton cols={5} />
+          </table>
+        </div>
+      ) : records.length === 0 ? (
+        <EmptyState
+          icon={<LuTriangleAlert className="h-6 w-6 text-gray-300" />}
+          title="No emergency hotlines yet"
+          sub="Add PNP, BFP, MDRRMO and other emergency contacts."
+          onAdd={openCreate}
+          addLabel="Add Hotline"
+        />
+      ) : (
+        <div className="overflow-x-auto px-5 pb-5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["Name", "Number", "Description", "Category", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 4 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <motion.tbody
+              className="divide-y divide-gray-50"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+            >
+              <AnimatePresence>
+                {records.map((c) => {
+                  const cat =
+                    EMERGENCY_CATEGORY_META[
+                      (f(c, "category") as EmergencyContactCategory) || "other"
+                    ];
+                  return (
+                    <motion.tr
+                      key={c.id}
+                      variants={rowVariants}
+                      exit="exit"
+                      className="hover:bg-gray-50/50 transition-colors"
+                    >
+                      <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">
+                        {f(c, "name")}
+                      </td>
+                      <td className="px-5 py-3 font-mono text-gray-700 whitespace-nowrap">
+                        {f(c, "number")}
+                      </td>
+                      <td className="px-5 py-3 text-gray-500">
+                        {f(c, "description")}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${cat.color} ${cat.bg}`}
                         >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(c)}
-                          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
-                          aria-label={`Remove ${c.name}`}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                );
-              })}
-            </AnimatePresence>
-          </motion.tbody>
-        </table>
-        {contacts.length === 0 && (
-          <div className="py-12 text-center text-sm text-gray-400">
-            No emergency hotlines yet. Add one above.
-          </div>
-        )}
-      </div>
+                          {cat.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            ref={
+                              getEditRef(
+                                c.id,
+                              ) as React.RefObject<HTMLButtonElement>
+                            }
+                            type="button"
+                            onClick={() => openEdit(c)}
+                            className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            aria-label={`Edit ${f(c, "name")}`}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(c)}
+                            className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                            aria-label={`Remove ${f(c, "name")}`}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
+            </motion.tbody>
+          </table>
+        </div>
+      )}
 
       <AnimatePresence>
         {panelMode && (
@@ -1092,7 +1069,7 @@ function EmergencyPanel({
                 ? "Add Emergency Hotline"
                 : "Edit Emergency Hotline"
             }
-            subtitle="These appear on the public Contact page"
+            subtitle="Shown on the public Contact page"
             accentColor="from-gray-800 to-gray-900"
             onClose={closePanel}
             returnFocusRef={returnFocusRef}
@@ -1100,6 +1077,7 @@ function EmergencyPanel({
             submitLabel={
               panelMode === "create" ? "Add Hotline" : "Save Changes"
             }
+            isSubmitting={isSubmitting}
             submitColorClass="bg-gray-900 hover:bg-gray-800 focus:ring-gray-700"
           >
             <form
@@ -1182,29 +1160,24 @@ function EmergencyPanel({
                     id="em-cat"
                     value={category}
                     onChange={(e) =>
-                      setCategory(e.target.value as EmergencyCategory)
+                      setCategory(e.target.value as EmergencyContactCategory)
                     }
                     className={inputNormal}
                   >
-                    {(
-                      Object.entries(EMERGENCY_CATEGORY_META) as [
-                        EmergencyCategory,
-                        (typeof EMERGENCY_CATEGORY_META)[EmergencyCategory],
-                      ][]
-                    ).map(([k, v]) => (
+                    {EMERGENCY_CATEGORIES.map((k) => (
                       <option key={k} value={k}>
-                        {v.label}
+                        {EMERGENCY_CATEGORY_META[k].label}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
-              <div className="pt-1">
+              <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
-                  Category preview
+                  Preview
                 </p>
                 <span
-                  className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${EMERGENCY_CATEGORY_META[category].color} ${EMERGENCY_CATEGORY_META[category].bg}`}
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${EMERGENCY_CATEGORY_META[category].color} ${EMERGENCY_CATEGORY_META[category].bg}`}
                 >
                   {EMERGENCY_CATEGORY_META[category].label}
                 </span>
@@ -1213,14 +1186,13 @@ function EmergencyPanel({
           </SlidePanel>
         )}
         {deleteTarget && (
-          <DeleteConfirmDialog
-            label={deleteTarget.name}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setContacts((prev) =>
-                prev.filter((c) => c.id !== deleteTarget.id),
-              )
-            }
+          <DeleteDialog
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
           />
         )}
       </AnimatePresence>
@@ -1228,32 +1200,40 @@ function EmergencyPanel({
   );
 }
 
-// ─── Medical panel (tab body) ─────────────────────────────────────────────────
+// ─── Medical Panel ────────────────────────────────────────────────────────────
 
-function MedicalPanel({
-  contacts,
-  setContacts,
-}: {
-  contacts: MedicalContact[];
-  setContacts: React.Dispatch<React.SetStateAction<MedicalContact[]>>;
-}) {
+function MedicalPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const records = useMedicalContactsStore((s) => s.adminRecords);
+  const isLoading = useMedicalContactsStore((s) => s.isAdminLoading);
+  const error = useMedicalContactsStore((s) => s.error);
+  const { fetchAdminRecords, createRecord, updateRecord, deleteRecord } =
+    useMedicalContactsStore();
+
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<MedicalContact | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<MedicalContact | null>(null);
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
+
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [description, setDescription] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function getEditRef(id: string) {
     if (!editRefs.current[id]) editRefs.current[id] = { current: null };
     return editRefs.current[id];
   }
 
-  const [name, setName] = useState("");
-  const [number, setNumber] = useState("");
-  const [description, setDescription] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (accessToken) fetchAdminRecords(accessToken);
+  }, []);
 
   function openCreate() {
     setName("");
@@ -1263,10 +1243,10 @@ function MedicalPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(c: MedicalContact) {
-    setName(c.name);
-    setNumber(c.number);
-    setDescription(c.description);
+  function openEdit(c: ContentRecord) {
+    setName(f(c, "name"));
+    setNumber(f(c, "number"));
+    setDescription(f(c, "description"));
     setErrors({});
     setEditTarget(c);
     setPanelMode("edit");
@@ -1276,7 +1256,7 @@ function MedicalPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Name is required.";
@@ -1286,31 +1266,40 @@ function MedicalPanel({
       setErrors(e);
       return;
     }
-    if (panelMode === "create") {
-      setContacts((prev) => [
-        ...prev,
-        {
-          id: `m-${crypto.randomUUID().slice(0, 8)}`,
-          name: name.trim(),
-          number: number.trim(),
-          description: description.trim(),
-        },
-      ]);
-    } else if (editTarget) {
-      setContacts((prev) =>
-        prev.map((c) =>
-          c.id === editTarget.id
-            ? {
-                ...c,
-                name: name.trim(),
-                number: number.trim(),
-                description: description.trim(),
-              }
-            : c,
-        ),
-      );
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: name.trim(),
+        number: number.trim(),
+        description: description.trim(),
+        status: "published" as const,
+      };
+      if (panelMode === "create") {
+        await createRecord(payload, accessToken!);
+        toast("Medical hotline added.", "success");
+      } else if (editTarget) {
+        await updateRecord(editTarget.id, payload, accessToken!);
+        toast("Medical hotline saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    closePanel();
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteRecord(record.id, accessToken!);
+      toast("Hotline removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const returnFocusRef = (
@@ -1322,102 +1311,143 @@ function MedicalPanel({
   ) as React.RefObject<HTMLButtonElement>;
 
   return (
-    <div className="p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div>
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div>
           <p className="text-sm font-semibold text-gray-800">
-            Medical Emergency Hotlines
+            Medical Hotlines
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            {contacts.length === 0
-              ? "No hotlines yet"
-              : `${contacts.length} entr${contacts.length === 1 ? "y" : "ies"}`}
+            {records.length} entr{records.length === 1 ? "y" : "ies"}
           </p>
         </div>
-        <button
-          ref={addBtnRef}
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
-        >
-          <LuPlus className="h-4 w-4" aria-hidden="true" />
-          Add Hotline
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => accessToken && fetchAdminRecords(accessToken)}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            ref={addBtnRef}
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+          >
+            <LuPlus className="h-4 w-4" /> Add Hotline
+          </button>
+        </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-100">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Facility / Service
-              </th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Number
-              </th>
-              <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Description
-              </th>
-              <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <motion.tbody
-            className="divide-y divide-gray-50"
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
-          >
-            <AnimatePresence>
-              {contacts.map((c) => (
-                <motion.tr
-                  key={c.id}
-                  variants={rowVariants}
-                  exit="exit"
-                  className="hover:bg-blue-50/30 transition-colors"
-                >
-                  <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">
-                    {c.name}
-                  </td>
-                  <td className="px-5 py-3 font-mono text-blue-600 whitespace-nowrap">
-                    {c.number}
-                  </td>
-                  <td className="px-5 py-3 text-gray-500">{c.description}</td>
-                  <td className="px-5 py-3 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        ref={
-                          getEditRef(c.id) as React.RefObject<HTMLButtonElement>
-                        }
-                        type="button"
-                        onClick={() => openEdit(c)}
-                        className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                        aria-label={`Edit ${c.name}`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(c)}
-                        className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
-                        aria-label={`Remove ${c.name}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </AnimatePresence>
-          </motion.tbody>
-        </table>
-        {contacts.length === 0 && (
-          <div className="py-12 text-center text-sm text-gray-400">
-            No medical hotlines yet. Add one above.
-          </div>
-        )}
-      </div>
+      {error && (
+        <ErrorBanner
+          message={error}
+          onRetry={() => accessToken && fetchAdminRecords(accessToken)}
+        />
+      )}
+
+      {isLoading && records.length === 0 ? (
+        <div className="overflow-x-auto px-5 pb-5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["Facility / Service", "Number", "Description", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 3 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <TableSkeleton cols={4} />
+          </table>
+        </div>
+      ) : records.length === 0 ? (
+        <EmptyState
+          icon={<LuPhone className="h-6 w-6 text-gray-300" />}
+          title="No medical hotlines yet"
+          sub="Add RHU, hospitals, and medical emergency contacts."
+          onAdd={openCreate}
+          addLabel="Add Hotline"
+        />
+      ) : (
+        <div className="overflow-x-auto px-5 pb-5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["Facility / Service", "Number", "Description", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 3 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <motion.tbody
+              className="divide-y divide-gray-50"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+            >
+              <AnimatePresence>
+                {records.map((c) => (
+                  <motion.tr
+                    key={c.id}
+                    variants={rowVariants}
+                    exit="exit"
+                    className="hover:bg-blue-50/30 transition-colors"
+                  >
+                    <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">
+                      {f(c, "name")}
+                    </td>
+                    <td className="px-5 py-3 font-mono text-blue-600 whitespace-nowrap">
+                      {f(c, "number")}
+                    </td>
+                    <td className="px-5 py-3 text-gray-500">
+                      {f(c, "description")}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          ref={
+                            getEditRef(
+                              c.id,
+                            ) as React.RefObject<HTMLButtonElement>
+                          }
+                          type="button"
+                          onClick={() => openEdit(c)}
+                          className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                          aria-label={`Edit ${f(c, "name")}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(c)}
+                          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                          aria-label={`Remove ${f(c, "name")}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </motion.tbody>
+          </table>
+        </div>
+      )}
 
       <AnimatePresence>
         {panelMode && (
@@ -1435,6 +1465,7 @@ function MedicalPanel({
             submitLabel={
               panelMode === "create" ? "Add Hotline" : "Save Changes"
             }
+            isSubmitting={isSubmitting}
           >
             <form
               id="med-form"
@@ -1509,14 +1540,13 @@ function MedicalPanel({
           </SlidePanel>
         )}
         {deleteTarget && (
-          <DeleteConfirmDialog
-            label={deleteTarget.name}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setContacts((prev) =>
-                prev.filter((c) => c.id !== deleteTarget.id),
-              )
-            }
+          <DeleteDialog
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
           />
         )}
       </AnimatePresence>
@@ -1524,40 +1554,46 @@ function MedicalPanel({
   );
 }
 
-// ─── Offices panel (tab body) ─────────────────────────────────────────────────
+// ─── Offices Panel ────────────────────────────────────────────────────────────
 
-function OfficesPanel({
-  offices,
-  setOffices,
-}: {
-  offices: MunicipalOffice[];
-  setOffices: React.Dispatch<React.SetStateAction<MunicipalOffice[]>>;
-}) {
+function OfficesPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const records = useOfficeDirectoryStore((s) => s.records);
+  const isLoading = useOfficeDirectoryStore((s) => s.isLoading);
+  const error = useOfficeDirectoryStore((s) => s.error);
+  const { fetchRecords, createRecord, updateRecord, deleteRecord } =
+    useOfficeDirectoryStore();
+
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<MunicipalOffice | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<MunicipalOffice | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
   const [search, setSearch] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
+
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function getEditRef(id: string) {
     if (!editRefs.current[id]) editRefs.current[id] = { current: null };
     return editRefs.current[id];
   }
 
-  const [name, setName] = useState("");
-  const [number, setNumber] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  useEffect(() => {
+    fetchRecords();
+  }, []);
 
-  const filtered = offices.filter(
+  const filtered = records.filter(
     (o) =>
       search.trim() === "" ||
-      o.name.toLowerCase().includes(search.toLowerCase()) ||
-      o.number.includes(search.trim()),
+      f(o, "name").toLowerCase().includes(search.toLowerCase()) ||
+      f(o, "number").includes(search.trim()),
   );
 
   function openCreate() {
@@ -1567,9 +1603,9 @@ function OfficesPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(o: MunicipalOffice) {
-    setName(o.name);
-    setNumber(o.number);
+  function openEdit(o: ContentRecord) {
+    setName(f(o, "name"));
+    setNumber(f(o, "number"));
     setErrors({});
     setEditTarget(o);
     setPanelMode("edit");
@@ -1579,7 +1615,7 @@ function OfficesPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Office name is required.";
@@ -1588,25 +1624,41 @@ function OfficesPanel({
       setErrors(e);
       return;
     }
-    if (panelMode === "create") {
-      setOffices((prev) => [
-        ...prev,
-        {
-          id: `o-${crypto.randomUUID().slice(0, 8)}`,
-          name: name.trim(),
-          number: number.trim(),
-        },
-      ]);
-    } else if (editTarget) {
-      setOffices((prev) =>
-        prev.map((o) =>
-          o.id === editTarget.id
-            ? { ...o, name: name.trim(), number: number.trim() }
-            : o,
-        ),
-      );
+    setIsSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await createRecord(
+          { name: name.trim(), number: number.trim() },
+          accessToken!,
+        );
+        toast("Office added.", "success");
+      } else if (editTarget) {
+        await updateRecord(
+          editTarget.id,
+          { name: name.trim(), number: number.trim() },
+          accessToken!,
+        );
+        toast("Office saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    closePanel();
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteRecord(record.id, accessToken!);
+      toast("Office removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const returnFocusRef = (
@@ -1618,24 +1670,19 @@ function OfficesPanel({
   ) as React.RefObject<HTMLButtonElement>;
 
   return (
-    <div className="p-5">
-      {/* Sub-header + search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+    <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 pt-5 pb-4">
         <div>
           <p className="text-sm font-semibold text-gray-800">
             Municipal Offices Directory
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            {offices.length} offices total
+            {records.length} offices total
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Search */}
           <div className="relative">
-            <LuSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
-              aria-hidden="true"
-            />
+            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <input
               type="search"
               placeholder="Search offices…"
@@ -1646,75 +1693,102 @@ function OfficesPanel({
             />
           </div>
           <button
+            type="button"
+            onClick={() => fetchRecords()}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
             ref={addBtnRef}
             type="button"
             onClick={openCreate}
             className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all whitespace-nowrap"
           >
-            <LuPlus className="h-4 w-4" aria-hidden="true" />
-            Add Office
+            <LuPlus className="h-4 w-4" /> Add Office
           </button>
         </div>
       </div>
 
-      {/* Card grid */}
-      {filtered.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-400">
-          {search
-            ? "No offices match your search."
-            : "No offices yet. Add one above."}
-        </p>
+      {error && <ErrorBanner message={error} onRetry={() => fetchRecords()} />}
+
+      {isLoading && records.length === 0 ? (
+        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-20 rounded-xl bg-gray-100 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : records.length === 0 ? (
+        <EmptyState
+          icon={<LuBuilding2 className="h-6 w-6 text-gray-300" />}
+          title="No offices yet"
+          sub="Add municipal offices and their direct contact numbers."
+          onAdd={openCreate}
+          addLabel="Add Office"
+        />
       ) : (
-        <motion.div
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          initial="hidden"
-          animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
-        >
-          <AnimatePresence>
-            {filtered.map((o) => (
-              <motion.div
-                key={o.id}
-                variants={rowVariants}
-                exit="exit"
-                className="group relative rounded-xl border border-gray-100 bg-gray-50/50 p-4 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all"
-              >
-                <div className="flex items-start gap-2.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
-                    <LuPhone className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div className="flex-1 min-w-0 pb-7">
-                    <p className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
-                      {o.name}
-                    </p>
-                    <p className="mt-1 font-mono text-xs text-indigo-600">
-                      {o.number}
-                    </p>
-                  </div>
-                </div>
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    ref={getEditRef(o.id) as React.RefObject<HTMLButtonElement>}
-                    type="button"
-                    onClick={() => openEdit(o)}
-                    className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
-                    aria-label={`Edit ${o.name}`}
+        <div className="px-5 pb-5">
+          {filtered.length === 0 && search ? (
+            <SearchEmpty query={search} />
+          ) : (
+            <motion.div
+              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
+            >
+              <AnimatePresence>
+                {filtered.map((o) => (
+                  <motion.div
+                    key={o.id}
+                    variants={rowVariants}
+                    exit="exit"
+                    className="group relative rounded-xl border border-gray-100 bg-gray-50/50 p-4 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all"
                   >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(o)}
-                    className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
-                    aria-label={`Remove ${o.name}`}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+                    <div className="flex items-start gap-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                        <LuPhone className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0 pb-7">
+                        <p className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
+                          {f(o, "name")}
+                        </p>
+                        <p className="mt-1 font-mono text-xs text-indigo-600">
+                          {f(o, "number")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        ref={
+                          getEditRef(o.id) as React.RefObject<HTMLButtonElement>
+                        }
+                        type="button"
+                        onClick={() => openEdit(o)}
+                        className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
+                        aria-label={`Edit ${f(o, "name")}`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(o)}
+                        className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                        aria-label={`Remove ${f(o, "name")}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </div>
       )}
 
       <AnimatePresence>
@@ -1727,6 +1801,7 @@ function OfficesPanel({
             returnFocusRef={returnFocusRef}
             formId="of-form"
             submitLabel={panelMode === "create" ? "Add Office" : "Save Changes"}
+            isSubmitting={isSubmitting}
             submitColorClass="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
           >
             <form
@@ -1779,12 +1854,13 @@ function OfficesPanel({
           </SlidePanel>
         )}
         {deleteTarget && (
-          <DeleteConfirmDialog
-            label={deleteTarget.name}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setOffices((prev) => prev.filter((o) => o.id !== deleteTarget.id))
-            }
+          <DeleteDialog
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
           />
         )}
       </AnimatePresence>
@@ -1792,26 +1868,469 @@ function OfficesPanel({
   );
 }
 
+// ─── Social Links Panel ───────────────────────────────────────────────────────
+
+function SocialLinksPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const records = useSocialLinksStore((s) => s.records);
+  const isLoading = useSocialLinksStore((s) => s.isLoading);
+  const error = useSocialLinksStore((s) => s.error);
+  const { fetchRecords, createRecord, updateRecord, deleteRecord } =
+    useSocialLinksStore();
+
+  const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+  const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
+    {},
+  );
+
+  const [name, setName] = useState("");
+  const [href, setHref] = useState("");
+  const [platform, setPlatform] = useState<SocialLinkPlatform>("facebook");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function getEditRef(id: string) {
+    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
+    return editRefs.current[id];
+  }
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  function openCreate() {
+    setName("");
+    setHref("");
+    setPlatform("facebook");
+    setErrors({});
+    setEditTarget(null);
+    setPanelMode("create");
+  }
+  function openEdit(r: ContentRecord) {
+    setName(f(r, "name"));
+    setHref(f(r, "href"));
+    setPlatform((f(r, "platform") as SocialLinkPlatform) || "facebook");
+    setErrors({});
+    setEditTarget(r);
+    setPanelMode("edit");
+  }
+  function closePanel() {
+    setPanelMode(null);
+    setEditTarget(null);
+  }
+
+  async function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    const e: Record<string, string> = {};
+    if (!name.trim()) e.name = "Name is required.";
+    if (!href.trim()) e.href = "URL is required.";
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await createRecord(
+          { name: name.trim(), href: href.trim(), platform },
+          accessToken!,
+        );
+        toast("Social link added.", "success");
+      } else if (editTarget) {
+        await updateRecord(
+          editTarget.id,
+          { name: name.trim(), href: href.trim(), platform },
+          accessToken!,
+        );
+        toast("Social link saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteRecord(record.id, accessToken!);
+      toast("Social link removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  const returnFocusRef = (
+    panelMode === "create"
+      ? addBtnRef
+      : editTarget
+        ? getEditRef(editTarget.id)
+        : addBtnRef
+  ) as React.RefObject<HTMLButtonElement>;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
+        <div>
+          <p className="text-sm font-semibold text-gray-800">
+            Social Media Links
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {records.length} link{records.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fetchRecords()}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            ref={addBtnRef}
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all"
+          >
+            <LuPlus className="h-4 w-4" /> Add Link
+          </button>
+        </div>
+      </div>
+
+      {error && <ErrorBanner message={error} onRetry={() => fetchRecords()} />}
+
+      {isLoading && records.length === 0 ? (
+        <SkeletonRows count={4} />
+      ) : records.length === 0 ? (
+        <EmptyState
+          icon={<LuShare2 className="h-6 w-6 text-gray-300" />}
+          title="No social links yet"
+          sub="Add Facebook, Instagram, YouTube, and other social channels."
+          onAdd={openCreate}
+          addLabel="Add Link"
+        />
+      ) : (
+        <div className="divide-y divide-gray-50 pb-2">
+          <AnimatePresence>
+            {records.map((r) => {
+              const pm =
+                SOCIAL_PLATFORM_META[
+                  (f(r, "platform") as SocialLinkPlatform) || "other"
+                ];
+              return (
+                <motion.div
+                  key={r.id}
+                  variants={rowVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:gap-4"
+                >
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${pm.bg}`}
+                  >
+                    <LuShare2 className={`h-4 w-4 ${pm.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {f(r, "name")}
+                      </p>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${pm.color} ${pm.bg}`}
+                      >
+                        {pm.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 font-mono truncate mt-0.5">
+                      {f(r, "href")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 sm:shrink-0">
+                    <a
+                      href={f(r, "href")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-1.5 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+                      aria-label="Open link"
+                    >
+                      <LuLink className="h-3.5 w-3.5" />
+                    </a>
+                    <button
+                      ref={
+                        getEditRef(r.id) as React.RefObject<HTMLButtonElement>
+                      }
+                      type="button"
+                      onClick={() => openEdit(r)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
+                      aria-label={`Edit ${f(r, "name")}`}
+                    >
+                      <LuPencil className="h-3.5 w-3.5" /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(r)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                      aria-label={`Remove ${f(r, "name")}`}
+                    >
+                      <LuTrash2 className="h-3.5 w-3.5" /> Remove
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {panelMode && (
+          <SlidePanel
+            title={
+              panelMode === "create" ? "Add Social Link" : "Edit Social Link"
+            }
+            subtitle="Social media channels shown on the Contact page"
+            accentColor="from-violet-500 to-violet-700"
+            onClose={closePanel}
+            returnFocusRef={returnFocusRef}
+            formId="sl-form"
+            submitLabel={panelMode === "create" ? "Add Link" : "Save Changes"}
+            isSubmitting={isSubmitting}
+            submitColorClass="bg-violet-600 hover:bg-violet-700 focus:ring-violet-500"
+          >
+            <form
+              id="sl-form"
+              onSubmit={handleSubmit}
+              noValidate
+              className="space-y-4"
+            >
+              <div>
+                <label
+                  htmlFor="sl-platform"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Platform
+                </label>
+                <select
+                  id="sl-platform"
+                  value={platform}
+                  onChange={(e) =>
+                    setPlatform(e.target.value as SocialLinkPlatform)
+                  }
+                  className={inputNormal}
+                >
+                  {SOCIAL_PLATFORMS.map((p) => (
+                    <option key={p} value={p}>
+                      {SOCIAL_PLATFORM_META[p].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="sl-name"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Display Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="sl-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setErrors((p) => ({ ...p, name: "" }));
+                  }}
+                  className={errors.name ? inputError : inputNormal}
+                  placeholder="e.g. Facebook"
+                />
+                <FieldError id="sl-name-err" msg={errors.name} />
+              </div>
+              <div>
+                <label
+                  htmlFor="sl-href"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="sl-href"
+                  type="url"
+                  value={href}
+                  onChange={(e) => {
+                    setHref(e.target.value);
+                    setErrors((p) => ({ ...p, href: "" }));
+                  }}
+                  className={errors.href ? inputError : inputNormal}
+                  placeholder="https://facebook.com/lgulibmanan"
+                />
+                <FieldError id="sl-href-err" msg={errors.href} />
+              </div>
+            </form>
+          </SlidePanel>
+        )}
+        {deleteTarget && (
+          <DeleteDialog
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Directory Tab Panel ──────────────────────────────────────────────────────
+
+function DirectoryPanel() {
+  const [activeTab, setActiveTab] = useState<DirectoryTab>("emergency");
+  const emergencyCount = useEmergencyContactsStore(
+    (s) => s.adminRecords.length,
+  );
+  const medicalCount = useMedicalContactsStore((s) => s.adminRecords.length);
+  const officeCount = useOfficeDirectoryStore((s) => s.records.length);
+  const socialCount = useSocialLinksStore((s) => s.records.length);
+
+  const tabs: { key: DirectoryTab; label: string; count: number }[] = [
+    { key: "emergency", label: "Emergency Hotlines", count: emergencyCount },
+    { key: "medical", label: "Medical Hotlines", count: medicalCount },
+    { key: "offices", label: "Municipal Offices", count: officeCount },
+    { key: "social", label: "Social Media", count: socialCount },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+      <div className="border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <nav
+          className="flex min-w-max px-4 pt-3 gap-1"
+          role="tablist"
+          aria-label="Directory sections"
+        >
+          {tabs.map(({ key, label, count }) => {
+            const isActive = key === activeTab;
+            return (
+              <button
+                key={key}
+                role="tab"
+                type="button"
+                aria-selected={isActive}
+                aria-controls={`dir-tabpanel-${key}`}
+                id={`dir-tab-${key}`}
+                onClick={() => setActiveTab(key)}
+                className={[
+                  "relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1",
+                  isActive
+                    ? "text-blue-600 bg-blue-50/60"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-50",
+                ].join(" ")}
+              >
+                {label}
+                <span
+                  className={[
+                    "inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold min-w-[18px]",
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-500",
+                  ].join(" ")}
+                >
+                  {count}
+                </span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+      <div
+        key={activeTab}
+        id={`dir-tabpanel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`dir-tab-${activeTab}`}
+      >
+        {activeTab === "emergency" && <EmergencyPanel />}
+        {activeTab === "medical" && <MedicalPanel />}
+        {activeTab === "offices" && <OfficesPanel />}
+        {activeTab === "social" && <SocialLinksPanel />}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function ContactsPage() {
+  const emergencyCount = useEmergencyContactsStore(
+    (s) => s.adminRecords.length,
+  );
+  const medicalCount = useMedicalContactsStore((s) => s.adminRecords.length);
+  const officeCount = useOfficeDirectoryStore((s) => s.records.length);
+  const socialCount = useSocialLinksStore((s) => s.records.length);
+  const contactCount = useContactStore((s) => s.adminRecords.length);
+  const total =
+    emergencyCount + medicalCount + officeCount + socialCount + contactCount;
+
   return (
-    <motion.div
-      className="space-y-6"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: EASE }}
-    >
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Contacts Management</h1>
-        <p className="mt-0.5 text-sm text-gray-400">
-          Manage all contact information displayed on the public Contact page.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+            Contacts
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Manage contact info, hotlines, offices, and social links on the
+            public Contact page
+          </p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-gray-900">{total}</p>
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-0.5">
+              Total
+            </p>
+          </div>
+          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-red-700">{emergencyCount}</p>
+            <p className="text-[10px] uppercase tracking-wider text-red-500 mt-0.5">
+              Emergency
+            </p>
+          </div>
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-blue-700">{medicalCount}</p>
+            <p className="text-[10px] uppercase tracking-wider text-blue-500 mt-0.5">
+              Medical
+            </p>
+          </div>
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 shadow-sm text-center min-w-[70px]">
+            <p className="text-xl font-bold text-indigo-700">{officeCount}</p>
+            <p className="text-[10px] uppercase tracking-wider text-indigo-500 mt-0.5">
+              Offices
+            </p>
+          </div>
+        </div>
       </div>
 
       <ContactInfoSection />
       <DirectoryPanel />
-    </motion.div>
+    </div>
   );
 }
 
