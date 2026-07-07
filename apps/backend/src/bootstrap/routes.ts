@@ -26,6 +26,7 @@ import { medicalContactsRouter } from "@/modules/medical-contacts";
 import { officeDirectoryRouter } from "@/modules/office-directory";
 import { socialLinksRouter } from "@/modules/social-links";
 import { legislativeRouter } from "@/modules/legislative";
+import { transparencyRouter } from "@/modules/transparency/transparency.routes";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -119,6 +120,9 @@ apiRouter.use("/social-links", socialLinksRouter);
 
 // Legislative — ordinances, resolutions, process steps, about points
 apiRouter.use("/legislative", legislativeRouter);
+
+// Transparency — LGU-managed DPWH infrastructure projects
+apiRouter.use("/transparency", transparencyRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
