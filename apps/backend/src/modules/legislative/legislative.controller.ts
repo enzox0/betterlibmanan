@@ -451,12 +451,10 @@ export async function getProcessSteps(
   try {
     const variant = req.query.variant as string;
     if (variant !== "ordinance" && variant !== "resolution") {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "variant must be 'ordinance' or 'resolution'",
-        });
+      res.status(400).json({
+        success: false,
+        message: "variant must be 'ordinance' or 'resolution'",
+      });
       return;
     }
     const records = await listProcessSteps(variant);
