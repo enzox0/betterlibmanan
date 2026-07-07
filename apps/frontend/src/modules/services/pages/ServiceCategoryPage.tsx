@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -7,10 +8,13 @@ import {
   FaMoneyBillWave,
   FaListUl,
   FaChevronRight,
+  FaInfoCircle,
+  FaPlusCircle,
 } from "react-icons/fa";
-import { mockServicesData } from "../data/mockData";
-import type { ServiceItem } from "../types/types";
-import { IconType } from "react-icons";
+import { useServicesStore } from "@/modules/admin/store/servicesStore";
+import { resolveIcon } from "../utils/iconMap";
+import { ContributeCTA } from "@/app/shell/ContributeCTA";
+import type { ServiceItemRecord } from "@/modules/admin/services/services.api";
 
 interface ServiceCategoryPageProps {
   slug: string;
@@ -22,10 +26,11 @@ function ServiceCard({
   service,
   index,
 }: {
-  service: ServiceItem;
+  service: ServiceItemRecord;
   index: number;
 }) {
-  const hasDetails = service.requirements || service.steps;
+  const hasDetails =
+    (service.requirements?.length ?? 0) > 0 || (service.steps?.length ?? 0) > 0;
 
   return (
     <motion.div
@@ -118,14 +123,117 @@ function ServiceCard({
   );
 }
 
+// ── Loading state ────────────────────────────────────────────────────────────
+
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-neutral-100">
+      <section className="relative bg-gray-900 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-10 pb-12 sm:pt-14 sm:pb-16">
+          <div className="mb-6 h-4 w-24 rounded bg-white/10 animate-pulse" />
+          <div className="flex items-center gap-4 sm:gap-5">
+            <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white/10 animate-pulse" />
+            <div className="flex-1">
+              <div className="h-8 w-64 rounded bg-white/10 mb-2 animate-pulse" />
+              <div className="h-4 w-96 rounded bg-white/10 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="py-10 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="space-y-5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-neutral-200 bg-white p-6 animate-pulse"
+              >
+                <div className="h-5 w-48 rounded bg-gray-200 mb-3" />
+                <div className="h-4 w-full rounded bg-gray-100 mb-2" />
+                <div className="h-4 w-3/4 rounded bg-gray-100" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
-  const category = mockServicesData.categories.find((c) => c.slug === slug);
+  const publicCategories = useServicesStore((s) => s.publicCategories);
+  const isLoading = useServicesStore((s) => s.isPublicCategoriesLoading);
+  const fetchPublicCategories = useServicesStore(
+    (s) => s.fetchPublicCategories,
+  );
 
-  if (!category) return null;
+  // Always fetch fresh on mount — store deduplicates concurrent calls
+  useEffect(() => {
+    fetchPublicCategories().catch(() => {});
+  }, [fetchPublicCategories]);
 
-  const Icon: IconType = category.icon;
+  // Show skeleton while the very first fetch is in flight
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  const category = publicCategories.find((c) => c.slug === slug);
+
+  // No matching category — show nudge panel + contribute section
+  if (!category) {
+    return (
+      <div className="min-h-screen bg-neutral-100">
+        {/* Minimal dark header */}
+        <section className="relative bg-gray-900 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-10 pb-12 sm:pt-14 sm:pb-16">
+            <Link
+              to="/services"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors uppercase tracking-wider"
+            >
+              <FaArrowLeft size={10} />
+              All Services
+            </Link>
+          </div>
+        </section>
+
+        {/* No-data nudge */}
+        <section className="py-14">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="rounded-2xl border border-blue-100 bg-blue-50/60 px-8 py-12 text-center"
+            >
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-500">
+                <FaInfoCircle size={20} />
+              </div>
+              <p className="text-base font-bold text-blue-900 mb-1">
+                No services available yet
+              </p>
+              <p className="text-sm text-blue-600 max-w-xs mx-auto leading-relaxed mb-6">
+                This section doesn't have any data yet. Would you like to
+                contribute or add information?
+              </p>
+              <Link
+                to="/admin/register"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+              >
+                <FaPlusCircle size={13} />
+                Add Information
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const Icon = resolveIcon(category.iconKey);
 
   return (
     <div className="min-h-screen bg-neutral-100">
