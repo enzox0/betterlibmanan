@@ -3,11 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FaSearch,
   FaTimes,
-  FaRoad,
-  FaWater,
   FaBuilding,
   FaCheckCircle,
-  FaSpinner,
   FaClock,
   FaMapMarkerAlt,
   FaCalendarAlt,
@@ -16,16 +13,55 @@ import {
   FaChartLine,
   FaExternalLinkAlt,
   FaStream,
-  FaTh,
-  FaList,
-  FaChevronLeft,
-  FaChevronRight,
   FaFilter,
 } from "react-icons/fa";
 import React from "react";
 import CountUp from "@/shared/ui/CountUp";
-import { Project, ProjectSummary, fetchProjects } from "../api";
-import { ListRowSkeleton, Pagination } from "@/shared/ui";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface Project {
+  id: string;
+  contractId: string;
+  description: string;
+  category: string;
+  status: string;
+  budget: number;
+  amountPaid: number;
+  progress: number;
+  location: { province: string; region: string };
+  contractor: string;
+  startDate: string;
+  completionDate: string | null;
+  infraYear: string;
+  programName: string;
+  sourceOfFunds: string;
+}
+
+interface ProjectSummary {
+  totalProjects: number;
+  completed: number;
+  ongoing: number;
+  notStarted: number;
+  totalBudget: number;
+}
+
+interface FinancialReport {
+  id: string;
+  fiscalYear: string;
+  quarter: "Q1" | "Q2" | "Q3" | "Q4";
+  totalIncome: number;
+  totalExpenditures: number;
+  netOperatingIncome: number;
+  fundBalance: number;
+  incomeSources: Array<{ source: string; amount: number; percentage: number }>;
+  expenditureAllocations: Array<{
+    category: string;
+    amount: number;
+    percentage: number;
+  }>;
+  reportDate: string;
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -35,34 +71,36 @@ const DOT_BG = {
   backgroundSize: "28px 28px",
 };
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 25;
 
-const CATEGORY_ICONS: Record<
+const CATEGORY_BADGES: Record<
   string,
-  React.ComponentType<{ className?: string }>
+  { label: string; bg: string; text: string }
 > = {
-  Roads: FaRoad,
-  Bridges: FaStream,
-  "Flood Control and Drainage": FaWater,
-  "Buildings and Facilities": FaBuilding,
+  Roads: { label: "ROADS", bg: "bg-yellow-100", text: "text-yellow-800" },
+  Bridges: { label: "BRIDGES", bg: "bg-purple-100", text: "text-purple-800" },
+  "Flood Control and Drainage": {
+    label: "FLOOD CONTROL",
+    bg: "bg-blue-100",
+    text: "text-blue-800",
+  },
+  "Buildings and Facilities": {
+    label: "BUILDINGS",
+    bg: "bg-green-100",
+    text: "text-green-800",
+  },
 };
 
-const STATUS_STYLES: Record<string, { pill: string; dot: string }> = {
-  Completed: { pill: "bg-neutral-900 text-white", dot: "bg-neutral-900" },
-  "On-Going": { pill: "bg-blue-600 text-white", dot: "bg-blue-600" },
-  "Not Started": {
-    pill: "bg-neutral-200 text-neutral-700",
-    dot: "bg-neutral-400",
-  },
+const STATUS_STYLES: Record<string, { pill: string }> = {
+  Completed: { pill: "bg-green-100 text-green-800 border border-green-200" },
+  "On-Going": { pill: "bg-blue-100 text-blue-800 border border-blue-200" },
+  "Not Started": { pill: "bg-gray-100 text-gray-600 border border-gray-200" },
   "For Procurement": {
-    pill: "bg-neutral-500 text-white",
-    dot: "bg-neutral-500",
+    pill: "bg-amber-100 text-amber-700 border border-amber-200",
   },
 };
-const DEFAULT_STATUS = {
-  pill: "bg-neutral-200 text-neutral-700",
-  dot: "bg-neutral-400",
-};
+
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -82,34 +120,59 @@ const formatDate = (d: string | null) =>
       })
     : "N/A";
 
-const getCategoryIcon = (cat: string) => CATEGORY_ICONS[cat] ?? FaBuilding;
-const getStatusStyle = (s: string) => STATUS_STYLES[s] ?? DEFAULT_STATUS;
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-/** Slim horizontal progress bar */
-function ProgressBar({ pct }: { pct: number }) {
+function getStatusStyle(s: string) {
   return (
-    <div className="mt-3 pt-3 border-t border-neutral-100">
-      <div className="flex justify-between text-[11px] text-gray-500 mb-1.5">
-        <span>Progress</span>
-        <span className="font-bold text-gray-700">{pct}%</span>
-      </div>
-      <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
-        <motion.div
-          className="h-full rounded-full bg-blue-600"
-          initial={{ width: 0 }}
-          whileInView={{ width: `${pct}%` }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        />
-      </div>
-    </div>
+    STATUS_STYLES[s] ?? {
+      pill: "bg-gray-100 text-gray-600 border border-gray-200",
+    }
   );
 }
 
-/** Pill badge */
-function StatusPill({ status }: { status: string }) {
+function getCategoryBadge(cat: string) {
+  return (
+    CATEGORY_BADGES[cat] ?? {
+      label: cat.toUpperCase(),
+      bg: "bg-gray-100",
+      text: "text-gray-600",
+    }
+  );
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+
+async function fetchLocalProjects(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<{ data: Project[]; summary: ProjectSummary; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search) query.set("search", params.search);
+
+  const res = await fetch(`${API_BASE}/api/transparency/projects?${query}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message ?? "API error");
+  return {
+    data: json.data.data,
+    summary: json.data.summary,
+    total: json.data.pagination.totalCount,
+  };
+}
+
+async function fetchFinancialReports(): Promise<FinancialReport[]> {
+  const res = await fetch(`${API_BASE}/api/transparency/financial-reports`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message ?? "API error");
+  return json.data;
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+/** Status badge pill */
+function StatusBadge({ status }: { status: string }) {
   const s = getStatusStyle(status);
   return (
     <span
@@ -120,178 +183,68 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-/** Grid card */
-function GridCard({
-  project,
-  onClick,
-}: {
-  project: Project;
-  onClick: () => void;
-}) {
-  const Icon = getCategoryIcon(project.category);
+/** Category chip */
+function CategoryChip({ category }: { category: string }) {
+  const b = getCategoryBadge(category);
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4 }}
-      onClick={onClick}
-      className="group relative cursor-pointer rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5"
+    <span
+      className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${b.bg} ${b.text}`}
     >
-      {/* left accent stripe */}
-      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
-
-      <div className="pl-5 pr-5 pt-5 pb-4">
-        {/* header row */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600 group-hover:bg-neutral-200 transition-colors">
-            <Icon className="text-sm" />
-          </div>
-          <StatusPill status={project.status} />
-        </div>
-
-        {/* title */}
-        <h3 className="line-clamp-3 text-sm font-bold text-gray-900 leading-snug mb-3">
-          {project.description}
-        </h3>
-
-        {/* key info */}
-        <div className="space-y-1.5 text-xs text-gray-600">
-          <div className="flex items-center gap-2">
-            <FaMoneyBillWave className="shrink-0 text-gray-400" />
-            <span className="font-semibold text-gray-800 truncate">
-              {formatCurrency(project.budget)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <FaHardHat className="shrink-0 text-gray-400" />
-            <span className="truncate">
-              {project.contractor.split("(")[0].trim()}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <FaCalendarAlt className="shrink-0 text-gray-400" />
-            <span>{formatDate(project.startDate)}</span>
-          </div>
-        </div>
-
-        {/* progress */}
-        {project.progress > 0 && <ProgressBar pct={project.progress} />}
-
-        {/* footer */}
-        <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center justify-between">
-          <span className="text-[10px] text-gray-400 font-mono">
-            {project.contractId}
-          </span>
-          <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 group-hover:text-gray-800 transition-colors">
-            Details
-            <svg
-              className="w-3 h-3 group-hover:translate-x-0.5 transition-transform"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </span>
-        </div>
-      </div>
-    </motion.div>
+      {b.label}
+    </span>
   );
 }
 
-/** List row */
-function ListRow({
-  project,
-  onClick,
-}: {
-  project: Project;
-  onClick: () => void;
-}) {
-  const Icon = getCategoryIcon(project.category);
+/** Progress bar (compact, horizontal) */
+function ProgressBar({ pct }: { pct: number }) {
+  const color =
+    pct === 100
+      ? "bg-green-500"
+      : pct >= 60
+        ? "bg-blue-500"
+        : pct >= 30
+          ? "bg-amber-400"
+          : "bg-blue-300";
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.35 }}
-      onClick={onClick}
-      className="group relative cursor-pointer flex items-start gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
-    >
-      <div className="absolute left-0 top-0 h-full w-1 rounded-l-2xl bg-gradient-to-b from-neutral-400 to-neutral-700" />
-
-      <div className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-600 group-hover:bg-neutral-200 transition-colors">
-        <Icon className="text-sm" />
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+        <div
+          className={`h-full rounded-full ${color}`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1.5">
-          <StatusPill status={project.status} />
-          {project.progress > 0 && (
-            <span className="text-[11px] font-bold text-gray-600">
-              {project.progress}%
-            </span>
-          )}
-        </div>
-        <p className="text-sm font-bold text-gray-900 leading-snug mb-2">
-          {project.description}
-        </p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <FaMoneyBillWave className="text-gray-400" />
-            {formatCurrency(project.budget)}
-          </span>
-          <span className="flex items-center gap-1">
-            <FaHardHat className="text-gray-400" />
-            {project.contractor.split("(")[0].trim()}
-          </span>
-          <span className="flex items-center gap-1">
-            <FaCalendarAlt className="text-gray-400" />
-            {formatDate(project.startDate)}
-          </span>
-          <span className="flex items-center gap-1">
-            <FaMapMarkerAlt className="text-gray-400" />
-            {project.location.province}
-          </span>
-        </div>
-        {project.progress > 0 && (
-          <div className="mt-2 h-1 w-full rounded-full bg-neutral-100 overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-blue-600"
-              initial={{ width: 0 }}
-              whileInView={{ width: `${project.progress}%` }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="shrink-0 flex items-center self-center">
-        <svg
-          className="w-4 h-4 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </div>
-    </motion.div>
+      <span className="text-[11px] font-bold text-gray-600 w-8 shrink-0 text-right">
+        {pct}%
+      </span>
+    </div>
   );
 }
 
-/** Project detail modal */
+/** Detail row for project modal */
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+      <div className="flex items-center gap-1.5 text-gray-400 mb-1">
+        <Icon size={11} />
+        <span className="text-[11px] font-semibold uppercase tracking-wide">
+          {label}
+        </span>
+      </div>
+      <p className="text-sm text-gray-800">{value}</p>
+    </div>
+  );
+}
+
+// ── Project Detail Modal ──────────────────────────────────────────────────────
+
 function ProjectModal({
   project,
   onClose,
@@ -299,9 +252,6 @@ function ProjectModal({
   project: Project;
   onClose: () => void;
 }) {
-  const Icon = getCategoryIcon(project.category);
-
-  // close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -312,7 +262,6 @@ function ProjectModal({
 
   return (
     <div className="fixed inset-0 z-[9999999] flex items-end sm:items-center justify-center p-0 sm:p-4">
-      {/* backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -335,35 +284,28 @@ function ProjectModal({
             className="absolute inset-0 opacity-[0.04] pointer-events-none"
             style={DOT_BG}
           />
-
           <button
             onClick={onClose}
             className="absolute right-4 top-4 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
           >
             <FaTimes size={14} />
           </button>
-
-          <div className="relative flex items-start gap-3 pr-8">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
-              <Icon className="text-sm" />
+          <div className="relative pr-8">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <StatusBadge status={project.status} />
+              <CategoryChip category={project.category} />
+              <span className="text-[11px] text-gray-400 font-mono">
+                {project.contractId}
+              </span>
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <StatusPill status={project.status} />
-                <span className="text-[11px] text-gray-400 font-mono">
-                  {project.contractId}
-                </span>
-              </div>
-              <h2 className="text-sm font-bold text-white leading-snug sm:text-base">
-                {project.description}
-              </h2>
-            </div>
+            <h2 className="text-sm font-bold text-white leading-snug sm:text-base">
+              {project.description}
+            </h2>
           </div>
         </div>
 
         {/* scrollable body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* progress */}
           {project.progress > 0 && (
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
               <div className="flex justify-between mb-2">
@@ -383,7 +325,6 @@ function ProjectModal({
             </div>
           )}
 
-          {/* financials */}
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               {
@@ -419,12 +360,11 @@ function ProjectModal({
             ))}
           </div>
 
-          {/* details grid */}
           <div className="space-y-2.5">
             <DetailRow
               icon={FaHardHat}
               label="Contractor"
-              value={project.contractor}
+              value={project.contractor || "N/A"}
             />
             <DetailRow
               icon={FaMapMarkerAlt}
@@ -468,16 +408,7 @@ function ProjectModal({
           </div>
         </div>
 
-        {/* footer */}
-        <div className="flex-shrink-0 border-t border-neutral-100 px-5 py-3 flex items-center justify-between">
-          <a
-            href="https://www.dpwh.gov.ph/dpwh/transparency"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
-          >
-            DPWH Transparency Portal <FaExternalLinkAlt size={9} />
-          </a>
+        <div className="flex-shrink-0 border-t border-neutral-100 px-5 py-3 flex items-center justify-end">
           <button
             onClick={onClose}
             className="rounded-xl border border-neutral-200 bg-white px-4 py-1.5 text-xs font-semibold text-gray-700 hover:bg-neutral-50 transition-colors"
@@ -490,25 +421,664 @@ function ProjectModal({
   );
 }
 
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  value: string;
-}) {
+// ── Table skeleton row ────────────────────────────────────────────────────────
+
+function TableRowSkeleton() {
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-      <div className="flex items-center gap-1.5 text-gray-400 mb-1">
-        <Icon size={11} />
-        <span className="text-[11px] font-semibold uppercase tracking-wide">
-          {label}
-        </span>
-      </div>
-      <p className="text-sm text-gray-800">{value}</p>
+    <tr className="border-b border-gray-100 animate-pulse">
+      <td className="px-4 py-4">
+        <div className="space-y-1.5">
+          <div className="h-2.5 w-16 rounded bg-gray-200" />
+          <div className="h-3 w-full max-w-xs rounded bg-gray-200" />
+          <div className="h-2.5 w-32 rounded bg-gray-100" />
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <div className="h-2.5 w-24 rounded bg-gray-200" />
+      </td>
+      <td className="px-4 py-4">
+        <div className="h-5 w-20 rounded-full bg-gray-200" />
+      </td>
+      <td className="px-4 py-4">
+        <div className="h-2.5 w-28 rounded bg-gray-200" />
+      </td>
+      <td className="px-4 py-4">
+        <div className="h-2 w-24 rounded-full bg-gray-200" />
+      </td>
+    </tr>
+  );
+}
+
+// ── Pagination control ────────────────────────────────────────────────────────
+
+function TablePagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+}) {
+  const pages: (number | "…")[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (page > 3) pages.push("…");
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i++
+    )
+      pages.push(i);
+    if (page < totalPages - 2) pages.push("…");
+    pages.push(totalPages);
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1 px-4 py-4">
+      <button
+        onClick={() => onPageChange(page - 1)}
+        disabled={page === 1}
+        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+      >
+        Prev
+      </button>
+      {pages.map((p, i) =>
+        p === "…" ? (
+          <span key={`e${i}`} className="px-2 text-xs text-gray-400">
+            …
+          </span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onPageChange(p as number)}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              p === page
+                ? "bg-gray-900 text-white border-gray-900"
+                : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        onClick={() => onPageChange(page + 1)}
+        disabled={page === totalPages}
+        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+      >
+        Next
+      </button>
     </div>
+  );
+}
+
+// ── Infrastructure Investments Section ───────────────────────────────────────
+
+const CATEGORY_COLORS: Record<
+  string,
+  { bg: string; text: string; border: string }
+> = {
+  Roads: {
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
+  },
+  Bridges: {
+    bg: "bg-violet-50",
+    text: "text-violet-700",
+    border: "border-violet-200",
+  },
+  "Flood Control and Drainage": {
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "border-blue-200",
+  },
+  "Buildings and Facilities": {
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+  },
+};
+const DEFAULT_COL = {
+  bg: "bg-gray-50",
+  text: "text-gray-600",
+  border: "border-gray-200",
+};
+
+function InfrastructureCard({
+  project,
+  index,
+}: {
+  project: Project;
+  index: number;
+}) {
+  const col = CATEGORY_COLORS[project.category] ?? DEFAULT_COL;
+  const catLabel =
+    project.category === "Flood Control and Drainage"
+      ? "Flood Control"
+      : project.category;
+  const fmtBudget = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 0,
+  }).format(project.budget);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+      className="relative rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
+    >
+      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
+      <div className="pl-5 pr-5 pt-5 pb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="px-2.5 py-1 rounded-lg bg-gray-900 text-white text-xs font-black">
+            {project.infraYear || "—"}
+          </span>
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-semibold ${col.bg} ${col.text} ${col.border}`}
+          >
+            <span className="text-[9px]">≡</span> {catLabel}
+          </span>
+          {project.status === "Completed" && (
+            <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 text-white text-[11px] font-semibold">
+              Completed
+            </span>
+          )}
+          {project.status === "On-Going" && (
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-semibold">
+              On-Going
+            </span>
+          )}
+        </div>
+        <h3 className="text-base font-bold text-gray-900 leading-snug mb-1.5">
+          {project.description}
+        </h3>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-4">
+          <FaMapMarkerAlt size={10} className="shrink-0 text-gray-400" />
+          <span>
+            {project.location.province}, {project.location.region}
+          </span>
+        </div>
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 grid grid-cols-3 divide-x divide-neutral-200">
+          <div className="px-4 py-3">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+              Type of Work
+            </p>
+            <p className="text-xs font-bold text-gray-800 leading-snug">
+              {project.programName || project.category}
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+              Contractor
+            </p>
+            <p className="text-xs font-bold text-gray-800 leading-snug">
+              {project.contractor || "TBD"}
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+              Contract Cost
+            </p>
+            <p className="text-sm font-extrabold text-blue-600">{fmtBudget}</p>
+          </div>
+        </div>
+        {project.status === "On-Going" && project.progress > 0 && (
+          <div className="mt-3 pt-3 border-t border-neutral-100">
+            <div className="flex justify-between text-[11px] text-gray-500 mb-1.5">
+              <span>Progress</span>
+              <span className="font-bold text-gray-700">
+                {project.progress}%
+              </span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-blue-600"
+                initial={{ width: 0 }}
+                whileInView={{ width: `${project.progress}%` }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          <a
+            href="https://transparency.dpwh.gov.ph/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline inline-flex items-center gap-1"
+          >
+            <FaExternalLinkAlt size={9} />
+            Source: DPWH Transparency Portal
+          </a>
+        </div>
+        {project.status === "Completed" && project.completionDate && (
+          <span className="text-[11px] text-gray-500 font-mono">
+            {formatDate(project.completionDate)}
+          </span>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function InfrastructureSection({ projects }: { projects: Project[] }) {
+  const filtered = projects.filter(
+    (p) => p.category === "Flood Control and Drainage",
+  );
+  if (filtered.length === 0) return null;
+  return (
+    <section className="py-14 sm:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-10"
+        >
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-3">
+            <FaBuilding size={10} /> Public Works
+          </p>
+          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl leading-tight">
+            Flood Control and Drainage Projects
+          </h2>
+          <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+            Major flood control and drainage projects serving the community
+          </p>
+        </motion.div>
+        <div className="space-y-4">
+          {filtered.map((p, i) => (
+            <InfrastructureCard key={p.id} project={p} index={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Budget & Financial Section ────────────────────────────────────────────────
+
+const DONUT_COLORS = [
+  "#1d4ed8",
+  "#0ea5e9",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+  "#ef4444",
+  "#ec4899",
+  "#14b8a6",
+];
+
+function DonutChart({
+  items,
+  centerLabel,
+}: {
+  items: Array<{ label: string; percentage: number }>;
+  centerLabel?: string;
+}) {
+  const size = 130;
+  const stroke = 24;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const segments: React.ReactNode[] = [];
+  let cum = 0;
+  items.forEach((item, i) => {
+    const dash = (item.percentage / 100) * circ;
+    segments.push(
+      <circle
+        key={i}
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={DONUT_COLORS[i % DONUT_COLORS.length]}
+        strokeWidth={stroke}
+        strokeDasharray={`${dash} ${circ - dash}`}
+        strokeDashoffset={-cum}
+        strokeLinecap="butt"
+      />,
+    );
+    cum += dash;
+  });
+  return (
+    <div className="relative flex items-center justify-center shrink-0">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="#f1f5f9"
+          strokeWidth={stroke}
+        />
+        {segments}
+      </svg>
+      {centerLabel && (
+        <span
+          className="absolute text-[9px] font-bold text-gray-400 uppercase tracking-wide"
+          style={{ transform: "rotate(90deg)" }}
+        >
+          {centerLabel}
+        </span>
+      )}
+    </div>
+  );
+}
+
+const QUARTER_LABELS: Record<string, string> = {
+  Q1: "Jan – Mar",
+  Q2: "Apr – Jun",
+  Q3: "Jul – Sep",
+  Q4: "Oct – Dec",
+};
+
+const STAT_META = [
+  { label: "Total Income", color: "bg-green-500", icon: "↓" },
+  { label: "Total Expenditures", color: "bg-amber-500", icon: "↑" },
+  { label: "Net Operating Income", color: "bg-blue-500", icon: "≈" },
+  { label: "Fund Balance (End)", color: "bg-violet-500", icon: "⊟" },
+];
+
+function BudgetSection({ reports }: { reports: FinancialReport[] }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeYear, setActiveYear] = useState("");
+
+  const byYear = reports.reduce<Record<string, FinancialReport[]>>((acc, r) => {
+    if (!acc[r.fiscalYear]) acc[r.fiscalYear] = [];
+    acc[r.fiscalYear].push(r);
+    return acc;
+  }, {});
+  const years = Object.keys(byYear).sort((a, b) => b.localeCompare(a));
+
+  useEffect(() => {
+    if (years.length > 0 && !activeYear) setActiveYear(years[0]);
+  }, [years, activeYear]);
+
+  if (reports.length === 0) return null;
+
+  const yearReports = (byYear[activeYear] ?? []).sort((a, b) =>
+    a.quarter.localeCompare(b.quarter),
+  );
+  const report = yearReports[Math.min(activeIdx, yearReports.length - 1)];
+  if (!report) return null;
+
+  const fmt = (n: number) => `₱${(Math.abs(n) / 1_000_000).toFixed(2)} M`;
+  const statValues = [
+    report.totalIncome,
+    report.totalExpenditures,
+    report.netOperatingIncome,
+    report.fundBalance,
+  ];
+
+  return (
+    <section>
+      {/* Dark hero banner */}
+      <div className="relative bg-gray-900 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent pointer-events-none" />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 text-center"
+        >
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-400 mb-3">
+            <FaMoneyBillWave size={10} /> Financial Transparency
+          </p>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl leading-tight">
+            Budget & Financial Transparency
+          </h2>
+          <p className="mt-2 text-sm text-gray-400 max-w-md mx-auto">
+            Tracking municipal finances and projects for accountability
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Content on neutral-100 */}
+      <div className="bg-neutral-100 py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="space-y-6">
+            {/* Fiscal year pills */}
+            {years.length > 1 && (
+              <div className="flex flex-wrap gap-2">
+                {years.map((yr) => (
+                  <button
+                    key={yr}
+                    onClick={() => {
+                      setActiveYear(yr);
+                      setActiveIdx(0);
+                    }}
+                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      activeYear === yr
+                        ? "bg-neutral-900 text-white shadow-sm"
+                        : "bg-white border border-neutral-200 text-gray-600 hover:bg-neutral-50"
+                    }`}
+                  >
+                    FY {yr}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ── Report card ── */}
+            <motion.div
+              key={`${activeYear}-${activeIdx}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
+            >
+              {/* Card header */}
+              <div className="px-6 pt-6 pb-5 border-b border-neutral-100 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-1.5">
+                    <FaChartLine size={10} /> Financial Report
+                  </p>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Statement of Receipts & Expenditures
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    FY {report.fiscalYear} quarterly financial performance
+                  </p>
+                </div>
+
+                {/* Quarter tabs — same pill style as filter tabs above */}
+                <div className="flex gap-1.5 shrink-0">
+                  {yearReports.map((r, i) => (
+                    <button
+                      key={r.id}
+                      onClick={() => setActiveIdx(i)}
+                      className={`flex flex-col items-center px-4 py-2.5 rounded-xl transition-all ${
+                        i === activeIdx
+                          ? "bg-neutral-900 text-white shadow-sm"
+                          : "border border-neutral-200 bg-white text-gray-600 hover:bg-neutral-50"
+                      }`}
+                    >
+                      <span className="text-sm font-black leading-none">
+                        {r.quarter}
+                      </span>
+                      <span
+                        className={`text-[10px] mt-0.5 ${i === activeIdx ? "text-gray-300" : "text-gray-400"}`}
+                      >
+                        {QUARTER_LABELS[r.quarter]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* KPI strip — system card style with left accent stripe */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-neutral-100">
+                {STAT_META.map((meta, i) => (
+                  <motion.div
+                    key={meta.label}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: i * 0.07 }}
+                    className="relative bg-white px-5 py-5 overflow-hidden"
+                  >
+                    <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
+                    <div
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-xl text-white text-sm font-bold mb-3 ${meta.color}`}
+                    >
+                      {meta.icon}
+                    </div>
+                    <p className="text-xl font-bold text-gray-900 leading-none">
+                      {fmt(statValues[i])}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-1.5 font-medium">
+                      {meta.label}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* ── Donut charts ── */}
+              {(report.incomeSources.length > 0 ||
+                report.expenditureAllocations.length > 0) && (
+                <div className="grid sm:grid-cols-2 gap-px bg-neutral-100 border-t border-neutral-100">
+                  {report.incomeSources.length > 0 && (
+                    <div className="bg-white p-6">
+                      <p className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-5">
+                        <FaChartLine size={11} className="text-blue-600" />{" "}
+                        Income Sources
+                      </p>
+                      <div className="flex items-center gap-6">
+                        <DonutChart
+                          items={report.incomeSources.map((s) => ({
+                            label: s.source,
+                            percentage: s.percentage,
+                          }))}
+                          centerLabel="Income"
+                        />
+                        <div className="flex-1 space-y-2.5 min-w-0">
+                          {report.incomeSources.map((s, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <div
+                                className="h-2.5 w-2.5 rounded-full shrink-0 mt-0.5"
+                                style={{
+                                  backgroundColor:
+                                    DONUT_COLORS[i % DONUT_COLORS.length],
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-semibold text-gray-700 truncate">
+                                  {s.source}
+                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-gray-400">
+                                    {new Intl.NumberFormat("en-PH", {
+                                      style: "currency",
+                                      currency: "PHP",
+                                      minimumFractionDigits: 0,
+                                    }).format(s.amount)}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-gray-600">
+                                    {s.percentage}%
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {report.expenditureAllocations.length > 0 && (
+                    <div className="bg-white p-6">
+                      <p className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-5">
+                        <FaMoneyBillWave size={11} className="text-amber-500" />{" "}
+                        Expenditure Allocation
+                      </p>
+                      <div className="flex items-center gap-6">
+                        <DonutChart
+                          items={report.expenditureAllocations.map((a) => ({
+                            label: a.category,
+                            percentage: a.percentage,
+                          }))}
+                          centerLabel="Spending"
+                        />
+                        <div className="flex-1 space-y-2.5 min-w-0">
+                          {report.expenditureAllocations.map((a, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <div
+                                className="h-2.5 w-2.5 rounded-full shrink-0 mt-0.5"
+                                style={{
+                                  backgroundColor:
+                                    DONUT_COLORS[i % DONUT_COLORS.length],
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-semibold text-gray-700 truncate">
+                                  {a.category}
+                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-gray-400">
+                                    {new Intl.NumberFormat("en-PH", {
+                                      style: "currency",
+                                      currency: "PHP",
+                                      minimumFractionDigits: 0,
+                                    }).format(a.amount)}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-gray-600">
+                                    {a.percentage}%
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Card footer */}
+              <div className="px-6 py-3.5 bg-neutral-50/60 border-t border-neutral-100">
+                <p className="text-[11px] text-gray-400">
+                  Source:
+                  <a
+                    href="https://blgf.gov.ph/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline ml-2 inline-flex items-center gap-1"
+                  >
+                    Bureau of Local Government Finance (BLGF){" "}
+                    <FaExternalLinkAlt size={9} />
+                  </a>
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -519,10 +1089,10 @@ export function TransparencyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [status, setStatus] = useState("All");
   const [selected, setSelected] = useState<Project | null>(null);
-  const [view, setView] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
   const [summary, setSummary] = useState<ProjectSummary>({
     totalProjects: 0,
@@ -531,19 +1101,22 @@ export function TransparencyPage() {
     notStarted: 0,
     totalBudget: 0,
   });
+  const [financialReports, setFinancialReports] = useState<FinancialReport[]>(
+    [],
+  );
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetchProjects({
-        page: 1,
-        limit: 100,
-        search: "Libmanan",
-        region: "Region V",
-        province: "CAMARINES SUR",
-      });
-      setProjects(res.data.data);
-      setSummary(res.data.summary);
+      const res = await fetchLocalProjects({ limit: 500 });
+      setProjects(res.data);
+      setSummary(res.summary);
     } catch {
       setError("Failed to load projects. Please try again later.");
     } finally {
@@ -553,10 +1126,14 @@ export function TransparencyPage() {
 
   useEffect(() => {
     load();
+    fetchFinancialReports()
+      .then(setFinancialReports)
+      .catch(() => {});
   }, [load]);
+
   useEffect(() => {
     setPage(1);
-  }, [search, category, status]);
+  }, [debouncedSearch, category, status]);
 
   const categories = [
     "All",
@@ -568,210 +1145,133 @@ export function TransparencyPage() {
   ];
 
   const filtered = projects.filter((p) => {
-    const q = search.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     return (
       (p.description.toLowerCase().includes(q) ||
-        p.contractor.toLowerCase().includes(q)) &&
+        p.contractor.toLowerCase().includes(q) ||
+        p.contractId.toLowerCase().includes(q)) &&
       (category === "All" || p.category === category) &&
       (status === "All" || p.status === status)
     );
   });
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const start = (page - 1) * ITEMS_PER_PAGE;
   const visible = filtered.slice(start, start + ITEMS_PER_PAGE);
 
-  const summaryCards = [
-    {
-      label: "Total Projects",
-      value: filtered.length,
-      icon: FaBuilding,
-      accent: "text-gray-700",
-    },
-    {
-      label: "Completed",
-      value: filtered.filter((p) => p.status === "Completed").length,
-      icon: FaCheckCircle,
-      accent: "text-gray-700",
-    },
-    {
-      label: "On-Going",
-      value: filtered.filter((p) => p.status === "On-Going").length,
-      icon: FaSpinner,
-      accent: "text-blue-600",
-    },
-    {
-      label: "Total Budget",
-      value: null,
-      budget: filtered.reduce((s, p) => s + p.budget, 0),
-      icon: FaMoneyBillWave,
-      accent: "text-gray-700",
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-neutral-100">
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative bg-gray-900 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={DOT_BG}
-        />
+      {/* ── Budget & Financial Transparency ──────────────────────────── */}
+      <BudgetSection reports={financialReports} />
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-14 sm:pt-16 sm:pb-20"
-        >
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
-              DPWH Projects
-            </h1>
-            <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
-              Track infrastructure projects in Libmanan, Camarines Sur
+      {/* ── DPWH Header ──────────────────────────────────────────────── */}
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-10"
+          >
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-3">
+              National Government Projects
             </p>
-          </div>
+            <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl leading-tight">
+              DPWH Infrastructure Projects
+            </h1>
+            <p className="mt-2 text-sm text-gray-500 max-w-lg mx-auto">
+              Implementing Agency: Camarines Sur District Engineering Office ·
+              Libmanan, Camarines Sur
+            </p>
+          </motion.div>
 
-          {/* hero search */}
-          <div className="mt-8 max-w-xl mx-auto">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-xl backdrop-blur-sm bg-white/10 border border-white/10 pointer-events-none" />
-              <FaSearch
-                size={13}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"
-              />
-              <input
-                type="text"
-                placeholder="Search projects or contractors…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="relative z-10 w-full pl-11 pr-10 py-3.5 rounded-xl bg-transparent border border-transparent text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/60 transition-all"
-              />
-              <AnimatePresence>
-                {search && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
-                  >
-                    <FaTimes size={12} />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* hero KPIs */}
-          <div className="mt-8 flex flex-wrap justify-center gap-8 sm:gap-12">
+          {/* KPIs */}
+          <div className="flex flex-wrap justify-center gap-6 sm:gap-12">
             {[
-              { label: "Total Projects", value: summary.totalProjects },
+              { label: "Projects", value: summary.totalProjects },
               { label: "Completed", value: summary.completed },
               { label: "On-Going", value: summary.ongoing },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <p className="text-2xl font-bold text-white">
-                  <CountUp from={0} to={s.value} duration={1.5} delay={0.3} />
-                </p>
+                <p className="text-3xl font-bold text-gray-900">{s.value}</p>
                 <p className="text-[11px] text-gray-500 uppercase tracking-wider mt-0.5">
                   {s.label}
                 </p>
               </div>
             ))}
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900">
+                ₱
+                {new Intl.NumberFormat("en-PH", {
+                  maximumFractionDigits: 2,
+                }).format(summary.totalBudget / 1_000_000_000)}
+                B
+              </p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider mt-0.5">
+                Total Investment
+              </p>
+            </div>
           </div>
-        </motion.div>
-      </section>
-
-      {/* ── Summary Cards ─────────────────────────────────────────────── */}
-      <section className="py-8 sm:py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {summaryCards.map((card, i) => {
-              const CardIcon = card.icon;
-              return (
-                <motion.div
-                  key={card.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.08 }}
-                  className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                        {card.label}
-                      </p>
-                      {card.value !== null ? (
-                        <p className={`text-2xl font-bold ${card.accent}`}>
-                          <CountUp
-                            from={0}
-                            to={card.value}
-                            duration={1.2}
-                            delay={0.2 + i * 0.08}
-                          />
-                        </p>
-                      ) : (
-                        <p className="text-base font-bold text-gray-900">
-                          ₱
-                          <CountUp
-                            from={0}
-                            to={card.budget!}
-                            duration={1.4}
-                            delay={0.2 + i * 0.08}
-                            separator=","
-                          />
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-100">
-                      <CardIcon className={`text-base ${card.accent}`} />
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+          <div className="text-center mt-6">
+            <a
+              href="https://transparency.dpwh.gov.ph/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:underline"
+            >
+              Visit DPWH Transparency Portal <FaExternalLinkAlt size={10} />
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ── Filters toolbar ───────────────────────────────────────────── */}
-      <section className="bg-white border-y border-neutral-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+      {/* ── Filters ───────────────────────────────────────────────────── */}
+      <section className="bg-neutral-100 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* filters */}
             <div className="flex flex-wrap gap-2 items-center">
+              {/* Category tabs */}
+              <div className="flex flex-wrap gap-1">
+                {categories.map((c) => {
+                  const count =
+                    c === "All"
+                      ? filtered.length
+                      : filtered.filter((p) => p.category === c).length;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setCategory(c)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        category === c
+                          ? "bg-gray-900 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {c}
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          category === c
+                            ? "bg-white/20 text-white"
+                            : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Status filter */}
               <div className="relative">
                 <FaFilter
-                  size={11}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-7 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="relative">
-                <FaClock
-                  size={11}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={10}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                 />
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-7 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                  className="appearance-none rounded-lg border border-gray-200 bg-white py-1.5 pl-7 pr-6 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 >
                   {statuses.map((s) => (
                     <option key={s} value={s}>
@@ -792,163 +1292,219 @@ export function TransparencyPage() {
                 </button>
               )}
             </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400">
-                {start + 1}–{Math.min(start + ITEMS_PER_PAGE, filtered.length)}{" "}
-                of {filtered.length}
-              </span>
-              {/* view toggle */}
-              <div className="flex rounded-xl border border-neutral-200 overflow-hidden">
-                {(["grid", "list"] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setView(v)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      view === v
-                        ? "bg-neutral-900 text-white"
-                        : "bg-white text-gray-600 hover:bg-neutral-50"
-                    }`}
-                  >
-                    {v === "grid" ? <FaTh size={11} /> : <FaList size={11} />}
-                    <span className="hidden sm:inline capitalize">{v}</span>
-                  </button>
-                ))}
-              </div>
+            {/* Search */}
+            <div className="relative w-full sm:w-64">
+              <FaSearch
+                size={11}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder="Search projects, contractors…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 rounded-lg border border-gray-200 bg-white text-xs text-gray-700 placeholder-gray-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FaTimes size={10} />
+                </button>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Projects ──────────────────────────────────────────────────── */}
-      <section className="py-8 sm:py-10">
+      {/* ── Table ─────────────────────────────────────────────────────── */}
+      <section className="bg-white py-6 sm:py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {loading ? (
-            <div
-              className={
-                view === "grid"
-                  ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                  : "space-y-3"
-              }
-            >
-              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-                <ListRowSkeleton key={i} />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-100">
-                <svg
-                  className="h-6 w-6 text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <p className="text-base font-bold text-gray-900 mb-1">
-                Something went wrong
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            {/* Table meta row */}
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/60">
+              <p className="text-xs text-gray-500">
+                Showing{" "}
+                <span className="font-semibold text-gray-800">
+                  {Math.min(start + 1, filtered.length)}–
+                  {Math.min(start + ITEMS_PER_PAGE, filtered.length)}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-gray-800">
+                  {filtered.length}
+                </span>{" "}
+                projects
               </p>
-              <p className="text-sm text-gray-500 mb-5">{error}</p>
-              <button
-                onClick={load}
-                className="rounded-xl border border-neutral-200 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors"
-              >
-                Try Again
-              </button>
+              {debouncedSearch && (
+                <p className="text-xs text-gray-400">
+                  Results for "
+                  <span className="font-semibold text-gray-700">
+                    {debouncedSearch}
+                  </span>
+                  "
+                </p>
+              )}
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
-                <FaSearch size={12} className="text-neutral-400" />
-              </div>
-              <p className="text-sm font-semibold text-neutral-700 mb-1">
-                No projects found
-              </p>
-              <p className="text-xs text-neutral-400">
-                Try adjusting your filters or search term.
-              </p>
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setCategory("All");
-                  setStatus("All");
-                }}
-                className="mt-3 text-xs font-semibold text-gray-700 hover:text-gray-900 transition-colors"
-              >
-                Clear all filters
-              </button>
-            </div>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${view}-${page}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className={
-                  view === "grid"
-                    ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                    : "space-y-3"
-                }
-              >
-                {visible.map((project) =>
-                  view === "grid" ? (
-                    <GridCard
-                      key={project.contractId}
-                      project={project}
-                      onClick={() => setSelected(project)}
-                    />
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[700px]">
+                <thead>
+                  <tr className="bg-gray-900 text-white">
+                    <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider w-[40%]">
+                      Contract Description
+                    </th>
+                    <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider">
+                      Contractor
+                    </th>
+                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider">
+                      Cost
+                    </th>
+                    <th className="px-4 py-3.5 text-center text-xs font-bold uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider">
+                      Completed
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <TableRowSkeleton key={i} />
+                    ))
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={5} className="py-16 text-center">
+                        <p className="text-sm font-semibold text-gray-700 mb-1">
+                          Something went wrong
+                        </p>
+                        <p className="text-xs text-gray-400 mb-4">{error}</p>
+                        <button
+                          onClick={load}
+                          className="rounded-xl bg-gray-900 px-5 py-2 text-xs font-semibold text-white hover:bg-gray-700 transition-colors"
+                        >
+                          Try Again
+                        </button>
+                      </td>
+                    </tr>
+                  ) : filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-gray-300">
+                            <FaSearch size={12} className="text-gray-400" />
+                          </div>
+                          <p className="text-sm font-semibold text-gray-600">
+                            No projects found
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Try adjusting your filters or search term.
+                          </p>
+                          <button
+                            onClick={() => {
+                              setSearch("");
+                              setCategory("All");
+                              setStatus("All");
+                            }}
+                            className="mt-1 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                          >
+                            Clear all filters
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ) : (
-                    <ListRow
-                      key={project.contractId}
-                      project={project}
-                      onClick={() => setSelected(project)}
-                    />
-                  ),
-                )}
-              </motion.div>
-            </AnimatePresence>
-          )}
-
-          {/* ── Pagination ──────────────────────────────────────────── */}
-          {!loading && !error && totalPages > 1 && (
-            <div className="mt-10 bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
-              <Pagination
-                page={page}
-                totalPages={totalPages}
-                total={filtered.length}
-                pageSize={ITEMS_PER_PAGE}
-                onPageChange={(p) => {
-                  setPage(p);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
+                    <AnimatePresence mode="popLayout">
+                      {visible.map((p, idx) => (
+                        <motion.tr
+                          key={p.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15, delay: idx * 0.02 }}
+                          onClick={() => setSelected(p)}
+                          className="cursor-pointer hover:bg-blue-50/40 transition-colors group"
+                        >
+                          {/* Description */}
+                          <td className="px-4 py-3.5 max-w-xs">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] font-mono text-gray-400">
+                                  {p.contractId}
+                                </span>
+                                <CategoryChip category={p.category} />
+                              </div>
+                              <p className="text-xs font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-blue-800 transition-colors">
+                                {p.description}
+                              </p>
+                              <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                <FaMapMarkerAlt size={8} />
+                                <span>{p.location.province}</span>
+                              </div>
+                            </div>
+                          </td>
+                          {/* Contractor */}
+                          <td className="px-4 py-3.5">
+                            <p className="text-xs text-gray-700 leading-snug">
+                              {p.contractor || "TBD"}
+                            </p>
+                          </td>
+                          {/* Cost */}
+                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                            <p className="text-xs font-bold text-gray-900">
+                              {formatCurrency(p.budget)}
+                            </p>
+                            {p.progress > 0 && <ProgressBar pct={p.progress} />}
+                          </td>
+                          {/* Status */}
+                          <td className="px-4 py-3.5 text-center">
+                            <StatusBadge status={p.status} />
+                          </td>
+                          {/* Completion date */}
+                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                            <span className="text-xs text-gray-600">
+                              {formatDate(p.completionDate)}
+                            </span>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
 
-          {/* source attribution */}
+            {/* Pagination */}
+            {!loading && !error && totalPages > 1 && (
+              <div className="border-t border-gray-100">
+                <TablePagination
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={(p) => {
+                    setPage(p);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Attribution */}
           {!loading && !error && filtered.length > 0 && (
-            <div className="mt-8 flex justify-center">
+            <div className="mt-6 flex justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs text-gray-500 shadow-sm">
                 <span className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[9px] font-bold text-white">
                   i
                 </span>
-                Data source:
+                Source:
                 <a
-                  href="https://www.dpwh.gov.ph/dpwh/transparency"
+                  href="https://transparency.dpwh.gov.ph/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-gray-800 hover:text-gray-900 inline-flex items-center gap-1 transition-colors"
+                  className="text-blue-600 hover:underline inline-flex items-center gap-1"
                 >
-                  DPWH Transparency Portal <FaExternalLinkAlt size={9} />
+                  DPWH Transparency Portal <FaExternalLinkAlt size={8} />
                 </a>
               </div>
             </div>
@@ -962,6 +1518,9 @@ export function TransparencyPage() {
           <ProjectModal project={selected} onClose={() => setSelected(null)} />
         )}
       </AnimatePresence>
+
+      {/* ── Infrastructure Investments ────────────────────────────────── */}
+      <InfrastructureSection projects={projects} />
     </div>
   );
 }
