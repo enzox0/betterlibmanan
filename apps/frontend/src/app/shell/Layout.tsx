@@ -3,6 +3,7 @@ import { TopUtilityBar } from "@/app/shell/TopUtilityBar";
 import { Navbar } from "@/app/shell/Navbar";
 import { BottomUtilityBar } from "@/app/shell/BottomUtilityBar";
 import { Footer } from "@/app/shell/Footer";
+import { ContributeCTA } from "@/app/shell/ContributeCTA";
 import { BackToTopButton } from "@/app/shell/BackToTopButton";
 import { InfoFloatingButton } from "@/app/shell/InfoFloatingButton";
 import { UserAuthModal } from "@/modules/landing/components/ui/UserAuthModal";
@@ -27,6 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col">
         <LazyLoader>{children}</LazyLoader>
       </main>
+      <ContributeCTA />
       <Footer />
       <BackToTopButton />
       <InfoFloatingButton setAuthModalOpen={setAuthModalOpen} />
@@ -53,6 +55,7 @@ export function LayoutEager({ children }: { children: React.ReactNode }) {
       />
       <BottomUtilityBar />
       <main className="flex-1">{children}</main>
+      <ContributeCTA />
       <Footer />
       <BackToTopButton />
       <InfoFloatingButton setAuthModalOpen={setAuthModalOpen} />
