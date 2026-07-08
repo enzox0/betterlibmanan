@@ -1,11 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  FaFacebook,
-  FaLinkedin,
-  FaDiscord,
-  FaEnvelope,
-  FaGithub,
-} from "react-icons/fa";
+import { FaFacebook, FaEnvelope, FaGithub } from "react-icons/fa";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -35,12 +29,6 @@ export function Footer() {
                 className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
                 <FaFacebook size={18} />
-              </a>
-              <a
-                href="https://discord.gg/invite/betterlibmanan"
-                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-              >
-                <FaDiscord size={18} />
               </a>
               <a
                 href="https://github.com/enzox0/betterlibmanan"
