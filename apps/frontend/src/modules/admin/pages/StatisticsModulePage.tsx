@@ -17,7 +17,24 @@ import {
   LuPercent,
   LuStar,
   LuInfo,
+  LuRefreshCw,
+  LuLoader,
+  LuTriangleAlert,
 } from "react-icons/lu";
+import { useStatisticsStore } from "../store/statisticsStore";
+import { useAdminStore } from "../store/adminStore";
+import { useToast } from "@/context/ToastContext";
+import type {
+  MunicipalStatRecord,
+  FinanceStatRecord,
+  FinanceCompositionRecord,
+  PopulationPointRecord,
+  BarangayRecord,
+  EconomyIndicatorRecord,
+  EconomySectorRecord,
+  PovertyEntryRecord,
+  CompetitivenessItemRecord,
+} from "../services/statistics.api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -676,15 +693,33 @@ function DeleteConfirmDialog({
 
 function OverviewPanel({
   stats,
-  setStats,
+  token,
+  onCreate,
+  onUpdate,
+  onDelete,
 }: {
-  stats: MunicipalStat[];
-  setStats: React.Dispatch<React.SetStateAction<MunicipalStat[]>>;
+  stats: MunicipalStatRecord[];
+  token: string;
+  onCreate: (
+    p: { value: string; label: string; subLabel: string; order: number },
+    token: string,
+  ) => Promise<MunicipalStatRecord>;
+  onUpdate: (
+    id: string,
+    p: { value: string; label: string; subLabel: string; order: number },
+    token: string,
+  ) => Promise<MunicipalStatRecord>;
+  onDelete: (id: string, token: string) => Promise<void>;
 }) {
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<MunicipalStat | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<MunicipalStat | null>(null);
+  const [editTarget, setEditTarget] = useState<MunicipalStatRecord | null>(
+    null,
+  );
+  const [deleteTarget, setDeleteTarget] = useState<MunicipalStatRecord | null>(
+    null,
+  );
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
@@ -718,7 +753,7 @@ function OverviewPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(s: MunicipalStat) {
+  function openEdit(s: MunicipalStatRecord) {
     setValue(s.value);
     setLabel(s.label);
     setSubLabel(s.subLabel);
@@ -731,7 +766,7 @@ function OverviewPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!value.trim()) e.value = "Value is required.";
@@ -740,39 +775,44 @@ function OverviewPanel({
       setErrors(e);
       return;
     }
-    if (panelMode === "create") {
-      setStats((p) => [
-        ...p,
-        {
-          id: `ms-${crypto.randomUUID().slice(0, 8)}`,
-          value: value.trim(),
-          label: label.trim(),
-          subLabel: subLabel.trim(),
-        },
-      ]);
-    } else if (editTarget) {
-      setStats((p) =>
-        p.map((s) =>
-          s.id === editTarget.id
-            ? {
-                ...s,
-                value: value.trim(),
-                label: label.trim(),
-                subLabel: subLabel.trim(),
-              }
-            : s,
-        ),
-      );
-      markSaved(editTarget.id);
+    setSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await onCreate(
+          {
+            value: value.trim(),
+            label: label.trim(),
+            subLabel: subLabel.trim(),
+            order: 0,
+          },
+          token,
+        );
+      } else if (editTarget) {
+        await onUpdate(
+          editTarget._id,
+          {
+            value: value.trim(),
+            label: label.trim(),
+            subLabel: subLabel.trim(),
+            order: editTarget.order,
+          },
+          token,
+        );
+        markSaved(editTarget._id);
+      }
+      closePanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setSubmitting(false);
     }
-    closePanel();
   }
 
   const returnFocusRef = (
     panelMode === "create"
       ? addBtnRef
       : editTarget
-        ? getEditRef(editTarget.id)
+        ? getEditRef(editTarget._id)
         : addBtnRef
   ) as React.RefObject<HTMLButtonElement>;
 
@@ -797,7 +837,7 @@ function OverviewPanel({
         <AnimatePresence>
           {stats.map((s) => (
             <motion.div
-              key={s.id}
+              key={s._id}
               variants={rowVariants}
               initial="hidden"
               animate="visible"
@@ -817,7 +857,7 @@ function OverviewPanel({
                       {s.label}
                     </span>
                     <AnimatePresence>
-                      {savedIds.has(s.id) && (
+                      {savedIds.has(s._id) && (
                         <motion.span
                           className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
                           initial={{ opacity: 0, scale: 0.85 }}
@@ -835,7 +875,7 @@ function OverviewPanel({
               </div>
               <div className="flex items-center gap-2 sm:shrink-0 sm:ml-auto">
                 <button
-                  ref={getEditRef(s.id) as React.RefObject<HTMLButtonElement>}
+                  ref={getEditRef(s._id) as React.RefObject<HTMLButtonElement>}
                   type="button"
                   onClick={() => openEdit(s)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
@@ -937,9 +977,10 @@ function OverviewPanel({
           <DeleteConfirmDialog
             label={deleteTarget.label}
             onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setStats((p) => p.filter((s) => s.id !== deleteTarget.id))
-            }
+            onConfirm={() => {
+              onDelete(deleteTarget._id, token).catch(() => {});
+              setDeleteTarget(null);
+            }}
           />
         )}
       </AnimatePresence>
@@ -951,24 +992,46 @@ function OverviewPanel({
 
 function FinancePanel({
   stats,
-  setStats,
   composition,
-  setComposition,
+  token,
+  onCreateStat,
+  onUpdateStat,
+  onDeleteStat,
+  onCreateComp,
+  onUpdateComp,
+  onDeleteComp,
 }: {
-  stats: FinanceStat[];
-  setStats: React.Dispatch<React.SetStateAction<FinanceStat[]>>;
-  composition: FinanceCompositionItem[];
-  setComposition: React.Dispatch<
-    React.SetStateAction<FinanceCompositionItem[]>
-  >;
+  stats: FinanceStatRecord[];
+  composition: FinanceCompositionRecord[];
+  token: string;
+  onCreateStat: (
+    p: { label: string; value: string; subValue: string; order: number },
+    token: string,
+  ) => Promise<FinanceStatRecord>;
+  onUpdateStat: (
+    id: string,
+    p: { label: string; value: string; subValue: string; order: number },
+    token: string,
+  ) => Promise<FinanceStatRecord>;
+  onDeleteStat: (id: string, token: string) => Promise<void>;
+  onCreateComp: (
+    p: { label: string; percentage: number; color: string; order: number },
+    token: string,
+  ) => Promise<FinanceCompositionRecord>;
+  onUpdateComp: (
+    id: string,
+    p: { label: string; percentage: number; color: string; order: number },
+    token: string,
+  ) => Promise<FinanceCompositionRecord>;
+  onDeleteComp: (id: string, token: string) => Promise<void>;
 }) {
   // ── Finance Stats ──
   const [statPanel, setStatPanel] = useState<null | "create" | "edit">(null);
-  const [statTarget, setStatTarget] = useState<FinanceStat | null>(null);
-  const [statDeleteTarget, setStatDeleteTarget] = useState<FinanceStat | null>(
-    null,
-  );
+  const [statTarget, setStatTarget] = useState<FinanceStatRecord | null>(null);
+  const [statDeleteTarget, setStatDeleteTarget] =
+    useState<FinanceStatRecord | null>(null);
   const [statSavedIds, setStatSavedIds] = useState<Set<string>>(new Set());
+  const [statSubmitting, setStatSubmitting] = useState(false);
   const addStatRef = useRef<HTMLButtonElement>(null);
   const [fLabel, setFLabel] = useState("");
   const [fValue, setFValue] = useState("");
@@ -995,7 +1058,7 @@ function FinancePanel({
     setStatTarget(null);
     setStatPanel("create");
   }
-  function openStatEdit(s: FinanceStat) {
+  function openStatEdit(s: FinanceStatRecord) {
     setFLabel(s.label);
     setFValue(s.value);
     setFSubValue(s.subValue);
@@ -1007,7 +1070,7 @@ function FinancePanel({
     setStatPanel(null);
     setStatTarget(null);
   }
-  function handleStatSubmit(ev: React.FormEvent) {
+  async function handleStatSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!fLabel.trim()) e.fLabel = "Label is required.";
@@ -1016,41 +1079,47 @@ function FinancePanel({
       setStatErrors(e);
       return;
     }
-    if (statPanel === "create") {
-      setStats((p) => [
-        ...p,
-        {
-          id: `fs-${crypto.randomUUID().slice(0, 8)}`,
-          label: fLabel.trim(),
-          value: fValue.trim(),
-          subValue: fSubValue.trim(),
-        },
-      ]);
-    } else if (statTarget) {
-      setStats((p) =>
-        p.map((s) =>
-          s.id === statTarget.id
-            ? {
-                ...s,
-                label: fLabel.trim(),
-                value: fValue.trim(),
-                subValue: fSubValue.trim(),
-              }
-            : s,
-        ),
-      );
-      markStatSaved(statTarget.id);
+    setStatSubmitting(true);
+    try {
+      if (statPanel === "create") {
+        await onCreateStat(
+          {
+            label: fLabel.trim(),
+            value: fValue.trim(),
+            subValue: fSubValue.trim(),
+            order: 0,
+          },
+          token,
+        );
+      } else if (statTarget) {
+        await onUpdateStat(
+          statTarget._id,
+          {
+            label: fLabel.trim(),
+            value: fValue.trim(),
+            subValue: fSubValue.trim(),
+            order: statTarget.order,
+          },
+          token,
+        );
+        markStatSaved(statTarget._id);
+      }
+      closeStatPanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setStatSubmitting(false);
     }
-    closeStatPanel();
   }
 
   // ── Composition ──
   const [compPanel, setCompPanel] = useState<null | "create" | "edit">(null);
-  const [compTarget, setCompTarget] = useState<FinanceCompositionItem | null>(
+  const [compTarget, setCompTarget] = useState<FinanceCompositionRecord | null>(
     null,
   );
   const [compDeleteTarget, setCompDeleteTarget] =
-    useState<FinanceCompositionItem | null>(null);
+    useState<FinanceCompositionRecord | null>(null);
+  const [compSubmitting, setCompSubmitting] = useState(false);
   const addCompRef = useRef<HTMLButtonElement>(null);
   const [cLabel, setCLabel] = useState("");
   const [cPct, setCPct] = useState("50");
@@ -1065,7 +1134,7 @@ function FinancePanel({
     setCompTarget(null);
     setCompPanel("create");
   }
-  function openCompEdit(c: FinanceCompositionItem) {
+  function openCompEdit(c: FinanceCompositionRecord) {
     setCLabel(c.label);
     setCPct(c.percentage.toString());
     setCColor(c.color);
@@ -1077,7 +1146,7 @@ function FinancePanel({
     setCompPanel(null);
     setCompTarget(null);
   }
-  function handleCompSubmit(ev: React.FormEvent) {
+  async function handleCompSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!cLabel.trim()) e.cLabel = "Label is required.";
@@ -1087,31 +1156,36 @@ function FinancePanel({
       setCompErrors(e);
       return;
     }
-    if (compPanel === "create") {
-      setComposition((p) => [
-        ...p,
-        {
-          id: `fc-${crypto.randomUUID().slice(0, 8)}`,
-          label: cLabel.trim(),
-          percentage: Math.min(100, Math.max(0, Number(cPct))),
-          color: cColor,
-        },
-      ]);
-    } else if (compTarget) {
-      setComposition((p) =>
-        p.map((c) =>
-          c.id === compTarget.id
-            ? {
-                ...c,
-                label: cLabel.trim(),
-                percentage: Math.min(100, Math.max(0, Number(cPct))),
-                color: cColor,
-              }
-            : c,
-        ),
-      );
+    setCompSubmitting(true);
+    try {
+      if (compPanel === "create") {
+        await onCreateComp(
+          {
+            label: cLabel.trim(),
+            percentage: Math.min(100, Math.max(0, Number(cPct))),
+            color: cColor,
+            order: 0,
+          },
+          token,
+        );
+      } else if (compTarget) {
+        await onUpdateComp(
+          compTarget._id,
+          {
+            label: cLabel.trim(),
+            percentage: Math.min(100, Math.max(0, Number(cPct))),
+            color: cColor,
+            order: compTarget.order,
+          },
+          token,
+        );
+      }
+      closeCompPanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setCompSubmitting(false);
     }
-    closeCompPanel();
   }
 
   return (
@@ -1139,7 +1213,7 @@ function FinancePanel({
           <AnimatePresence>
             {stats.map((s) => (
               <motion.div
-                key={s.id}
+                key={s._id}
                 variants={rowVariants}
                 initial="hidden"
                 animate="visible"
@@ -1156,7 +1230,7 @@ function FinancePanel({
                         {s.value}
                       </p>
                       <AnimatePresence>
-                        {statSavedIds.has(s.id) && (
+                        {statSavedIds.has(s._id) && (
                           <motion.span
                             className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
                             initial={{ opacity: 0, scale: 0.85 }}
@@ -1280,9 +1354,10 @@ function FinancePanel({
             <DeleteConfirmDialog
               label={statDeleteTarget.label}
               onClose={() => setStatDeleteTarget(null)}
-              onConfirm={() =>
-                setStats((p) => p.filter((s) => s.id !== statDeleteTarget.id))
-              }
+              onConfirm={() => {
+                onDeleteStat(statDeleteTarget._id, token).catch(() => {});
+                setStatDeleteTarget(null);
+              }}
             />
           )}
         </AnimatePresence>
@@ -1310,7 +1385,7 @@ function FinancePanel({
           <AnimatePresence>
             {composition.map((c) => (
               <motion.div
-                key={c.id}
+                key={c._id}
                 variants={rowVariants}
                 initial="hidden"
                 animate="visible"
@@ -1450,11 +1525,10 @@ function FinancePanel({
             <DeleteConfirmDialog
               label={compDeleteTarget.label}
               onClose={() => setCompDeleteTarget(null)}
-              onConfirm={() =>
-                setComposition((p) =>
-                  p.filter((c) => c.id !== compDeleteTarget.id),
-                )
-              }
+              onConfirm={() => {
+                onDeleteComp(compDeleteTarget._id, token).catch(() => {});
+                setCompDeleteTarget(null);
+              }}
             />
           )}
         </AnimatePresence>
@@ -1467,17 +1541,32 @@ function FinancePanel({
 
 function PopulationPanel({
   points,
-  setPoints,
+  token,
+  onCreate,
+  onUpdate,
+  onDelete,
 }: {
-  points: PopulationPoint[];
-  setPoints: React.Dispatch<React.SetStateAction<PopulationPoint[]>>;
+  points: PopulationPointRecord[];
+  token: string;
+  onCreate: (
+    p: { year: number; pop: number },
+    token: string,
+  ) => Promise<PopulationPointRecord>;
+  onUpdate: (
+    id: string,
+    p: { year: number; pop: number },
+    token: string,
+  ) => Promise<PopulationPointRecord>;
+  onDelete: (id: string, token: string) => Promise<void>;
 }) {
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<PopulationPoint | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<PopulationPoint | null>(
+  const [editTarget, setEditTarget] = useState<PopulationPointRecord | null>(
     null,
   );
+  const [deleteTarget, setDeleteTarget] =
+    useState<PopulationPointRecord | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const [pYear, setPYear] = useState("");
   const [pPop, setPPop] = useState("");
@@ -1502,7 +1591,7 @@ function PopulationPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(p: PopulationPoint) {
+  function openEdit(p: PopulationPointRecord) {
     setPYear(p.year.toString());
     setPPop(p.pop.toString());
     setErrors({});
@@ -1514,7 +1603,7 @@ function PopulationPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!pYear.trim() || isNaN(Number(pYear)))
@@ -1525,26 +1614,24 @@ function PopulationPanel({
       setErrors(e);
       return;
     }
-    if (panelMode === "create") {
-      const newPoint: PopulationPoint = {
-        id: `ph-${crypto.randomUUID().slice(0, 8)}`,
-        year: Number(pYear),
-        pop: Number(pPop),
-      };
-      setPoints((prev) => [...prev, newPoint].sort((a, b) => a.year - b.year));
-    } else if (editTarget) {
-      setPoints((prev) =>
-        [
-          ...prev.map((p) =>
-            p.id === editTarget.id
-              ? { ...p, year: Number(pYear), pop: Number(pPop) }
-              : p,
-          ),
-        ].sort((a, b) => a.year - b.year),
-      );
-      markSaved(editTarget.id);
+    setSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await onCreate({ year: Number(pYear), pop: Number(pPop) }, token);
+      } else if (editTarget) {
+        await onUpdate(
+          editTarget._id,
+          { year: Number(pYear), pop: Number(pPop) },
+          token,
+        );
+        markSaved(editTarget._id);
+      }
+      closePanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setSubmitting(false);
     }
-    closePanel();
   }
 
   return (
@@ -1602,7 +1689,7 @@ function PopulationPanel({
                   : null;
                 return (
                   <motion.tr
-                    key={p.id}
+                    key={p._id}
                     variants={rowVariants}
                     exit="exit"
                     className="hover:bg-gray-50/50 transition-colors"
@@ -1610,7 +1697,7 @@ function PopulationPanel({
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
                         <AnimatePresence>
-                          {savedIds.has(p.id) && (
+                          {savedIds.has(p._id) && (
                             <motion.span
                               className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-600 ring-1 ring-green-200"
                               initial={{ opacity: 0, scale: 0.85 }}
@@ -1739,9 +1826,10 @@ function PopulationPanel({
           <DeleteConfirmDialog
             label={`${deleteTarget.year} (${deleteTarget.pop.toLocaleString()})`}
             onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setPoints((p) => p.filter((pt) => pt.id !== deleteTarget.id))
-            }
+            onConfirm={() => {
+              onDelete(deleteTarget._id, token).catch(() => {});
+              setDeleteTarget(null);
+            }}
           />
         )}
       </AnimatePresence>
@@ -1753,26 +1841,34 @@ function PopulationPanel({
 
 function BarangaysPanel({
   barangays,
-  setBarangays,
+  token,
+  onCreate,
+  onUpdate,
+  onDelete,
 }: {
-  barangays: BarangayEntry[];
-  setBarangays: React.Dispatch<React.SetStateAction<BarangayEntry[]>>;
+  barangays: BarangayRecord[];
+  token: string;
+  onCreate: (
+    p: { name: string; population: number },
+    token: string,
+  ) => Promise<BarangayRecord[]>;
+  onUpdate: (
+    id: string,
+    p: { name: string; population: number },
+    token: string,
+  ) => Promise<BarangayRecord[]>;
+  onDelete: (id: string, token: string) => Promise<void>;
 }) {
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<BarangayEntry | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<BarangayEntry | null>(null);
+  const [editTarget, setEditTarget] = useState<BarangayRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BarangayRecord | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const [bName, setBName] = useState("");
   const [bPop, setBPop] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  function sortByPop(list: BarangayEntry[]): BarangayEntry[] {
-    return [...list]
-      .sort((a, b) => b.population - a.population)
-      .map((b, i) => ({ ...b, rank: i + 1 }));
-  }
 
   function markSaved(id: string) {
     setSavedIds((p) => new Set([...p, id]));
@@ -1793,7 +1889,7 @@ function BarangaysPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(b: BarangayEntry) {
+  function openEdit(b: BarangayRecord) {
     setBName(b.name);
     setBPop(b.population.toString());
     setErrors({});
@@ -1805,7 +1901,7 @@ function BarangaysPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!bName.trim()) e.bName = "Name is required.";
@@ -1815,30 +1911,25 @@ function BarangaysPanel({
       setErrors(e);
       return;
     }
-    if (panelMode === "create") {
-      const updated = sortByPop([
-        ...barangays,
-        {
-          id: `brgy-${crypto.randomUUID().slice(0, 8)}`,
-          rank: 0,
-          name: bName.trim(),
-          population: Number(bPop),
-        },
-      ]);
-      setBarangays(updated);
-    } else if (editTarget) {
-      const updated = sortByPop(
-        barangays.map((b) =>
-          b.id === editTarget.id
-            ? { ...b, name: bName.trim(), population: Number(bPop) }
-            : b,
-        ),
-      );
-      setBarangays(updated);
-      const fresh = updated.find((b) => b.id === editTarget.id);
-      if (fresh) markSaved(fresh.id);
+    setSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await onCreate({ name: bName.trim(), population: Number(bPop) }, token);
+      } else if (editTarget) {
+        const updated = await onUpdate(
+          editTarget._id,
+          { name: bName.trim(), population: Number(bPop) },
+          token,
+        );
+        const fresh = updated.find((b) => b._id === editTarget._id);
+        if (fresh) markSaved(fresh._id);
+      }
+      closePanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setSubmitting(false);
     }
-    closePanel();
   }
 
   const filtered = barangays.filter(
@@ -1904,7 +1995,7 @@ function BarangaysPanel({
         <AnimatePresence>
           {filtered.map((b) => (
             <motion.div
-              key={b.id}
+              key={b._id}
               variants={rowVariants}
               initial="hidden"
               animate="visible"
@@ -1921,7 +2012,7 @@ function BarangaysPanel({
                       {b.name}
                     </span>
                     <AnimatePresence>
-                      {savedIds.has(b.id) && (
+                      {savedIds.has(b._id) && (
                         <motion.span
                           className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-600 ring-1 ring-green-200"
                           initial={{ opacity: 0, scale: 0.85 }}
@@ -2039,11 +2130,10 @@ function BarangaysPanel({
           <DeleteConfirmDialog
             label={deleteTarget.name}
             onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setBarangays(
-                sortByPop(barangays.filter((b) => b.id !== deleteTarget.id)),
-              )
-            }
+            onConfirm={() => {
+              onDelete(deleteTarget._id, token).catch(() => {});
+              setDeleteTarget(null);
+            }}
           />
         )}
       </AnimatePresence>
@@ -2055,20 +2145,49 @@ function BarangaysPanel({
 
 function EconomyPanel({
   indicators,
-  setIndicators,
   sectors,
-  setSectors,
+  token,
+  onCreateIndicator,
+  onUpdateIndicator,
+  onDeleteIndicator,
+  onCreateSector,
+  onUpdateSector,
+  onDeleteSector,
 }: {
-  indicators: EconomyIndicator[];
-  setIndicators: React.Dispatch<React.SetStateAction<EconomyIndicator[]>>;
-  sectors: EconomySector[];
-  setSectors: React.Dispatch<React.SetStateAction<EconomySector[]>>;
+  indicators: EconomyIndicatorRecord[];
+  sectors: EconomySectorRecord[];
+  token: string;
+  onCreateIndicator: (
+    p: { label: string; value: string; subLabel: string; order: number },
+    token: string,
+  ) => Promise<EconomyIndicatorRecord>;
+  onUpdateIndicator: (
+    id: string,
+    p: { label: string; value: string; subLabel: string; order: number },
+    token: string,
+  ) => Promise<EconomyIndicatorRecord>;
+  onDeleteIndicator: (id: string, token: string) => Promise<void>;
+  onCreateSector: (
+    p: { name: string; percentage: number; order: number },
+    token: string,
+  ) => Promise<EconomySectorRecord>;
+  onUpdateSector: (
+    id: string,
+    p: { name: string; percentage: number; order: number },
+    token: string,
+  ) => Promise<EconomySectorRecord>;
+  onDeleteSector: (id: string, token: string) => Promise<void>;
 }) {
   // Indicators
   const [indPanel, setIndPanel] = useState<null | "create" | "edit">(null);
-  const [indTarget, setIndTarget] = useState<EconomyIndicator | null>(null);
-  const [indDelete, setIndDelete] = useState<EconomyIndicator | null>(null);
+  const [indTarget, setIndTarget] = useState<EconomyIndicatorRecord | null>(
+    null,
+  );
+  const [indDelete, setIndDelete] = useState<EconomyIndicatorRecord | null>(
+    null,
+  );
   const [indSaved, setIndSaved] = useState<Set<string>>(new Set());
+  const [indSubmitting, setIndSubmitting] = useState(false);
   const addIndRef = useRef<HTMLButtonElement>(null);
   const [iLabel, setILabel] = useState("");
   const [iValue, setIValue] = useState("");
@@ -2095,7 +2214,7 @@ function EconomyPanel({
     setIndTarget(null);
     setIndPanel("create");
   }
-  function openIndEdit(i: EconomyIndicator) {
+  function openIndEdit(i: EconomyIndicatorRecord) {
     setILabel(i.label);
     setIValue(i.value);
     setISub(i.subLabel);
@@ -2107,7 +2226,7 @@ function EconomyPanel({
     setIndPanel(null);
     setIndTarget(null);
   }
-  function handleIndSubmit(ev: React.FormEvent) {
+  async function handleIndSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!iLabel.trim()) e.iLabel = "Label is required.";
@@ -2116,38 +2235,44 @@ function EconomyPanel({
       setIErrors(e);
       return;
     }
-    if (indPanel === "create") {
-      setIndicators((p) => [
-        ...p,
-        {
-          id: `ei-${crypto.randomUUID().slice(0, 8)}`,
-          label: iLabel.trim(),
-          value: iValue.trim(),
-          subLabel: iSub.trim(),
-        },
-      ]);
-    } else if (indTarget) {
-      setIndicators((p) =>
-        p.map((i) =>
-          i.id === indTarget.id
-            ? {
-                ...i,
-                label: iLabel.trim(),
-                value: iValue.trim(),
-                subLabel: iSub.trim(),
-              }
-            : i,
-        ),
-      );
-      markIndSaved(indTarget.id);
+    setIndSubmitting(true);
+    try {
+      if (indPanel === "create") {
+        await onCreateIndicator(
+          {
+            label: iLabel.trim(),
+            value: iValue.trim(),
+            subLabel: iSub.trim(),
+            order: 0,
+          },
+          token,
+        );
+      } else if (indTarget) {
+        await onUpdateIndicator(
+          indTarget._id,
+          {
+            label: iLabel.trim(),
+            value: iValue.trim(),
+            subLabel: iSub.trim(),
+            order: indTarget.order,
+          },
+          token,
+        );
+        markIndSaved(indTarget._id);
+      }
+      closeIndPanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setIndSubmitting(false);
     }
-    closeIndPanel();
   }
 
   // Sectors
   const [secPanel, setSecPanel] = useState<null | "create" | "edit">(null);
-  const [secTarget, setSecTarget] = useState<EconomySector | null>(null);
-  const [secDelete, setSecDelete] = useState<EconomySector | null>(null);
+  const [secTarget, setSecTarget] = useState<EconomySectorRecord | null>(null);
+  const [secDelete, setSecDelete] = useState<EconomySectorRecord | null>(null);
+  const [secSubmitting, setSecSubmitting] = useState(false);
   const addSecRef = useRef<HTMLButtonElement>(null);
   const [sName, setSName] = useState("");
   const [sPct, setSPct] = useState("10");
@@ -2160,7 +2285,7 @@ function EconomyPanel({
     setSecTarget(null);
     setSecPanel("create");
   }
-  function openSecEdit(s: EconomySector) {
+  function openSecEdit(s: EconomySectorRecord) {
     setSName(s.name);
     setSPct(s.percentage.toString());
     setSErrors({});
@@ -2171,7 +2296,7 @@ function EconomyPanel({
     setSecPanel(null);
     setSecTarget(null);
   }
-  function handleSecSubmit(ev: React.FormEvent) {
+  async function handleSecSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!sName.trim()) e.sName = "Name is required.";
@@ -2181,29 +2306,34 @@ function EconomyPanel({
       setSErrors(e);
       return;
     }
-    if (secPanel === "create") {
-      setSectors((p) => [
-        ...p,
-        {
-          id: `es-${crypto.randomUUID().slice(0, 8)}`,
-          name: sName.trim(),
-          percentage: Math.min(100, Math.max(0, Number(sPct))),
-        },
-      ]);
-    } else if (secTarget) {
-      setSectors((p) =>
-        p.map((s) =>
-          s.id === secTarget.id
-            ? {
-                ...s,
-                name: sName.trim(),
-                percentage: Math.min(100, Math.max(0, Number(sPct))),
-              }
-            : s,
-        ),
-      );
+    setSecSubmitting(true);
+    try {
+      if (secPanel === "create") {
+        await onCreateSector(
+          {
+            name: sName.trim(),
+            percentage: Math.min(100, Math.max(0, Number(sPct))),
+            order: 0,
+          },
+          token,
+        );
+      } else if (secTarget) {
+        await onUpdateSector(
+          secTarget._id,
+          {
+            name: sName.trim(),
+            percentage: Math.min(100, Math.max(0, Number(sPct))),
+            order: secTarget.order,
+          },
+          token,
+        );
+      }
+      closeSecPanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setSecSubmitting(false);
     }
-    closeSecPanel();
   }
 
   return (
@@ -2230,7 +2360,7 @@ function EconomyPanel({
           <AnimatePresence>
             {indicators.map((ind) => (
               <motion.div
-                key={ind.id}
+                key={ind._id}
                 variants={rowVariants}
                 initial="hidden"
                 animate="visible"
@@ -2247,7 +2377,7 @@ function EconomyPanel({
                         {ind.value}
                       </p>
                       <AnimatePresence>
-                        {indSaved.has(ind.id) && (
+                        {indSaved.has(ind._id) && (
                           <motion.span
                             className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
                             initial={{ opacity: 0, scale: 0.85 }}
@@ -2369,9 +2499,10 @@ function EconomyPanel({
             <DeleteConfirmDialog
               label={indDelete.label}
               onClose={() => setIndDelete(null)}
-              onConfirm={() =>
-                setIndicators((p) => p.filter((i) => i.id !== indDelete.id))
-              }
+              onConfirm={() => {
+                onDeleteIndicator(indDelete._id, token).catch(() => {});
+                setIndDelete(null);
+              }}
             />
           )}
         </AnimatePresence>
@@ -2399,7 +2530,7 @@ function EconomyPanel({
           <AnimatePresence>
             {sectors.map((s) => (
               <motion.div
-                key={s.id}
+                key={s._id}
                 variants={rowVariants}
                 initial="hidden"
                 animate="visible"
@@ -2512,9 +2643,10 @@ function EconomyPanel({
             <DeleteConfirmDialog
               label={secDelete.name}
               onClose={() => setSecDelete(null)}
-              onConfirm={() =>
-                setSectors((p) => p.filter((s) => s.id !== secDelete.id))
-              }
+              onConfirm={() => {
+                onDeleteSector(secDelete._id, token).catch(() => {});
+                setSecDelete(null);
+              }}
             />
           )}
         </AnimatePresence>
@@ -2527,15 +2659,43 @@ function EconomyPanel({
 
 function PovertyPanel({
   entries,
-  setEntries,
+  token,
+  onCreate,
+  onUpdate,
+  onDelete,
 }: {
-  entries: PovertyEntry[];
-  setEntries: React.Dispatch<React.SetStateAction<PovertyEntry[]>>;
+  entries: PovertyEntryRecord[];
+  token: string;
+  onCreate: (
+    p: {
+      year: number;
+      rate: number;
+      confidenceInterval: string;
+      change: number;
+      status: "improved" | "worsened" | "stable";
+    },
+    token: string,
+  ) => Promise<PovertyEntryRecord>;
+  onUpdate: (
+    id: string,
+    p: {
+      year: number;
+      rate: number;
+      confidenceInterval: string;
+      change: number;
+      status: "improved" | "worsened" | "stable";
+    },
+    token: string,
+  ) => Promise<PovertyEntryRecord>;
+  onDelete: (id: string, token: string) => Promise<void>;
 }) {
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<PovertyEntry | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<PovertyEntry | null>(null);
+  const [editTarget, setEditTarget] = useState<PovertyEntryRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PovertyEntryRecord | null>(
+    null,
+  );
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const [pYear, setPYear] = useState("");
   const [pRate, setPRate] = useState("");
@@ -2568,7 +2728,7 @@ function PovertyPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(e: PovertyEntry) {
+  function openEdit(e: PovertyEntryRecord) {
     setPYear(e.year.toString());
     setPRate(e.rate.toString());
     setPCI(e.confidenceInterval);
@@ -2583,7 +2743,7 @@ function PovertyPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!pYear.trim() || isNaN(Number(pYear)))
@@ -2594,21 +2754,27 @@ function PovertyPanel({
       setErrors(e);
       return;
     }
-    const entry: PovertyEntry = {
-      id: editTarget?.id ?? `pv-${crypto.randomUUID().slice(0, 8)}`,
+    const payload = {
       year: Number(pYear),
       rate: parseFloat(pRate),
       confidenceInterval: pCI.trim(),
       change: parseFloat(pChange) || 0,
       status: pStatus,
     };
-    if (panelMode === "create") {
-      setEntries((p) => [...p, entry].sort((a, b) => a.year - b.year));
-    } else if (editTarget) {
-      setEntries((p) => p.map((e) => (e.id === editTarget.id ? entry : e)));
-      markSaved(editTarget.id);
+    setSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await onCreate(payload, token);
+      } else if (editTarget) {
+        await onUpdate(editTarget._id, payload, token);
+        markSaved(editTarget._id);
+      }
+      closePanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setSubmitting(false);
     }
-    closePanel();
   }
 
   return (
@@ -2634,7 +2800,7 @@ function PovertyPanel({
         <AnimatePresence>
           {entries.map((entry) => (
             <motion.div
-              key={entry.id}
+              key={entry._id}
               variants={rowVariants}
               initial="hidden"
               animate="visible"
@@ -2660,7 +2826,7 @@ function PovertyPanel({
                       {entry.status}
                     </span>
                     <AnimatePresence>
-                      {savedIds.has(entry.id) && (
+                      {savedIds.has(entry._id) && (
                         <motion.span
                           className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
                           initial={{ opacity: 0, scale: 0.85 }}
@@ -2842,9 +3008,10 @@ function PovertyPanel({
           <DeleteConfirmDialog
             label={`${deleteTarget.year} (${deleteTarget.rate}%)`}
             onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setEntries((p) => p.filter((e) => e.id !== deleteTarget.id))
-            }
+            onConfirm={() => {
+              onDelete(deleteTarget._id, token).catch(() => {});
+              setDeleteTarget(null);
+            }}
           />
         )}
       </AnimatePresence>
@@ -2856,19 +3023,43 @@ function PovertyPanel({
 
 function CompetitivenessPanel({
   items,
-  setItems,
+  token,
+  onCreate,
+  onUpdate,
+  onDelete,
 }: {
-  items: CompetitivenessItem[];
-  setItems: React.Dispatch<React.SetStateAction<CompetitivenessItem[]>>;
+  items: CompetitivenessItemRecord[];
+  token: string;
+  onCreate: (
+    p: {
+      category: string;
+      score: number;
+      change: number;
+      changeLabel: string;
+      order: number;
+    },
+    token: string,
+  ) => Promise<CompetitivenessItemRecord>;
+  onUpdate: (
+    id: string,
+    p: {
+      category: string;
+      score: number;
+      change: number;
+      changeLabel: string;
+      order: number;
+    },
+    token: string,
+  ) => Promise<CompetitivenessItemRecord>;
+  onDelete: (id: string, token: string) => Promise<void>;
 }) {
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
-  const [editTarget, setEditTarget] = useState<CompetitivenessItem | null>(
-    null,
-  );
-  const [deleteTarget, setDeleteTarget] = useState<CompetitivenessItem | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] =
+    useState<CompetitivenessItemRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] =
+    useState<CompetitivenessItemRecord | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const [cCat, setCCat] = useState("");
   const [cScore, setCScore] = useState("");
@@ -2897,7 +3088,7 @@ function CompetitivenessPanel({
     setEditTarget(null);
     setPanelMode("create");
   }
-  function openEdit(i: CompetitivenessItem) {
+  function openEdit(i: CompetitivenessItemRecord) {
     setCCat(i.category);
     setCScore(i.score.toString());
     setCChange(i.change.toString());
@@ -2911,7 +3102,7 @@ function CompetitivenessPanel({
     setEditTarget(null);
   }
 
-  function handleSubmit(ev: React.FormEvent) {
+  async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     const e: Record<string, string> = {};
     if (!cCat.trim()) e.cCat = "Category is required.";
@@ -2921,22 +3112,29 @@ function CompetitivenessPanel({
       setErrors(e);
       return;
     }
-    const item: CompetitivenessItem = {
-      id: editTarget?.id ?? `ci-${crypto.randomUUID().slice(0, 8)}`,
+    const changeNum = parseFloat(cChange) || 0;
+    const payload = {
       category: cCat.trim(),
       score: parseFloat(cScore),
-      change: parseFloat(cChange) || 0,
+      change: changeNum,
       changeLabel:
-        cLabel.trim() ||
-        (parseFloat(cChange) >= 0 ? `+${cChange}%` : `${cChange}%`),
+        cLabel.trim() || (changeNum >= 0 ? `+${cChange}%` : `${cChange}%`),
+      order: editTarget?.order ?? 0,
     };
-    if (panelMode === "create") {
-      setItems((p) => [...p, item]);
-    } else if (editTarget) {
-      setItems((p) => p.map((i) => (i.id === editTarget.id ? item : i)));
-      markSaved(editTarget.id);
+    setSubmitting(true);
+    try {
+      if (panelMode === "create") {
+        await onCreate(payload, token);
+      } else if (editTarget) {
+        await onUpdate(editTarget._id, payload, token);
+        markSaved(editTarget._id);
+      }
+      closePanel();
+    } catch {
+      // errors surfaced via store
+    } finally {
+      setSubmitting(false);
     }
-    closePanel();
   }
 
   const maxScore = 2.0;
@@ -2964,7 +3162,7 @@ function CompetitivenessPanel({
         <AnimatePresence>
           {items.map((item) => (
             <motion.div
-              key={item.id}
+              key={item._id}
               variants={rowVariants}
               initial="hidden"
               animate="visible"
@@ -2986,7 +3184,7 @@ function CompetitivenessPanel({
                       {item.changeLabel}
                     </span>
                     <AnimatePresence>
-                      {savedIds.has(item.id) && (
+                      {savedIds.has(item._id) && (
                         <motion.span
                           className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
                           initial={{ opacity: 0, scale: 0.85 }}
@@ -3144,9 +3342,10 @@ function CompetitivenessPanel({
           <DeleteConfirmDialog
             label={deleteTarget.category}
             onClose={() => setDeleteTarget(null)}
-            onConfirm={() =>
-              setItems((p) => p.filter((i) => i.id !== deleteTarget.id))
-            }
+            onConfirm={() => {
+              onDelete(deleteTarget._id, token).catch(() => {});
+              setDeleteTarget(null);
+            }}
           />
         )}
       </AnimatePresence>
@@ -3187,33 +3386,65 @@ function SummaryCard({
 export function StatisticsModulePage() {
   const [activeTab, setActiveTab] = useState<StatsTab>("overview");
 
-  const [municipalStats, setMunicipalStats] = useState<MunicipalStat[]>(
-    INITIAL_MUNICIPAL_STATS,
-  );
-  const [financeStats, setFinanceStats] = useState<FinanceStat[]>(
-    INITIAL_FINANCE_STATS,
-  );
-  const [financeComposition, setFinanceComposition] = useState<
-    FinanceCompositionItem[]
-  >(INITIAL_FINANCE_COMPOSITION);
-  const [populationHistory, setPopulationHistory] = useState<PopulationPoint[]>(
-    INITIAL_POPULATION_HISTORY,
-  );
-  const [barangays, setBarangays] = useState<BarangayEntry[]>([
-    ...INITIAL_BARANGAYS,
-    ...INITIAL_BARANGAYS_EXTRA,
-  ]);
-  const [economyIndicators, setEconomyIndicators] = useState<
-    EconomyIndicator[]
-  >(INITIAL_ECONOMY_INDICATORS);
-  const [economySectors, setEconomySectors] = useState<EconomySector[]>(
-    INITIAL_ECONOMY_SECTORS,
-  );
-  const [povertyEntries, setPovertyEntries] =
-    useState<PovertyEntry[]>(INITIAL_POVERTY);
-  const [competitivenessItems, setCompetitivenessItems] = useState<
-    CompetitivenessItem[]
-  >(INITIAL_COMPETITIVENESS);
+  const {
+    municipalStats,
+    financeStats,
+    financeComposition,
+    populationHistory,
+    barangays,
+    economyIndicators,
+    economySectors,
+    povertyEntries,
+    competitivenessItems,
+    isLoading,
+    error,
+    clearError,
+    fetchAll,
+    createMunicipalStat,
+    updateMunicipalStat,
+    deleteMunicipalStat,
+    createFinanceStat,
+    updateFinanceStat,
+    deleteFinanceStat,
+    createFinanceCompositionItem,
+    updateFinanceCompositionItem,
+    deleteFinanceCompositionItem,
+    createPopulationPoint,
+    updatePopulationPoint,
+    deletePopulationPoint,
+    createBarangay,
+    updateBarangay,
+    deleteBarangay,
+    createEconomyIndicator,
+    updateEconomyIndicator,
+    deleteEconomyIndicator,
+    createEconomySector,
+    updateEconomySector,
+    deleteEconomySector,
+    createPovertyEntry,
+    updatePovertyEntry,
+    deletePovertyEntry,
+    createCompetitivenessItem,
+    updateCompetitivenessItem,
+    deleteCompetitivenessItem,
+  } = useStatisticsStore();
+
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchAll().catch(() => {
+      toast("Failed to load statistics data.", "error");
+    });
+  }, []);
+
+  // Surface store errors as toasts
+  useEffect(() => {
+    if (error) {
+      toast(error, "error");
+      clearError();
+    }
+  }, [error]);
 
   const tabCounts: Record<StatsTab, number> = {
     overview: municipalStats.length,
@@ -3242,6 +3473,14 @@ export function StatisticsModulePage() {
           Camarines Sur.
         </p>
       </div>
+
+      {/* Loading / error banner */}
+      {isLoading && (
+        <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          <LuLoader className="h-4 w-4 animate-spin shrink-0" />
+          Loading statistics data…
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
@@ -3357,47 +3596,72 @@ export function StatisticsModulePage() {
               {activeTab === "overview" && (
                 <OverviewPanel
                   stats={municipalStats}
-                  setStats={setMunicipalStats}
+                  token={accessToken ?? ""}
+                  onCreate={createMunicipalStat}
+                  onUpdate={updateMunicipalStat}
+                  onDelete={deleteMunicipalStat}
                 />
               )}
               {activeTab === "finance" && (
                 <FinancePanel
                   stats={financeStats}
-                  setStats={setFinanceStats}
                   composition={financeComposition}
-                  setComposition={setFinanceComposition}
+                  token={accessToken ?? ""}
+                  onCreateStat={createFinanceStat}
+                  onUpdateStat={updateFinanceStat}
+                  onDeleteStat={deleteFinanceStat}
+                  onCreateComp={createFinanceCompositionItem}
+                  onUpdateComp={updateFinanceCompositionItem}
+                  onDeleteComp={deleteFinanceCompositionItem}
                 />
               )}
               {activeTab === "population" && (
                 <PopulationPanel
                   points={populationHistory}
-                  setPoints={setPopulationHistory}
+                  token={accessToken ?? ""}
+                  onCreate={createPopulationPoint}
+                  onUpdate={updatePopulationPoint}
+                  onDelete={deletePopulationPoint}
                 />
               )}
               {activeTab === "barangays" && (
                 <BarangaysPanel
                   barangays={barangays}
-                  setBarangays={setBarangays}
+                  token={accessToken ?? ""}
+                  onCreate={createBarangay}
+                  onUpdate={updateBarangay}
+                  onDelete={deleteBarangay}
                 />
               )}
               {activeTab === "economy" && (
                 <EconomyPanel
                   indicators={economyIndicators}
-                  setIndicators={setEconomyIndicators}
                   sectors={economySectors}
-                  setSectors={setEconomySectors}
+                  token={accessToken ?? ""}
+                  onCreateIndicator={createEconomyIndicator}
+                  onUpdateIndicator={updateEconomyIndicator}
+                  onDeleteIndicator={deleteEconomyIndicator}
+                  onCreateSector={createEconomySector}
+                  onUpdateSector={updateEconomySector}
+                  onDeleteSector={deleteEconomySector}
                 />
               )}
               {activeTab === "poverty" && (
                 <PovertyPanel
                   entries={povertyEntries}
-                  setEntries={setPovertyEntries}
+                  token={accessToken ?? ""}
+                  onCreate={createPovertyEntry}
+                  onUpdate={updatePovertyEntry}
+                  onDelete={deletePovertyEntry}
                 />
               )}
               {activeTab === "competitiveness" && (
                 <CompetitivenessPanel
                   items={competitivenessItems}
-                  setItems={setCompetitivenessItems}
+                  token={accessToken ?? ""}
+                  onCreate={createCompetitivenessItem}
+                  onUpdate={updateCompetitivenessItem}
+                  onDelete={deleteCompetitivenessItem}
                 />
               )}
             </motion.div>
