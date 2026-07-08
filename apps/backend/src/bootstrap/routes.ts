@@ -27,6 +27,7 @@ import { officeDirectoryRouter } from "@/modules/office-directory";
 import { socialLinksRouter } from "@/modules/social-links";
 import { legislativeRouter } from "@/modules/legislative";
 import { transparencyRouter } from "@/modules/transparency/transparency.routes";
+import { statisticsRouter } from "@/modules/statistics";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -123,6 +124,9 @@ apiRouter.use("/legislative", legislativeRouter);
 
 // Transparency — LGU-managed DPWH infrastructure projects
 apiRouter.use("/transparency", transparencyRouter);
+
+// Statistics — municipal demographics, finance, barangay populations, etc.
+apiRouter.use("/statistics", statisticsRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
