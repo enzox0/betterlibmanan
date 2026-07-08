@@ -795,7 +795,6 @@ const STAT_META = [
 ];
 
 function BudgetSection({ reports }: { reports: FinancialReport[] }) {
-  const [activeIdx, setActiveIdx] = useState(0);
   const [activeYear, setActiveYear] = useState("");
 
   const byYear = reports.reduce<Record<string, FinancialReport[]>>((acc, r) => {
@@ -814,267 +813,193 @@ function BudgetSection({ reports }: { reports: FinancialReport[] }) {
   const yearReports = (byYear[activeYear] ?? []).sort((a, b) =>
     a.quarter.localeCompare(b.quarter),
   );
-  const report = yearReports[Math.min(activeIdx, yearReports.length - 1)];
+  // Get the latest quarterly report or sum all quarters for the year
+  const report = yearReports[yearReports.length - 1];
   if (!report) return null;
 
-  const fmt = (n: number) => `₱${(Math.abs(n) / 1_000_000).toFixed(2)} M`;
-  const statValues = [
-    report.totalIncome,
-    report.totalExpenditures,
-    report.netOperatingIncome,
-    report.fundBalance,
-  ];
+  // Calculate total income, IRA share, local share
+  const iraSource = report.incomeSources.find((s) =>
+    s.source.toLowerCase().includes("ira"),
+  );
+  const localSources = report.incomeSources.filter(
+    (s) => !s.source.toLowerCase().includes("ira"),
+  );
+
+  const totalIncome = report.totalIncome;
+  const iraAmount = iraSource?.amount ?? totalIncome * 0.5945; // Default to 59.45% if not found
+  const localAmount =
+    localSources.reduce((sum, s) => sum + s.amount, 0) ?? totalIncome * 0.4055;
+  const iraPercentage = iraSource?.percentage ?? 59.45;
+  const localPercentage =
+    localSources.reduce((sum, s) => sum + s.percentage, 0) ?? 40.55;
 
   return (
-    <section>
-      {/* Dark hero banner */}
-      <div className="relative bg-gray-900 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent pointer-events-none" />
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
+    <section className="py-14 sm:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 text-center"
+          className="text-center mb-10"
         >
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-400 mb-3">
-            <FaMoneyBillWave size={10} /> Financial Transparency
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-3">
+            <FaMoneyBillWave size={10} /> Finance
           </p>
-          <h2 className="text-2xl font-bold text-white sm:text-3xl leading-tight">
-            Budget & Financial Transparency
+          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl leading-tight">
+            Municipal Income
           </h2>
-          <p className="mt-2 text-sm text-gray-400 max-w-md mx-auto">
-            Tracking municipal finances and projects for accountability
+          <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+            Financial standing for fiscal year {report.fiscalYear}
           </p>
         </motion.div>
-      </div>
 
-      {/* Content on neutral-100 */}
-      <div className="bg-neutral-100 py-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="space-y-6">
-            {/* Fiscal year pills */}
-            {years.length > 1 && (
-              <div className="flex flex-wrap gap-2">
-                {years.map((yr) => (
-                  <button
-                    key={yr}
-                    onClick={() => {
-                      setActiveYear(yr);
-                      setActiveIdx(0);
-                    }}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      activeYear === yr
-                        ? "bg-neutral-900 text-white shadow-sm"
-                        : "bg-white border border-neutral-200 text-gray-600 hover:bg-neutral-50"
-                    }`}
-                  >
-                    FY {yr}
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Fiscal year pills */}
+        {years.length > 1 && (
+          <div className="flex flex-wrap gap-2 justify-center mb-8">
+            {years.map((yr) => (
+              <button
+                key={yr}
+                onClick={() => setActiveYear(yr)}
+                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  activeYear === yr
+                    ? "bg-neutral-900 text-white shadow-sm"
+                    : "bg-white border border-neutral-200 text-gray-600 hover:bg-neutral-50"
+                }`}
+              >
+                FY {yr}
+              </button>
+            ))}
+          </div>
+        )}
 
-            {/* ── Report card ── */}
-            <motion.div
-              key={`${activeYear}-${activeIdx}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
+        {/* Cards row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {/* Annual Income card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0 }}
+            className="rounded-xl border border-neutral-200 bg-gradient-to-br from-blue-900 to-blue-800 text-white p-6 shadow-sm"
+          >
+            <p className="flex items-center gap-1.5 text-xs font-medium text-blue-200 mb-3">
+              <FaChartLine size={11} /> Annual Income
+            </p>
+            <p className="text-3xl font-black leading-none">
+              ₱{(totalIncome / 1_000_000).toFixed(2)} M
+            </p>
+            <p className="text-xs text-blue-200 mt-2">
+              {new Intl.NumberFormat("en-PH", {
+                style: "currency",
+                currency: "PHP",
+                minimumFractionDigits: 0,
+              }).format(totalIncome)}
+            </p>
+          </motion.div>
+
+          {/* IRA Share card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.07 }}
+            className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
+          >
+            <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-3">
+              <FaMoneyBillWave size={11} /> IRA Share
+            </p>
+            <p className="text-3xl font-black text-gray-900 leading-none">
+              ₱{(iraAmount / 1_000_000).toFixed(2)} M
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Internal Revenue Allotment
+            </p>
+          </motion.div>
+
+          {/* IRA Dependency card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.14 }}
+            className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
+          >
+            <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-3">
+              <FaChartLine size={11} /> IRA Dependency
+            </p>
+            <p className="text-3xl font-black text-gray-900 leading-none">
+              {iraPercentage.toFixed(2)}%
+            </p>
+            <p className="text-xs text-gray-500 mt-2">National Tax Share</p>
+          </motion.div>
+        </div>
+
+        {/* Income Composition */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.21 }}
+          className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
+        >
+          <p className="text-xs font-bold text-gray-700 mb-4">
+            Income Composition
+          </p>
+
+          {/* Progress bar */}
+          <div className="w-full h-10 rounded-lg overflow-hidden flex">
+            <div
+              className="bg-gradient-to-r from-blue-600 to-blue-500 flex items-center justify-end px-4"
+              style={{ width: `${iraPercentage}%` }}
             >
-              {/* Card header */}
-              <div className="px-6 pt-6 pb-5 border-b border-neutral-100 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-1.5">
-                    <FaChartLine size={10} /> Financial Report
-                  </p>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Statement of Receipts & Expenditures
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    FY {report.fiscalYear} quarterly financial performance
-                  </p>
-                </div>
+              <span className="text-xs font-bold text-white">
+                IRA {iraPercentage.toFixed(2)}%
+              </span>
+            </div>
+            <div
+              className="bg-gradient-to-r from-emerald-500 to-emerald-400 flex items-center justify-start px-4"
+              style={{ width: `${localPercentage}%` }}
+            >
+              <span className="text-xs font-bold text-white">
+                Local {localPercentage.toFixed(2)}%
+              </span>
+            </div>
+          </div>
 
-                {/* Quarter tabs — same pill style as filter tabs above */}
-                <div className="flex gap-1.5 shrink-0">
-                  {yearReports.map((r, i) => (
-                    <button
-                      key={r.id}
-                      onClick={() => setActiveIdx(i)}
-                      className={`flex flex-col items-center px-4 py-2.5 rounded-xl transition-all ${
-                        i === activeIdx
-                          ? "bg-neutral-900 text-white shadow-sm"
-                          : "border border-neutral-200 bg-white text-gray-600 hover:bg-neutral-50"
-                      }`}
-                    >
-                      <span className="text-sm font-black leading-none">
-                        {r.quarter}
-                      </span>
-                      <span
-                        className={`text-[10px] mt-0.5 ${i === activeIdx ? "text-gray-300" : "text-gray-400"}`}
-                      >
-                        {QUARTER_LABELS[r.quarter]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* Legend */}
+          <div className="flex items-center gap-6 mt-4 justify-center">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-blue-600" />
+              <span className="text-xs text-gray-600 font-medium">
+                Internal Revenue Allotment
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-emerald-500" />
+              <span className="text-xs text-gray-600 font-medium">
+                Local Sources
+              </span>
+            </div>
+          </div>
+        </motion.div>
 
-              {/* KPI strip — system card style with left accent stripe */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-neutral-100">
-                {STAT_META.map((meta, i) => (
-                  <motion.div
-                    key={meta.label}
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: i * 0.07 }}
-                    className="relative bg-white px-5 py-5 overflow-hidden"
-                  >
-                    <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-neutral-400 to-neutral-700" />
-                    <div
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-xl text-white text-sm font-bold mb-3 ${meta.color}`}
-                    >
-                      {meta.icon}
-                    </div>
-                    <p className="text-xl font-bold text-gray-900 leading-none">
-                      {fmt(statValues[i])}
-                    </p>
-                    <p className="text-[11px] text-gray-400 mt-1.5 font-medium">
-                      {meta.label}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* ── Donut charts ── */}
-              {(report.incomeSources.length > 0 ||
-                report.expenditureAllocations.length > 0) && (
-                <div className="grid sm:grid-cols-2 gap-px bg-neutral-100 border-t border-neutral-100">
-                  {report.incomeSources.length > 0 && (
-                    <div className="bg-white p-6">
-                      <p className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-5">
-                        <FaChartLine size={11} className="text-blue-600" />{" "}
-                        Income Sources
-                      </p>
-                      <div className="flex items-center gap-6">
-                        <DonutChart
-                          items={report.incomeSources.map((s) => ({
-                            label: s.source,
-                            percentage: s.percentage,
-                          }))}
-                          centerLabel="Income"
-                        />
-                        <div className="flex-1 space-y-2.5 min-w-0">
-                          {report.incomeSources.map((s, i) => (
-                            <div key={i} className="flex items-start gap-2">
-                              <div
-                                className="h-2.5 w-2.5 rounded-full shrink-0 mt-0.5"
-                                style={{
-                                  backgroundColor:
-                                    DONUT_COLORS[i % DONUT_COLORS.length],
-                                }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[11px] font-semibold text-gray-700 truncate">
-                                  {s.source}
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] text-gray-400">
-                                    {new Intl.NumberFormat("en-PH", {
-                                      style: "currency",
-                                      currency: "PHP",
-                                      minimumFractionDigits: 0,
-                                    }).format(s.amount)}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-gray-600">
-                                    {s.percentage}%
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {report.expenditureAllocations.length > 0 && (
-                    <div className="bg-white p-6">
-                      <p className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-5">
-                        <FaMoneyBillWave size={11} className="text-amber-500" />{" "}
-                        Expenditure Allocation
-                      </p>
-                      <div className="flex items-center gap-6">
-                        <DonutChart
-                          items={report.expenditureAllocations.map((a) => ({
-                            label: a.category,
-                            percentage: a.percentage,
-                          }))}
-                          centerLabel="Spending"
-                        />
-                        <div className="flex-1 space-y-2.5 min-w-0">
-                          {report.expenditureAllocations.map((a, i) => (
-                            <div key={i} className="flex items-start gap-2">
-                              <div
-                                className="h-2.5 w-2.5 rounded-full shrink-0 mt-0.5"
-                                style={{
-                                  backgroundColor:
-                                    DONUT_COLORS[i % DONUT_COLORS.length],
-                                }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[11px] font-semibold text-gray-700 truncate">
-                                  {a.category}
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] text-gray-400">
-                                    {new Intl.NumberFormat("en-PH", {
-                                      style: "currency",
-                                      currency: "PHP",
-                                      minimumFractionDigits: 0,
-                                    }).format(a.amount)}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-gray-600">
-                                    {a.percentage}%
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Card footer */}
-              <div className="px-6 py-3.5 bg-neutral-50/60 border-t border-neutral-100">
-                <p className="text-[11px] text-gray-400">
-                  Source:
-                  <a
-                    href="https://blgf.gov.ph/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline ml-2 inline-flex items-center gap-1"
-                  >
-                    Bureau of Local Government Finance (BLGF){" "}
-                    <FaExternalLinkAlt size={9} />
-                  </a>
-                </p>
-              </div>
-            </motion.div>
+        {/* Source */}
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center gap-2 text-xs text-gray-500">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
+              i
+            </span>
+            Source:
+            <a
+              href="https://blgf.gov.ph/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline inline-flex items-center gap-1"
+            >
+              Bureau of Local Government Finance (BLGF){" "}
+              <FaExternalLinkAlt size={8} />
+            </a>
           </div>
         </div>
       </div>
