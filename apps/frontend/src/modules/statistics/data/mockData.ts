@@ -21,44 +21,40 @@ export const mockStatisticsData: StatisticsData = {
   ],
 
   // ── Finance ────────────────────────────────────────────────────────
-  // Source: BLGF Statement of Receipts & Expenditures (SRE) 2024
-  // Revenue ₱440.3M, Assets ₱1,241M, Expenditure ₱449.6M as reported on Wikipedia
+  // Source: BLGF Statement of Receipts & Expenditures (SRE) 2023
   finance: {
-    title: "Municipal Finance",
-    subtitle: "Financial performance for fiscal year 2024",
+    title: "Municipal Income",
+    subtitle: "Financial standing for fiscal year 2023",
     stats: [
       {
-        label: "Total Revenue",
-        value: "₱440.3M",
-        subValue: "₱440,300,000 (2024 SRE)",
+        label: "Annual Income",
+        value: "₱371.33M",
+        subValue: "₱371,329,818.71",
       },
       {
-        label: "Total Assets",
-        value: "₱1,241M",
-        subValue: "Municipal asset base",
+        label: "IRA Share",
+        value: "₱220.77M",
+        subValue: "Internal Revenue Allotment",
       },
       {
-        label: "Total Expenditure",
-        value: "₱449.6M",
-        subValue: "FY 2024 municipal spending",
+        label: "IRA Dependency",
+        value: "59.45%",
+        subValue: "National Tax Share",
       },
     ],
-    // IRA typically makes up ~60–65% of LGU income for 1st class municipalities
-    // Remainder is locally-sourced revenue
     composition: [
       {
-        label: "IRA / National Transfer",
-        percentage: 62,
+        label: "Internal Revenue Allotment",
+        percentage: 59.45,
         color: "bg-blue-600",
       },
       {
-        label: "Locally-Sourced Revenue",
-        percentage: 38,
-        color: "bg-gray-700",
+        label: "Local Sources",
+        percentage: 40.55,
+        color: "bg-emerald-500",
       },
     ],
-    source:
-      "Bureau of Local Government Finance (BLGF) – 2024 SRE; Wikipedia / DILG",
+    source: "Bureau of Local Government Finance (BLGF) – 2023 SRE",
   },
 
   // ── Population Trend ───────────────────────────────────────────────
