@@ -26,53 +26,82 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const NAV_ITEMS: NavItem[] = [
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
   {
-    label: "Home",
-    to: "/admin/home",
-    icon: <LuHouse className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    items: [
+      {
+        label: "Home",
+        to: "/admin/home",
+        icon: <LuHouse className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+    ],
   },
   {
-    label: "Services",
-    to: "/admin/services",
-    icon: <LuWrench className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    title: "Content Management",
+    items: [
+      {
+        label: "Services",
+        to: "/admin/services",
+        icon: <LuWrench className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+      {
+        label: "Government",
+        to: "/admin/government",
+        icon: <LuBuilding2 className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+      {
+        label: "Statistics",
+        to: "/admin/statistics",
+        icon: <LuChartBar className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+      {
+        label: "Legislative",
+        to: "/admin/legislative",
+        icon: <LuFileText className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+      {
+        label: "Transparency",
+        to: "/admin/transparency",
+        icon: <LuSearch className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+    ],
   },
   {
-    label: "Government",
-    to: "/admin/government",
-    icon: <LuBuilding2 className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    title: "Engagement",
+    items: [
+      {
+        label: "Contacts",
+        to: "/admin/contacts",
+        icon: <LuPhone className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+      {
+        label: "Community",
+        to: "/admin/community",
+        icon: (
+          <LuMessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />
+        ),
+      },
+    ],
   },
   {
-    label: "Statistics",
-    to: "/admin/statistics",
-    icon: <LuChartBar className="h-4 w-4 shrink-0" aria-hidden="true" />,
-  },
-  {
-    label: "Legislative",
-    to: "/admin/legislative",
-    icon: <LuFileText className="h-4 w-4 shrink-0" aria-hidden="true" />,
-  },
-  {
-    label: "Transparency",
-    to: "/admin/transparency",
-    icon: <LuSearch className="h-4 w-4 shrink-0" aria-hidden="true" />,
-  },
-  {
-    label: "Contacts",
-    to: "/admin/contacts",
-    icon: <LuPhone className="h-4 w-4 shrink-0" aria-hidden="true" />,
-  },
-  {
-    label: "Community",
-    to: "/admin/community",
-    icon: <LuMessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />,
-  },
-  {
-    label: "Tourism",
-    to: "/admin/tourism",
-    icon: <LuMapPin className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    title: "Promotion",
+    items: [
+      {
+        label: "Tourism",
+        to: "/admin/tourism",
+        icon: <LuMapPin className="h-4 w-4 shrink-0" aria-hidden="true" />,
+      },
+    ],
   },
 ];
+
+// Flatten for backward compatibility if needed
+const NAV_ITEMS: NavItem[] = NAV_SECTIONS.flatMap((section) => section.items);
 
 const navContainerVariants = {
   hidden: {},
@@ -194,32 +223,43 @@ export function AdminSidebar() {
         className="flex-1 overflow-y-auto px-3 pb-3"
         aria-label="Admin navigation"
       >
-        <motion.ul
-          className="space-y-0.5"
-          variants={navContainerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {NAV_ITEMS.map(({ label, to, icon }) => (
-            <motion.li key={to} variants={navItemVariants}>
-              <NavLink
-                to={to}
-                end={to === "/admin"}
-                className={({ isActive }) =>
-                  [
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
-                    isActive
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
-                      : "text-blue-200 hover:bg-white/10 hover:text-white",
-                  ].join(" ")
-                }
-              >
-                {icon}
-                <span>{label}</span>
-              </NavLink>
-            </motion.li>
-          ))}
-        </motion.ul>
+        {NAV_SECTIONS.map((section, sectionIndex) => (
+          <div key={section.title} className={sectionIndex > 0 ? "pt-4" : ""}>
+            {section.title && (
+              <div className="px-3 pb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-400">
+                  {section.title}
+                </p>
+              </div>
+            )}
+            <motion.ul
+              className="space-y-0.5"
+              variants={navContainerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {section.items.map(({ label, to, icon }) => (
+                <motion.li key={to} variants={navItemVariants}>
+                  <NavLink
+                    to={to}
+                    end={to === "/admin"}
+                    className={({ isActive }) =>
+                      [
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                        isActive
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
+                          : "text-blue-200 hover:bg-white/10 hover:text-white",
+                      ].join(" ")
+                    }
+                  >
+                    {icon}
+                    <span>{label}</span>
+                  </NavLink>
+                </motion.li>
+              ))}
+            </motion.ul>
+          </div>
+        ))}
       </nav>
 
       {/* Account section */}
