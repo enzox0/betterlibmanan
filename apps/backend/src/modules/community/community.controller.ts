@@ -10,6 +10,13 @@ import {
 } from "./community.model";
 import { UserModel } from "../users/user.model";
 import { uploadBase64ImageToR2 } from "@/shared/storage/r2";
+import {
+  emitGroupMessage,
+  emitGroupMessageReaction,
+  emitGroupMessageDelete,
+  emitDiscussionReply,
+  emitDiscussionReplyLike,
+} from "@/gateway/websocket/socket";
 
 // ─── Discussions ──────────────────────────────────────────────────────────────
 
@@ -576,6 +583,12 @@ export async function createDiscussionReply(
     // Increment reply count on the discussion
     await DiscussionModel.findByIdAndUpdate(id, { $inc: { replies: 1 } });
 
+    // Broadcast to all other clients currently viewing this discussion.
+    // The sender already has the reply in their optimistic update, so we
+    // deliberately exclude them via the socket-id header if provided.
+    const senderSocketId = req.headers["x-socket-id"] as string | undefined;
+    emitDiscussionReply(id, reply.toObject(), senderSocketId);
+
     res.status(201).json({ success: true, data: reply });
   } catch {
     res.status(500).json({ success: false, message: "Failed to post reply" });
@@ -610,6 +623,9 @@ export async function likeDiscussionReply(
       reply.likes += 1;
     }
     await reply.save();
+
+    // Broadcast the updated reply so all clients see the new like count.
+    emitDiscussionReplyLike(reply.discussionId.toString(), reply.toObject());
 
     res.json({ success: true, data: reply });
   } catch {
@@ -751,6 +767,10 @@ export async function createGroupMessage(
       text,
     });
 
+    // Broadcast to all other clients currently in the group room.
+    const senderSocketId = req.headers["x-socket-id"] as string | undefined;
+    emitGroupMessage(id, message.toObject(), senderSocketId);
+
     res.status(201).json({ success: true, data: message });
   } catch {
     res.status(500).json({ success: false, message: "Failed to send message" });
@@ -795,7 +815,15 @@ export async function reactToGroupMessage(
     }
     await msg.save();
 
-    res.json({ success: true, data: msg });
+    // Convert Mongoose Map → plain object so JSON.stringify / Socket.IO serialize it correctly.
+    // msg.toObject() / toJSON() does NOT automatically flatten Map fields to POJOs —
+    // they must be converted manually.
+    const plain = msg.toObject({ flattenMaps: true });
+
+    // Broadcast the updated message so all viewers see the new reaction counts.
+    emitGroupMessageReaction(id, plain);
+
+    res.json({ success: true, data: plain });
   } catch {
     res
       .status(500)
@@ -809,12 +837,14 @@ export async function deleteGroupMessage(
   res: Response,
 ): Promise<void> {
   try {
-    const { messageId } = req.params;
+    const { groupId, messageId } = req.params;
     const doc = await GroupMessageModel.findByIdAndDelete(messageId);
     if (!doc) {
       res.status(404).json({ success: false, message: "Message not found" });
       return;
     }
+    // Notify all clients in the group room that the message was removed.
+    emitGroupMessageDelete(groupId, messageId);
     res.json({ success: true, message: "Message deleted" });
   } catch {
     res
