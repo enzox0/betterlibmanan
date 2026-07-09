@@ -1006,7 +1006,7 @@ export function CommunitySection() {
 
       {/* Content grid */}
       <div className="responsive-container py-10 sm:py-12 lg:py-16">
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* ── Main column ── */}
           <div className="flex-1 min-w-0 flex flex-col gap-8">
             {/* Trending Discussions */}
@@ -1025,16 +1025,22 @@ export function CommunitySection() {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {discussions.slice(0, 2).map((d, i) => (
-                    <DiscussionCard
-                      key={d._id}
-                      discussion={d}
-                      index={i}
-                      onClick={() =>
-                        navigate(`/community/discussions/${d._id}`)
-                      }
-                    />
-                  ))}
+                  {[...discussions]
+                    .sort((a, b) => {
+                      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+                      return b.replies - a.replies;
+                    })
+                    .slice(0, 2)
+                    .map((d, i) => (
+                      <DiscussionCard
+                        key={d._id}
+                        discussion={d}
+                        index={i}
+                        onClick={() =>
+                          navigate(`/community/discussions/${d._id}`)
+                        }
+                      />
+                    ))}
                 </div>
               )}
             </section>
@@ -1056,21 +1062,28 @@ export function CommunitySection() {
               ) : (
                 <>
                   <div className="flex flex-col gap-3">
-                    {groups.slice(0, 10).map((group, i) => (
-                      <GroupCard
-                        key={group._id}
-                        group={group}
-                        index={i}
-                        isJoined={joinedGroupIds.includes(group._id)}
-                        onJoin={() =>
-                          requireAuth(() => handleToggleGroup(group))
-                        }
-                        isGuest={!isAuthenticated}
-                        onClick={() =>
-                          navigate(`/community/groups/${group._id}`)
-                        }
-                      />
-                    ))}
+                    {[...groups]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.updatedAt).getTime() -
+                          new Date(a.updatedAt).getTime(),
+                      )
+                      .slice(0, 10)
+                      .map((group, i) => (
+                        <GroupCard
+                          key={group._id}
+                          group={group}
+                          index={i}
+                          isJoined={joinedGroupIds.includes(group._id)}
+                          onJoin={() =>
+                            requireAuth(() => handleToggleGroup(group))
+                          }
+                          isGuest={!isAuthenticated}
+                          onClick={() =>
+                            navigate(`/community/groups/${group._id}`)
+                          }
+                        />
+                      ))}
                   </div>
 
                   {/* View More — shown when there are more than 10 groups */}
@@ -1101,7 +1114,7 @@ export function CommunitySection() {
           </div>
 
           {/* ── Sidebar ── */}
-          <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4">
+          <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4 sticky top-[13dvh]">
             <FeaturedEventPanel
               event={featuredEvent}
               loading={isFeaturedEventLoading}
