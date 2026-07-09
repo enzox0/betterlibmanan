@@ -12,6 +12,7 @@ import {
   type UpdateProfilePayload,
   type ChangePasswordPayload,
 } from "../services/user.api";
+import { resetSocket } from "@/lib/socket";
 
 // ─── State shape ──────────────────────────────────────────────────────────────
 
@@ -60,6 +61,8 @@ export const useUserStore = create<UserState>()(
             user: result.user,
             isLoading: false,
           });
+          // Reconnect socket with the new user token
+          resetSocket();
         } catch (error: any) {
           set({
             isLoading: false,
@@ -82,6 +85,8 @@ export const useUserStore = create<UserState>()(
             user: result.user,
             isLoading: false,
           });
+          // Reconnect socket so it authenticates with the new token
+          resetSocket();
         } catch (error: any) {
           set({
             isLoading: false,
@@ -101,6 +106,8 @@ export const useUserStore = create<UserState>()(
           user: null,
           error: null,
         });
+        // Drop the authenticated socket and reconnect as guest
+        resetSocket();
       },
 
       refreshMe: async () => {

@@ -189,12 +189,16 @@ export async function createDiscussionReplyRequest(
   discussionId: string,
   payload: CreateReplyPayload,
   userToken: string,
+  socketId?: string,
 ): Promise<DiscussionReply> {
   const { data } = await apiClient.post<{
     success: boolean;
     data: DiscussionReply;
   }>(`/discussions/${discussionId}/replies`, payload, {
-    headers: { Authorization: `Bearer ${userToken}` },
+    headers: {
+      Authorization: `Bearer ${userToken}`,
+      ...(socketId ? { "x-socket-id": socketId } : {}),
+    },
   });
   return data.data;
 }
@@ -365,12 +369,16 @@ export async function sendGroupMessageRequest(
   groupId: string,
   payload: SendGroupMessagePayload,
   userToken: string,
+  socketId?: string,
 ): Promise<GroupMessage> {
   const { data } = await apiClient.post<{
     success: boolean;
     data: GroupMessage;
   }>(`/groups/${groupId}/messages`, payload, {
-    headers: { Authorization: `Bearer ${userToken}` },
+    headers: {
+      Authorization: `Bearer ${userToken}`,
+      ...(socketId ? { "x-socket-id": socketId } : {}),
+    },
   });
   return data.data;
 }

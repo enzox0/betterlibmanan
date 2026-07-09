@@ -96,6 +96,7 @@ interface CommunityState {
     discussionId: string,
     payload: CreateReplyPayload,
     userToken: string,
+    socketId?: string,
   ) => Promise<DiscussionReply>;
   toggleLikeReply: (
     replyId: string,
@@ -128,13 +129,15 @@ interface CommunityState {
     groupId: string,
     payload: SendGroupMessagePayload,
     userToken: string,
+    socketId?: string,
   ) => Promise<GroupMessage>;
   reactToGroupMessage: (
     groupId: string,
     msgId: string,
     emoji: string,
     userToken: string,
-  ) => Promise<GroupMessage>;
+    userId?: string,
+  ) => Promise<void>;
   fetchGroupMembers: (groupId: string) => Promise<GroupMembersResult>;
   // Trending tags
   fetchTrendingTags: () => Promise<TrendingTag[]>;
@@ -142,6 +145,21 @@ interface CommunityState {
   // Featured event actions
   fetchFeaturedEvent: () => Promise<FeaturedEvent | null>;
   rsvpEvent: () => Promise<void>;
+
+  // ── Internal socket helpers (used by real-time hooks only) ────────────────
+  _upsertGroupMessage: (groupId: string, message: GroupMessage) => void;
+  _deleteGroupMessage: (groupId: string, messageId: string) => void;
+  _upsertDiscussionReply: (
+    discussionId: string,
+    reply: DiscussionReply,
+  ) => void;
+  // Always overwrites — for reaction/like updates to existing items
+  _updateDiscussionReply: (
+    discussionId: string,
+    reply: DiscussionReply,
+  ) => void;
+  _updateGroupMessage: (groupId: string, message: GroupMessage) => void;
+  _incrementDiscussionReplies: (discussionId: string) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -316,13 +334,14 @@ export const useCommunityStore = create<CommunityState>()(
         return repliesFetchPromises[discussionId]!;
       },
 
-      postReply: async (discussionId, payload, userToken) => {
+      postReply: async (discussionId, payload, userToken, socketId) => {
         set({ error: null });
         try {
           const created = await createDiscussionReplyRequest(
             discussionId,
             payload,
             userToken,
+            socketId,
           );
           const current = get().repliesByDiscussion[discussionId] ?? [];
           set((state) => ({
@@ -346,6 +365,10 @@ export const useCommunityStore = create<CommunityState>()(
         set({ error: null });
         try {
           const updated = await likeDiscussionReplyRequest(replyId, userToken);
+          // Register before the socket echo arrives so the hook can skip it.
+          const { pendingLikeIds } =
+            await import("@/hooks/useDiscussionSocket");
+          pendingLikeIds.add(replyId);
           // Update the reply in whichever discussion it belongs to
           const discussionId = updated.discussionId;
           const current = get().repliesByDiscussion[discussionId] ?? [];
@@ -553,13 +576,14 @@ export const useCommunityStore = create<CommunityState>()(
         return messagesFetchPromises[groupId]!;
       },
 
-      sendGroupMessage: async (groupId, payload, userToken) => {
+      sendGroupMessage: async (groupId, payload, userToken, socketId) => {
         set({ error: null });
         try {
           const created = await sendGroupMessageRequest(
             groupId,
             payload,
             userToken,
+            socketId,
           );
           const current = get().messagesByGroup[groupId] ?? [];
           set((state) => ({
@@ -575,24 +599,58 @@ export const useCommunityStore = create<CommunityState>()(
         }
       },
 
-      reactToGroupMessage: async (groupId, msgId, emoji, userToken) => {
+      reactToGroupMessage: async (groupId, msgId, emoji, userToken, userId) => {
         set({ error: null });
         try {
-          const updated = await reactToGroupMessageRequest(
-            groupId,
-            msgId,
-            emoji,
-            userToken,
-          );
-          const current = get().messagesByGroup[groupId] ?? [];
-          set((state) => ({
-            messagesByGroup: {
-              ...state.messagesByGroup,
-              [groupId]: upsertMessage(current, updated),
-            },
-          }));
-          return updated;
+          // ── Optimistic update ─────────────────────────────────────────────
+          // Apply the toggle immediately so the UI is instant.
+          // The socket echo (group:message:react) will overwrite with the
+          // authoritative server state for all connected clients.
+          if (userId) {
+            set((state) => {
+              const msgs = state.messagesByGroup[groupId] ?? [];
+              const updated = msgs.map((m) => {
+                if (m._id !== msgId) return m;
+                const reactions = { ...m.reactions };
+                const users: string[] = reactions[emoji]
+                  ? [...reactions[emoji]]
+                  : [];
+                const idx = users.indexOf(userId);
+                if (idx === -1) {
+                  reactions[emoji] = [...users, userId];
+                } else {
+                  const next = users.filter((u) => u !== userId);
+                  if (next.length === 0) {
+                    delete reactions[emoji];
+                  } else {
+                    reactions[emoji] = next;
+                  }
+                }
+                return { ...m, reactions };
+              });
+              return {
+                messagesByGroup: {
+                  ...state.messagesByGroup,
+                  [groupId]: updated,
+                },
+              };
+            });
+          }
+
+          // Persist to server — server broadcasts group:message:react via
+          // socket which calls _updateGroupMessage to reconcile for all clients.
+          await reactToGroupMessageRequest(groupId, msgId, emoji, userToken);
         } catch (error: any) {
+          // Roll back on failure by re-fetching authoritative messages
+          const messages = await listGroupMessages(groupId).catch(() => null);
+          if (messages) {
+            set((state) => ({
+              messagesByGroup: {
+                ...state.messagesByGroup,
+                [groupId]: messages,
+              },
+            }));
+          }
           set({ error: getErrorMessage(error, "Failed to react to message.") });
           throw error;
         }
@@ -675,6 +733,83 @@ export const useCommunityStore = create<CommunityState>()(
           set({ error: getErrorMessage(error, "Failed to submit RSVP.") });
           throw error;
         }
+      },
+
+      // ── Internal socket helpers ───────────────────────────────────────────
+
+      _upsertGroupMessage: (groupId, message) => {
+        set((state) => ({
+          messagesByGroup: {
+            ...state.messagesByGroup,
+            [groupId]: upsertMessage(
+              state.messagesByGroup[groupId] ?? [],
+              message,
+            ),
+          },
+        }));
+      },
+
+      // Always overwrites — for reaction updates to existing messages
+      _updateGroupMessage: (groupId, message) => {
+        set((state) => ({
+          messagesByGroup: {
+            ...state.messagesByGroup,
+            [groupId]: upsertMessage(
+              state.messagesByGroup[groupId] ?? [],
+              message,
+            ),
+          },
+        }));
+      },
+
+      _deleteGroupMessage: (groupId, messageId) => {
+        set((state) => ({
+          messagesByGroup: {
+            ...state.messagesByGroup,
+            [groupId]: (state.messagesByGroup[groupId] ?? []).filter(
+              (m) => m._id !== messageId,
+            ),
+          },
+        }));
+      },
+
+      _upsertDiscussionReply: (discussionId, reply) => {
+        const current = get().repliesByDiscussion[discussionId] ?? [];
+        // If this reply is already in the local list (added by the optimistic
+        // update in postReply), skip both the upsert and the counter bump so
+        // the sender never sees a duplicate.
+        const alreadyExists = current.some((r) => r._id === reply._id);
+        if (alreadyExists) return;
+        set((state) => ({
+          repliesByDiscussion: {
+            ...state.repliesByDiscussion,
+            [discussionId]: upsertReply(current, reply),
+          },
+        }));
+      },
+
+      // Always overwrites an existing reply — used for like/unlike updates
+      // where the reply already exists and we just need the new counts.
+      _updateDiscussionReply: (discussionId, reply) => {
+        const current = get().repliesByDiscussion[discussionId] ?? [];
+        set((state) => ({
+          repliesByDiscussion: {
+            ...state.repliesByDiscussion,
+            [discussionId]: upsertReply(current, reply),
+          },
+        }));
+      },
+
+      _incrementDiscussionReplies: (discussionId) => {
+        // Only bump the counter when _upsertDiscussionReply actually added a
+        // new reply (i.e. this is called right after confirming it wasn't a
+        // duplicate). Because we guard in _upsertDiscussionReply we also guard
+        // here — caller (useDiscussionSocket) always calls both together.
+        set((state) => ({
+          discussions: state.discussions.map((d) =>
+            d._id === discussionId ? { ...d, replies: d.replies + 1 } : d,
+          ),
+        }));
       },
     }),
     {
