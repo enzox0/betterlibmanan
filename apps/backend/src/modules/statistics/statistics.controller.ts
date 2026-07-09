@@ -650,12 +650,10 @@ export async function createAdminBarangay(
           description: `Created barangay: ${parsed.data.name}`,
         },
       );
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: records.map((r) => toRecord(r, "barangays")),
-      });
+    res.status(201).json({
+      success: true,
+      data: records.map((r) => toRecord(r, "barangays")),
+    });
   } catch (err: any) {
     handleServiceError(err, res, next);
   }
