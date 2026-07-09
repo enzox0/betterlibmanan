@@ -13,7 +13,6 @@ import {
   FaThumbtack,
   FaFire,
   FaChevronDown,
-  FaChevronUp,
   FaReply,
   FaTimes,
 } from "react-icons/fa";
@@ -23,6 +22,8 @@ import { useCommunityStore } from "@/modules/admin/store/communityStore";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { UserAuthModal } from "../components/ui/UserAuthModal";
 import { Avatar } from "../components/ui/Avatar";
+import { useDiscussionSocket } from "@/hooks/useDiscussionSocket";
+import { getSocket } from "@/lib/socket";
 import type {
   Discussion,
   DiscussionReply,
@@ -408,6 +409,10 @@ export function DiscussionDetailPage() {
   const userToken = useUserStore((s) => s.token);
   const displayName = currentUser?.displayName ?? "Anonymous";
 
+  // ── Real-time Socket.IO connection ────────────────────────────────────────────
+  // Joins the discussion room so other users' replies appear live.
+  useDiscussionSocket(id, userToken ?? undefined);
+
   const discussions = useCommunityStore((s) => s.discussions);
   const isDiscussionsLoading = useCommunityStore((s) => s.isDiscussionsLoading);
   const fetchDiscussions = useCommunityStore((s) => s.fetchDiscussions);
@@ -425,9 +430,12 @@ export function DiscussionDetailPage() {
   // postingReplyTo: tracks which inline composer is in-flight
   const [postingReplyTo, setPostingReplyTo] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [showAllReplies, setShowAllReplies] = useState(false);
 
-  const PREVIEW_COUNT = 5;
+  // ── Pagination ────────────────────────────────────────────────────────────────
+  // Replies are shown newest-first. Start with 20 visible root threads,
+  // each "Load older" press reveals 20 more.
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -436,7 +444,7 @@ export function DiscussionDetailPage() {
         toast("Failed to load discussions.", "error"),
       );
     }
-  }, [fetchDiscussions, discussions.length]);
+  }, [fetchDiscussions, discussions.length, id]);
 
   useEffect(() => {
     const found = discussions.find((d) => d._id === id);
@@ -450,6 +458,13 @@ export function DiscussionDetailPage() {
 
   const replies = id ? (repliesByDiscussion[id] ?? []) : [];
   const replyTree = buildReplyTree(replies);
+
+  // Newest root replies first; children inside each thread stay oldest-first
+  // (natural reading order within a conversation thread).
+  const reversedRoots = [...replyTree].reverse();
+  const visibleRoots = reversedRoots.slice(0, visibleCount);
+  const hasMore = visibleCount < reversedRoots.length;
+  const remainingCount = reversedRoots.length - visibleCount;
 
   const requireAuth = (action: () => void) => {
     if (!isAuthenticated) {
@@ -475,6 +490,7 @@ export function DiscussionDetailPage() {
     if (!replyText.trim() || !id || !userToken) return;
     setPosting(true);
     try {
+      const socketId = getSocket().id;
       await postReply(
         id,
         {
@@ -483,9 +499,11 @@ export function DiscussionDetailPage() {
           avatarUrl: currentUser?.avatarUrl ?? "",
         },
         userToken,
+        socketId,
       );
       setReplyText("");
-      setShowAllReplies(true);
+      // Reset to first page so the new reply (newest) is immediately visible at top
+      setVisibleCount(PAGE_SIZE);
       toast("Reply posted!", "success");
     } catch {
       toast("Failed to post reply.", "error");
@@ -499,6 +517,7 @@ export function DiscussionDetailPage() {
     if (!id || !userToken) return;
     setPostingReplyTo(parentId);
     try {
+      const socketId = getSocket().id;
       await postReply(
         id,
         {
@@ -508,9 +527,10 @@ export function DiscussionDetailPage() {
           avatarUrl: currentUser?.avatarUrl ?? "",
         },
         userToken,
+        socketId,
       );
       setReplyingToId(null);
-      setShowAllReplies(true);
+      setVisibleCount(PAGE_SIZE);
       toast("Reply posted!", "success");
     } catch {
       toast("Failed to post reply.", "error");
@@ -551,11 +571,6 @@ export function DiscussionDetailPage() {
       </div>
     );
   }
-
-  const visibleRoots = showAllReplies
-    ? replyTree
-    : replyTree.slice(0, PREVIEW_COUNT);
-  const hiddenCount = replyTree.length - PREVIEW_COUNT;
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -653,67 +668,6 @@ export function DiscussionDetailPage() {
               </div>
             </motion.div>
 
-            {/* Replies */}
-            {isRepliesLoading && replies.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <FaSpinner
-                  className="animate-spin text-neutral-400"
-                  size={20}
-                />
-              </div>
-            ) : replyTree.length > 0 ? (
-              <div className="bg-white border border-neutral-200 rounded-2xl p-5 sm:p-6 flex flex-col gap-1">
-                <div className="flex items-center gap-2 mb-4">
-                  <FaComment size={11} className="text-neutral-400" />
-                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                    {replies.length}{" "}
-                    {replies.length === 1 ? "Reply" : "Replies"}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-4">
-                  <AnimatePresence initial={false}>
-                    {visibleRoots.map((node) => (
-                      <ReplyNodeCard
-                        key={node.reply._id}
-                        node={node}
-                        depth={0}
-                        currentUserId={currentUser?._id ?? null}
-                        displayName={displayName}
-                        isAuthenticated={isAuthenticated}
-                        onLike={handleLike}
-                        onReply={(rid) =>
-                          setReplyingToId((prev) => (prev === rid ? null : rid))
-                        }
-                        onOpenAuth={() => setAuthModalOpen(true)}
-                        replyingToId={replyingToId}
-                        postingReplyTo={postingReplyTo}
-                        onPostNestedReply={handlePostNestedReply}
-                        onCancelReply={() => setReplyingToId(null)}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </div>
-                {replyTree.length > PREVIEW_COUNT && (
-                  <button
-                    onClick={() => setShowAllReplies((v) => !v)}
-                    style={{ minHeight: 0 }}
-                    className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-800 transition-colors self-start"
-                  >
-                    {showAllReplies ? (
-                      <>
-                        <FaChevronUp size={10} /> Show less
-                      </>
-                    ) : (
-                      <>
-                        <FaChevronDown size={10} /> Show {hiddenCount} more{" "}
-                        {hiddenCount === 1 ? "reply" : "replies"}
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            ) : null}
-
             {/* Root reply composer */}
             <div className="bg-white border border-neutral-200 rounded-2xl p-5 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -793,10 +747,71 @@ export function DiscussionDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Replies */}
+            {isRepliesLoading && replies.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <FaSpinner
+                  className="animate-spin text-neutral-400"
+                  size={20}
+                />
+              </div>
+            ) : replyTree.length > 0 ? (
+              <div className="bg-white border border-neutral-200 rounded-2xl p-5 sm:p-6 flex flex-col gap-1">
+                <div className="flex items-center gap-2 mb-4">
+                  <FaComment size={11} className="text-neutral-400" />
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
+                    {replies.length}{" "}
+                    {replies.length === 1 ? "Reply" : "Replies"}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <AnimatePresence initial={false}>
+                    {visibleRoots.map((node) => (
+                      <ReplyNodeCard
+                        key={node.reply._id}
+                        node={node}
+                        depth={0}
+                        currentUserId={currentUser?._id ?? null}
+                        displayName={displayName}
+                        isAuthenticated={isAuthenticated}
+                        onLike={handleLike}
+                        onReply={(rid) =>
+                          setReplyingToId((prev) => (prev === rid ? null : rid))
+                        }
+                        onOpenAuth={() => setAuthModalOpen(true)}
+                        replyingToId={replyingToId}
+                        postingReplyTo={postingReplyTo}
+                        onPostNestedReply={handlePostNestedReply}
+                        onCancelReply={() => setReplyingToId(null)}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                {/* Load older replies — appends the next PAGE_SIZE roots */}
+                {hasMore && (
+                  <button
+                    onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                    style={{ minHeight: 0 }}
+                    className="mt-4 w-full py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:bg-neutral-200 text-xs font-semibold text-neutral-600 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <FaChevronDown size={10} />
+                    Load {Math.min(remainingCount, PAGE_SIZE)} older{" "}
+                    {Math.min(remainingCount, PAGE_SIZE) === 1
+                      ? "reply"
+                      : "replies"}
+                    <span className="text-neutral-400 font-normal">
+                      ({remainingCount} remaining)
+                    </span>
+                  </button>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {/* Sidebar */}
-          <aside className="w-full lg:w-72 xl:w-80 shrink-0">
+          <aside className="w-full lg:w-72 xl:w-80 shrink-0 sticky top-[13dvh]">
             <DiscussionSidebar
               discussion={discussion}
               related={related}

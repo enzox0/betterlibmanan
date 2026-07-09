@@ -24,6 +24,8 @@ import { useCommunityStore } from "@/modules/admin/store/communityStore";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { UserAuthModal } from "../components/ui/UserAuthModal";
 import SafeImage, { getProxiedUrl } from "../components/ui/SafeImage";
+import { useGroupSocket } from "@/hooks/useGroupSocket";
+import { getSocket } from "@/lib/socket";
 import type {
   CommunityGroup,
   GroupMessage,
@@ -148,8 +150,7 @@ function EmojiPickerPortal({
   onPick: (e: string) => void;
   onClose: () => void;
 }) {
-  // Position above the anchor button, aligned to its side
-  const PICKER_W = 8 * 36 + 8; // ~6 emojis * 36px + padding
+  const PICKER_W = 8 * 36 + 8;
   const top = anchorRect.top - 48;
   const left = isOwn
     ? Math.max(8, anchorRect.right - PICKER_W)
@@ -390,7 +391,12 @@ function JoinedGroupsPanel({
   const navigate = useNavigate();
 
   // Founder-created groups are joined implicitly — include all where user is a member
-  const myGroups = groups.filter((g) => joinedGroupIds.includes(g._id));
+  const myGroups = [...groups]
+    .filter((g) => joinedGroupIds.includes(g._id))
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
 
   return (
     <motion.div
@@ -611,7 +617,7 @@ function GroupInfoSidebar({
             </button>
           ) : isFounder ? (
             <div className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold">
-              <FaUsers size={12} /> Founder
+              <FaUsers size={12} /> Creator
             </div>
           ) : isJoined ? (
             <div className="w-full flex flex-col gap-2">
@@ -722,9 +728,8 @@ export function GroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
@@ -732,6 +737,8 @@ export function GroupDetailPage() {
   const userToken = useUserStore((s) => s.token);
   const displayName = currentUser?.displayName ?? "Anonymous";
   const userId = currentUser?._id ?? null;
+
+  useGroupSocket(id, userToken ?? undefined);
 
   // ── Store ─────────────────────────────────────────────────────────────────────
   const groups = useCommunityStore((s) => s.groups);
@@ -760,7 +767,6 @@ export function GroupDetailPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
-  const isInitialLoad = useRef(true);
 
   // Auto-collapse left panel on narrower lg screens
   useEffect(() => {
@@ -790,32 +796,23 @@ export function GroupDetailPage() {
     const found = groups.find((g) => g._id === id);
     if (found) {
       setGroup(found);
-      isInitialLoad.current = true;
     }
   }, [groups, id]);
 
-  // Fetch messages + members
   useEffect(() => {
     if (!id) return;
     fetchGroupMessages(id).catch(() => {});
     fetchGroupMembers(id).catch(() => {});
   }, [id, fetchGroupMessages, fetchGroupMembers]);
 
-  // Scroll to bottom on new messages
+  // Scroll to the latest message whenever the message list grows
   useEffect(() => {
-    if (isInitialLoad.current) {
-      const el = messagesContainerRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
-      isInitialLoad.current = false;
-      return;
-    }
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesByGroup]);
+  }, [messagesByGroup, id]);
 
   const messages: GroupMessage[] = id ? (messagesByGroup[id] ?? []) : [];
   const members: GroupMember[] = id ? (membersByGroup[id] ?? []) : [];
   const isJoined = id ? joinedGroupIds.includes(id) : false;
-  // Treat the first member as the founder; founders are automatically considered members
   const isFounder =
     !!userId && members.length > 0 && members[0].userId === userId;
   const isMember = isFounder || isJoined;
@@ -854,7 +851,13 @@ export function GroupDetailPage() {
   const handleReact = async (msgId: string, emoji: string) => {
     if (!userToken || !id) return;
     try {
-      await reactToGroupMessage(id, msgId, emoji, userToken);
+      await reactToGroupMessage(
+        id,
+        msgId,
+        emoji,
+        userToken,
+        userId ?? undefined,
+      );
     } catch {
       toast("Failed to react.", "error");
     }
@@ -868,6 +871,7 @@ export function GroupDetailPage() {
     setInput("");
     setReplyingTo(null);
     try {
+      const socketId = getSocket().id;
       await sendGroupMessage(
         group._id,
         {
@@ -877,6 +881,7 @@ export function GroupDetailPage() {
           avatarUrl: currentUser?.avatarUrl ?? "",
         },
         userToken,
+        socketId,
       );
     } catch {
       toast("Failed to send message.", "error");
@@ -903,7 +908,7 @@ export function GroupDetailPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-[80dvh] bg-neutral-50 flex flex-col items-center justify-center gap-4">
         <FaUsers size={36} className="text-neutral-300" />
         <p className="text-neutral-500 font-semibold">Group not found.</p>
         <button
@@ -919,7 +924,7 @@ export function GroupDetailPage() {
   return (
     <div
       className="flex flex-col bg-neutral-50 overflow-hidden"
-      style={{ height: "100dvh", minHeight: 0 }}
+      style={{ height: "80dvh", minHeight: 0 }}
     >
       {/* Top bar */}
       <div className="bg-white border-b border-neutral-200 shrink-0">
@@ -1048,10 +1053,7 @@ export function GroupDetailPage() {
           ) : (
             <>
               {/* Messages */}
-              <div
-                ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4"
-              >
+              <section className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
                 {isMessagesLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center py-8">
                     <FaSpinner
@@ -1092,8 +1094,7 @@ export function GroupDetailPage() {
                   })
                 )}
                 <div ref={messagesEndRef} />
-              </div>
-
+              </section>
               {/* Input bar */}
               <div className="shrink-0 border-t border-neutral-200 bg-white">
                 {/* Reply-to context banner */}
@@ -1201,7 +1202,6 @@ export function GroupDetailPage() {
 
         {/* Right sidebar (desktop) — collapsible */}
         <div className="hidden lg:flex shrink-0 relative">
-          {/* Toggle tab — always visible, sits outside the animated panel */}
           <button
             onClick={() => setSidebarCollapsed((v) => !v)}
             style={{ minHeight: 0 }}

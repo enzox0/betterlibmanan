@@ -257,17 +257,23 @@ export function AllPeerGroupsPage() {
               available
             </p>
             <div className="flex flex-col gap-3">
-              {groups.map((group, i) => (
-                <GroupCard
-                  key={group._id}
-                  group={group}
-                  index={i}
-                  isJoined={joinedGroupIds.includes(group._id)}
-                  onJoin={() => requireAuth(() => handleToggleGroup(group))}
-                  isGuest={!isAuthenticated}
-                  onClick={() => navigate(`/community/groups/${group._id}`)}
-                />
-              ))}
+              {[...groups]
+                .sort(
+                  (a, b) =>
+                    new Date(b.updatedAt).getTime() -
+                    new Date(a.updatedAt).getTime(),
+                )
+                .map((group, i) => (
+                  <GroupCard
+                    key={group._id}
+                    group={group}
+                    index={i}
+                    isJoined={joinedGroupIds.includes(group._id)}
+                    onJoin={() => requireAuth(() => handleToggleGroup(group))}
+                    isGuest={!isAuthenticated}
+                    onClick={() => navigate(`/community/groups/${group._id}`)}
+                  />
+                ))}
             </div>
 
             {!isAuthenticated && (
