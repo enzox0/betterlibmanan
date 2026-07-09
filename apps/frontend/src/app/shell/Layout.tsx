@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { TopUtilityBar } from "@/app/shell/TopUtilityBar";
 import { Navbar } from "@/app/shell/Navbar";
 import { BottomUtilityBar } from "@/app/shell/BottomUtilityBar";
@@ -11,9 +12,14 @@ import { MiniFloatingNav } from "@/modules/landing/components/sections/MiniFloat
 import { AutoPageMetadata } from "@/app/components";
 import { LazyLoader } from "@/app/router/lazy-loader";
 
+/** Routes where the footer and contribute CTA should be hidden. */
+const HIDE_FOOTER_PATTERNS = [/^\/community\/groups\/.+/];
+
 /** Layout with Suspense/lazy-loading fallback — used for all code-split routes. */
 export function Layout({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const { pathname } = useLocation();
+  const hideFooter = HIDE_FOOTER_PATTERNS.some((p) => p.test(pathname));
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -28,8 +34,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col">
         <LazyLoader>{children}</LazyLoader>
       </main>
-      <ContributeCTA />
-      <Footer />
+      {!hideFooter && <ContributeCTA />}
+      {!hideFooter && <Footer />}
       <BackToTopButton />
       <InfoFloatingButton setAuthModalOpen={setAuthModalOpen} />
       <UserAuthModal
