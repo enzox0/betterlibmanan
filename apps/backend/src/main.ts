@@ -10,9 +10,11 @@ import path from "path";
 import dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
+import { createServer } from "http";
 import { app } from "@/bootstrap/app";
 import { logger } from "@/shared/logger";
 import { connectDB } from "@/infrastructure/database";
+import { initSocketIO } from "@/gateway/websocket/socket";
 
 const PORT = parseInt(process.env.PORT || "5000", 10);
 
@@ -30,9 +32,14 @@ async function main() {
 
     await connectDB();
 
-    app.listen(PORT, "0.0.0.0", () => {
+    // Wrap Express in a raw Node HTTP server so Socket.IO can share the port.
+    const httpServer = createServer(app);
+    initSocketIO(httpServer);
+
+    httpServer.listen(PORT, "0.0.0.0", () => {
       logger.info(`✓ Server running on http://0.0.0.0:${PORT}`);
       logger.info(`✓ API available at http://0.0.0.0:${PORT}/api`);
+      logger.info(`✓ Socket.IO available at ws://0.0.0.0:${PORT}/socket.io`);
       logger.info(`✓ Frontend available at http://0.0.0.0:${PORT}/`);
       logger.info("=".repeat(50));
     });
