@@ -110,6 +110,9 @@ const InstallPage = lazyLoad(() =>
 const UserProfilePage = lazyLoad(() =>
   import("@/modules/landing").then((m) => ({ default: m.UserProfilePage })),
 );
+const LatestUpdatesPage = lazyLoad(() =>
+  import("@/modules/landing").then((m) => ({ default: m.LatestUpdatesPage })),
+);
 const TourismPage = lazyLoad(() => import("@/modules/tourism"));
 
 export function AppRouter() {
@@ -419,6 +422,14 @@ export function AppRouter() {
         element={
           <Layout>
             <UserProfilePage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/latest-updates"
+        element={
+          <Layout>
+            <LatestUpdatesPage />
           </Layout>
         }
       />
