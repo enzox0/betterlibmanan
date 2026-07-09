@@ -194,8 +194,36 @@ export function Footer() {
                   className="opacity-70 hover:opacity-100 transition-opacity duration-300"
                 >
                   <img
-                    src="/bettergov-logo.svg"
+                    src="/footer/bettergov-footer.svg"
                     alt="Better Gov"
+                    className="h-16 sm:h-20"
+                  />
+                </a>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <a
+                  href="https://abakada.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-70 hover:opacity-100 transition-opacity duration-300"
+                >
+                  <img
+                    src="/footer/abakada-footer.svg"
+                    alt="Abakada"
+                    className="h-16 sm:h-20"
+                  />
+                </a>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <a
+                  href="https://hivcareph.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-70 hover:opacity-100 transition-opacity duration-300"
+                >
+                  <img
+                    src="/footer/hiv-care-logo-footer.svg"
+                    alt="HIV Care Philippines"
                     className="h-16 sm:h-20"
                   />
                 </a>

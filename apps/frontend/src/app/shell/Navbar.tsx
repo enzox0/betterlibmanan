@@ -14,9 +14,7 @@ import {
   FaGavel,
   FaEye,
   FaChartBar,
-  FaMapMarkerAlt,
-  FaInfoCircle,
-  FaDownload,
+  FaUsers,
 } from "react-icons/fa";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { getProxiedUrl } from "@/modules/landing/components/ui/SafeImage";
@@ -456,6 +454,24 @@ export function Navbar({ authModalOpen, setAuthModalOpen }: NavbarProps) {
                             delay: 0.09,
                           }}
                         >
+                          <Link
+                            to="/community"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          >
+                            <FaUsers size={12} />
+                            Community
+                          </Link>
+                        </motion.div>
+                        <motion.div
+                          initial={{ x: -10, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{
+                            duration: 0.2,
+                            ease: "easeOut",
+                            delay: 0.12,
+                          }}
+                        >
                           <button
                             onClick={() => {
                               logout();
@@ -716,6 +732,14 @@ export function Navbar({ authModalOpen, setAuthModalOpen }: NavbarProps) {
                         >
                           <FaUser size={12} />
                           My Profile
+                        </Link>
+                        <Link
+                          to="/community"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center gap-2 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                        >
+                          <FaUsers size={12} />
+                          Community
                         </Link>
                         <button
                           onClick={() => {
