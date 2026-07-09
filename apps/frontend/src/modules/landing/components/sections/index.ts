@@ -8,3 +8,4 @@ export { LeadershipSection } from "./LeadershipSection";
 export { ContactSection } from "./ContactSection";
 export { QuizSection } from "./QuizSection";
 export { AboutSection } from "./AboutSection";
+export { FreedomWallCTASection } from "./FreedomWallCTASection";

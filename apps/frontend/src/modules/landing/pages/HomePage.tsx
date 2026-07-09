@@ -35,6 +35,9 @@ const ContactSection = lazyLoad(
 const QuizSection = lazyLoad(
   () => import("../components/sections/QuizSection"),
 );
+const FreedomWallCTASection = lazyLoad(
+  () => import("../components/sections/FreedomWallCTASection"),
+);
 
 const SECTIONS = [
   { id: "section-hero", label: "Home" },
@@ -47,6 +50,7 @@ const SECTIONS = [
   { id: "section-updates", label: "Latest Updates" },
   { id: "section-leadership", label: "Leadership" },
   { id: "section-contact", label: "Contact" },
+  { id: "section-freedom-wall-cta", label: "Freedom Wall" },
   { id: "section-quiz", label: "Quiz" },
 ];
 
@@ -94,6 +98,9 @@ export function HomePage() {
       </div>
       <div id="section-contact">
         <ContactSection isLoading={isLoading} />
+      </div>
+      <div id="section-freedom-wall-cta">
+        <FreedomWallCTASection />
       </div>
       <div id="section-quiz">
         <QuizSection isLoading={isLoading} />
