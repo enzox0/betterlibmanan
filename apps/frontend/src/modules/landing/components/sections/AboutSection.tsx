@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import {
-  FaBookOpen,
   FaUsers,
   FaCode,
   FaLock,
@@ -8,13 +8,14 @@ import {
   FaDiscord,
   FaEnvelope,
   FaExternalLinkAlt,
-  FaHeart,
   FaMapMarkerAlt,
   FaDatabase,
   FaEye,
   FaBalanceScale,
   FaGlobeAsia,
 } from "react-icons/fa";
+import joinUsLottie from "@/assets/lottiefiles/join-us.lottie?url";
+import aboutLottie from "@/assets/lottiefiles/about.lottie?url";
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -178,23 +179,50 @@ export function AboutSection() {
 
       <section className="py-16 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp}>
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">
-              What is BetterLibmanan?
-            </h2>
-            <p className="mt-3 text-sm sm:text-base text-neutral-500 max-w-3xl leading-relaxed">
-              BetterLibmanan.org is an independent, civic-technology website
-              that makes local government information about Libmanan — budgets,
-              ordinances, officials, barangay data, and public services — easy
-              for any resident to find and understand.
-            </p>
-            <p className="mt-3 text-sm sm:text-base text-neutral-500 max-w-3xl leading-relaxed">
-              It is not an official LGU website. It is built by volunteers and
-              is entirely open source. All data is sourced from public
-              government portals such as the Commission on Audit (COA), the DBM
-              Open Data portal, the Official Gazette, and LGU Libmanan's own
-              published records.
-            </p>
+          <motion.div
+            {...fadeUp}
+            className="flex flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-12"
+          >
+            {/* Lottie — left side */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{
+                duration: 0.7,
+                ease: [0.22, 1, 0.36, 1],
+                delay: 0.1,
+              }}
+              className="w-48 sm:w-60 lg:w-64 shrink-0"
+              aria-hidden="true"
+            >
+              <DotLottieReact
+                src={aboutLottie}
+                loop
+                autoplay
+                style={{ width: "100%", height: "100%" }}
+              />
+            </motion.div>
+
+            {/* Text */}
+            <div className="w-full lg:flex-1">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">
+                What is BetterLibmanan?
+              </h2>
+              <p className="mt-3 text-sm sm:text-base text-neutral-500 max-w-3xl leading-relaxed">
+                BetterLibmanan.org is an independent, civic-technology website
+                that makes local government information about Libmanan —
+                budgets, ordinances, officials, barangay data, and public
+                services — easy for any resident to find and understand.
+              </p>
+              <p className="mt-3 text-sm sm:text-base text-neutral-500 max-w-3xl leading-relaxed">
+                It is not an official LGU website. It is built by volunteers and
+                is entirely open source. All data is sourced from public
+                government portals such as the Commission on Audit (COA), the
+                DBM Open Data portal, the Official Gazette, and LGU Libmanan's
+                own published records.
+              </p>
+            </div>
           </motion.div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -536,43 +564,70 @@ export function AboutSection() {
 
       <section className="py-16 bg-gray-900 border-t border-neutral-800">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp} className="text-center">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
-              Built with love by volunteers from Libmanan
-            </h2>
-            <p className="mt-3 text-sm sm:text-base text-gray-400 max-w-xl mx-auto leading-relaxed">
-              This platform will always be free. Join hundreds of civic-minded
-              Filipinos who believe government should work for the people.
-            </p>
+          <motion.div
+            {...fadeUp}
+            className="flex flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-12"
+          >
+            {/* Lottie — left side */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{
+                duration: 0.7,
+                ease: [0.22, 1, 0.36, 1],
+                delay: 0.1,
+              }}
+              className="w-48 sm:w-60 lg:w-64 shrink-0"
+              aria-hidden="true"
+            >
+              <DotLottieReact
+                src={joinUsLottie}
+                loop
+                autoplay
+                style={{ width: "100%", height: "100%" }}
+              />
+            </motion.div>
 
-            <div className="mt-8 flex flex-wrap gap-3 justify-center">
-              <a
-                href="https://about.bettergov.ph/volunteer"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-              >
-                <FaEnvelope size={13} />
-                Volunteer with us
-              </a>
-              <a
-                href="https://github.com/bettergovph"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-neutral-600 bg-transparent px-5 py-2.5 text-sm font-semibold text-white hover:border-white transition-colors"
-              >
-                <FaGithub size={13} />
-                GitHub
-              </a>
-              <a
-                href="https://discord.gg/bettergovph"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-neutral-600 bg-transparent px-5 py-2.5 text-sm font-semibold text-white hover:border-white transition-colors"
-              >
-                <FaDiscord size={13} />
-                Discord
-              </a>
+            {/* Text + CTAs */}
+            <div className="text-center lg:text-left">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+                Built with love by volunteers from Libmanan
+              </h2>
+              <p className="mt-3 text-sm sm:text-base text-gray-400 max-w-xl leading-relaxed">
+                This platform will always be free. Join hundreds of civic-minded
+                Filipinos who believe government should work for the people.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3 justify-center lg:justify-start">
+                <a
+                  href="https://about.bettergov.ph/volunteer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                >
+                  <FaEnvelope size={13} />
+                  Volunteer with us
+                </a>
+                <a
+                  href="https://github.com/bettergovph"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-600 bg-transparent px-5 py-2.5 text-sm font-semibold text-white hover:border-white transition-colors"
+                >
+                  <FaGithub size={13} />
+                  GitHub
+                </a>
+                <a
+                  href="https://discord.gg/bettergovph"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-600 bg-transparent px-5 py-2.5 text-sm font-semibold text-white hover:border-white transition-colors"
+                >
+                  <FaDiscord size={13} />
+                  Discord
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>
