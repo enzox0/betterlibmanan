@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { FaCalendarAlt } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { FaCalendarAlt, FaArrowRight } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 import { useLatestUpdatesStore } from "@/modules/admin/store/latestUpdatesStore";
@@ -31,6 +32,7 @@ export function LatestUpdatesSection({
 }: {
   isLoading?: boolean;
 }) {
+  const navigate = useNavigate();
   const publicRecords = useLatestUpdatesStore((s) => s.publicRecords);
   const isPublicLoading = useLatestUpdatesStore((s) => s.isPublicLoading);
   const fetchPublicRecords = useLatestUpdatesStore((s) => s.fetchPublicRecords);
@@ -40,6 +42,7 @@ export function LatestUpdatesSection({
   }, [fetchPublicRecords]);
 
   const loading = isLoading || isPublicLoading;
+  const displayedRecords = publicRecords.slice(0, 3);
 
   return (
     <section className="py-16 bg-neutral-100">
@@ -50,20 +53,34 @@ export function LatestUpdatesSection({
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
+          <div className="mb-8 flex items-end justify-between gap-4">
             {loading ? (
               <>
-                <Skeleton className="h-9 w-48 mb-2" />
-                <Skeleton className="h-5 w-80" />
+                <div className="space-y-2">
+                  <Skeleton className="h-9 w-48" />
+                  <Skeleton className="h-5 w-80" />
+                </div>
               </>
             ) : (
               <>
-                <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900">
-                  Latest Updates
-                </h2>
-                <p className="mt-2 text-sm text-neutral-500">
-                  Stay informed about what's happening in our municipality
-                </p>
+                <div>
+                  <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900">
+                    Latest Updates
+                  </h2>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    Stay informed about what's happening in our municipality
+                  </p>
+                </div>
+                {publicRecords.length > 3 && (
+                  <button
+                    onClick={() => navigate("/latest-updates")}
+                    style={{ minHeight: 0 }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-neutral-900 text-white hover:bg-neutral-700 active:bg-black transition-all"
+                  >
+                    View More
+                    <FaArrowRight size={10} />
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -81,12 +98,12 @@ export function LatestUpdatesSection({
                   </div>
                 </SkeletonCard>
               ))
-            ) : publicRecords.length === 0 ? (
+            ) : displayedRecords.length === 0 ? (
               <p className="col-span-full text-sm text-neutral-400 italic">
                 No updates available yet.
               </p>
             ) : (
-              publicRecords.map((record) => (
+              displayedRecords.map((record) => (
                 <div
                   key={record.id}
                   className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
