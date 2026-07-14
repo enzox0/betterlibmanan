@@ -23,13 +23,20 @@ const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || "15m"; // short-lived
 const REFRESH_TOKEN_TTL_MS =
   parseInt(process.env.JWT_REFRESH_TTL_DAYS || "7", 10) * 24 * 60 * 60 * 1000;
 
+const INVALID_SECRET_PATTERNS = [
+  "change-me-access-secret",
+  "change-me-refresh-secret",
+  "your-super-secret-jwt-key-change-this-in-production",
+  "your-super-secret-refresh-key-change-this-in-production",
+];
+
 if (process.env.NODE_ENV === "production") {
   if (
-    ACCESS_SECRET === "change-me-access-secret" ||
-    REFRESH_SECRET === "change-me-refresh-secret"
+    INVALID_SECRET_PATTERNS.includes(ACCESS_SECRET) ||
+    INVALID_SECRET_PATTERNS.includes(REFRESH_SECRET)
   ) {
     throw new Error(
-      "[AUTH] JWT secrets must be set via JWT_ACCESS_SECRET and JWT_REFRESH_SECRET in production.",
+      "[AUTH] JWT secrets must be set via JWT_ACCESS_SECRET and JWT_REFRESH_SECRET in production (do not use placeholder values).",
     );
   }
 }
