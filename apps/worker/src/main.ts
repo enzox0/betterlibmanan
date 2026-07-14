@@ -14,11 +14,12 @@ import { mailer } from "./shared/mailer";
 let reportedError = false;
 
 async function checkHealth() {
+  const healthEndpoint = `${config.app.internalApiUrl}/health`;
   logger.info("Checking backend health...", {
-    endpoint: `${config.app.apiUrl}/health`,
+    endpoint: healthEndpoint,
   });
   try {
-    const response = await axios.get(`${config.app.apiUrl}/health`);
+    const response = await axios.get(healthEndpoint);
     logger.info("Backend health check passed", response.data);
     reportedError = false;
   } catch (error: any) {
@@ -26,7 +27,7 @@ async function checkHealth() {
       timestamp: new Date().toISOString(),
       status: error.response?.status || "unknown",
       statusText: error.response?.statusText || error.message,
-      url: `${config.app.apiUrl}/health`,
+      url: healthEndpoint,
       error: error.message,
     };
     logger.error("Backend health check failed", errorDetails);
