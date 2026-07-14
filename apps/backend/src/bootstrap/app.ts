@@ -59,34 +59,24 @@ logger.info(`[SPA] Assets path: ${assetsPath}`);
 
 // Verify frontend dist exists
 const isDevelopment = process.env.NODE_ENV !== "production";
+let assetsExists = false;
 if (!fs.existsSync(frontendDistPath)) {
-  if (isDevelopment) {
-    logger.info(`[SPA] Frontend dist not found (development mode - API only)`);
-    logger.info(`[SPA] To serve frontend, run: npm run build`);
-  } else {
-    logger.error(
-      `[SPA] ✗ CRITICAL: Frontend dist NOT FOUND at: ${frontendDistPath}`,
-    );
-    logger.error(`[SPA] ✗ Application will fail to serve frontend!`);
-    process.exit(1); // Exit only in production if frontend is missing
-  }
+  logger.warn(
+    `[SPA] Frontend dist NOT FOUND at: ${frontendDistPath}`,
+  );
+  logger.warn(`[SPA] Application will run in API-only mode - frontend not served!`);
 } else {
   const indexExists = fs.existsSync(path.join(frontendDistPath, "index.html"));
-  const assetsExists = fs.existsSync(assetsPath);
+  assetsExists = fs.existsSync(assetsPath);
 
   logger.info(`[SPA] ✓ Frontend dist directory exists`);
   logger.info(`[SPA] ✓ index.html: ${indexExists ? "Found" : "MISSING"}`);
   logger.info(`[SPA] ✓ assets/: ${assetsExists ? "Found" : "MISSING"}`);
 
   if (!indexExists || !assetsExists) {
-    if (isDevelopment) {
-      logger.info(
-        `[SPA] Frontend build incomplete (continuing in development mode)`,
-      );
-    } else {
-      logger.error(`[SPA] ✗ CRITICAL: Frontend build incomplete!`);
-      process.exit(1);
-    }
+    logger.warn(
+      `[SPA] Frontend build incomplete - application will run in API-only mode!`,
+    );
   }
 
   // Log sample assets for verification
@@ -219,15 +209,6 @@ app.get("/health", (_req, res) => {
     },
   };
 
-  // In production, return 503 if frontend is not ready
-  // In development, always return 200 (backend can run standalone)
-  const isDevelopment = process.env.NODE_ENV !== "production";
-  if (!status.frontend.ready && !isDevelopment) {
-    return res
-      .status(503)
-      .json({ ...status, success: false, message: "Frontend not ready" });
-  }
-
   res.json(status);
 });
 
@@ -253,188 +234,204 @@ app.use("/api", apiRouter);
 // STATIC FILE SERVING - CRITICAL SECTION
 // =============================================================================
 
-// MIME type helper - Comprehensive and explicit
-const getMimeType = (filePath: string): string | null => {
-  const ext = path.extname(filePath).toLowerCase();
-  const mimeTypes: Record<string, string> = {
-    // JavaScript
-    ".js": "application/javascript; charset=utf-8",
-    ".mjs": "application/javascript; charset=utf-8",
+// Check if frontend is available
+const frontendAvailable = fs.existsSync(frontendDistPath) &&
+  fs.existsSync(path.join(frontendDistPath, "index.html")) &&
+  fs.existsSync(assetsPath);
 
-    // Stylesheets
-    ".css": "text/css; charset=utf-8",
+if (frontendAvailable) {
+  // MIME type helper - Comprehensive and explicit
+  const getMimeType = (filePath: string): string | null => {
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      // JavaScript
+      ".js": "application/javascript; charset=utf-8",
+      ".mjs": "application/javascript; charset=utf-8",
 
-    // Data
-    ".json": "application/json; charset=utf-8",
-    ".map": "application/json; charset=utf-8",
+      // Stylesheets
+      ".css": "text/css; charset=utf-8",
 
-    // Images
-    ".svg": "image/svg+xml",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".webp": "image/webp",
-    ".gif": "image/gif",
-    ".ico": "image/x-icon",
-    ".avif": "image/avif",
+      // Data
+      ".json": "application/json; charset=utf-8",
+      ".map": "application/json; charset=utf-8",
 
-    // Fonts
-    ".woff": "font/woff",
-    ".woff2": "font/woff2",
-    ".ttf": "font/ttf",
-    ".otf": "font/otf",
-    ".eot": "application/vnd.ms-fontobject",
+      // Images
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".webp": "image/webp",
+      ".gif": "image/gif",
+      ".ico": "image/x-icon",
+      ".avif": "image/avif",
 
-    // Other
-    ".lottie": "application/json; charset=utf-8",
+      // Fonts
+      ".woff": "font/woff",
+      ".woff2": "font/woff2",
+      ".ttf": "font/ttf",
+      ".otf": "font/otf",
+      ".eot": "application/vnd.ms-fontobject",
+
+      // Other
+      ".lottie": "application/json; charset=utf-8",
+    };
+
+    return mimeTypes[ext] || null;
   };
 
-  return mimeTypes[ext] || null;
-};
+  // CRITICAL: Serve /assets/* with explicit MIME types and error handling
+  app.use("/assets", (req, res, next) => {
+    const filePath = path.join(assetsPath, req.path);
 
-// CRITICAL: Serve /assets/* with explicit MIME types and error handling
-app.use("/assets", (req, res, next) => {
-  const filePath = path.join(assetsPath, req.path);
+    // Security: prevent directory traversal
+    const normalizedPath = path.normalize(filePath);
+    if (!normalizedPath.startsWith(assetsPath)) {
+      logger.error(
+        `[ASSETS] Security: Path traversal attempt blocked: ${req.path}`,
+      );
+      return res.status(403).type("text/plain").send("Forbidden");
+    }
 
-  // Security: prevent directory traversal
-  const normalizedPath = path.normalize(filePath);
-  if (!normalizedPath.startsWith(assetsPath)) {
-    logger.error(
-      `[ASSETS] Security: Path traversal attempt blocked: ${req.path}`,
-    );
-    return res.status(403).type("text/plain").send("Forbidden");
-  }
-
-  // Check if file exists
-  if (!fs.existsSync(filePath)) {
-    logger.error(`[ASSETS] 404: ${req.path} (full path: ${filePath})`);
-    return res.status(404).type("text/plain").send("Asset not found");
-  }
-
-  // Check if it's a file (not a directory)
-  try {
-    const stats = fs.statSync(filePath);
-    if (!stats.isFile()) {
-      logger.error(`[ASSETS] Not a file: ${req.path}`);
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      logger.error(`[ASSETS] 404: ${req.path} (full path: ${filePath})`);
       return res.status(404).type("text/plain").send("Asset not found");
     }
-  } catch (err) {
-    logger.error(`[ASSETS] Error checking file ${req.path}:`, err);
-    return res.status(500).type("text/plain").send("Failed to load asset");
-  }
 
-  // Set MIME type explicitly
-  const mimeType = getMimeType(filePath);
-  if (mimeType) {
-    res.setHeader("Content-Type", mimeType);
-
-    // Security header for JS and CSS
-    if (
-      filePath.endsWith(".js") ||
-      filePath.endsWith(".mjs") ||
-      filePath.endsWith(".css")
-    ) {
-      res.setHeader("X-Content-Type-Options", "nosniff");
-    }
-  } else {
-    // Default to binary if unknown type
-    res.setHeader("Content-Type", "application/octet-stream");
-  }
-
-  // Aggressive caching for content-hashed files
-  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-
-  // Log successful asset serves (useful for debugging)
-  if (process.env.NODE_ENV === "production") {
-    logger.debug(`[ASSETS] ✓ ${req.path} (${mimeType || "unknown"})`);
-  }
-
-  // Serve the file
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      logger.error(`[ASSETS] Error serving ${req.path}:`, err);
-      if (!res.headersSent) {
-        res.status(500).type("text/plain").send("Failed to load asset");
+    // Check if it's a file (not a directory)
+    try {
+      const stats = fs.statSync(filePath);
+      if (!stats.isFile()) {
+        logger.error(`[ASSETS] Not a file: ${req.path}`);
+        return res.status(404).type("text/plain").send("Asset not found");
       }
+    } catch (err) {
+      logger.error(`[ASSETS] Error checking file ${req.path}:`, err);
+      return res.status(500).type("text/plain").send("Failed to load asset");
     }
-  });
-});
 
-// Serve other static files (images, fonts, etc.) from root
-app.use((req, res, next) => {
-  // Skip index.html and API routes
-  if (req.path === "/index.html" || req.path.startsWith("/api")) {
-    return next();
-  }
-
-  // Check if file exists in dist
-  const filePath = path.join(frontendDistPath, req.path);
-
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    // Set MIME type explicitly
     const mimeType = getMimeType(filePath);
     if (mimeType) {
       res.setHeader("Content-Type", mimeType);
+
+      // Security header for JS and CSS
+      if (
+        filePath.endsWith(".js") ||
+        filePath.endsWith(".mjs") ||
+        filePath.endsWith(".css")
+      ) {
+        res.setHeader("X-Content-Type-Options", "nosniff");
+      }
+    } else {
+      // Default to binary if unknown type
+      res.setHeader("Content-Type", "application/octet-stream");
     }
 
-    res.setHeader("Cache-Control", "public, max-age=3600");
+    // Aggressive caching for content-hashed files
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("Access-Control-Allow-Origin", "*");
 
+    // Log successful asset serves (useful for debugging)
+    if (process.env.NODE_ENV === "production") {
+      logger.debug(`[ASSETS] ✓ ${req.path} (${mimeType || "unknown"})`);
+    }
+
+    // Serve the file
     res.sendFile(filePath, (err) => {
       if (err) {
-        logger.error(`[STATIC] Error serving ${req.path}:`, err);
+        logger.error(`[ASSETS] Error serving ${req.path}:`, err);
         if (!res.headersSent) {
-          next();
+          res.status(500).type("text/plain").send("Failed to load asset");
         }
-      } else {
-        logger.debug(`[STATIC] ✓ ${req.path}`);
       }
     });
-  } else {
-    next();
-  }
-});
+  });
 
-// =============================================================================
-// SPA CATCH-ALL - Must be LAST
-// =============================================================================
+  // Serve other static files (images, fonts, etc.) from root
+  app.use((req, res, next) => {
+    // Skip index.html and API routes
+    if (req.path === "/index.html" || req.path.startsWith("/api")) {
+      return next();
+    }
 
-app.get("*", (req, res) => {
-  // If it looks like a static asset that wasn't found, return 404
-  if (
-    req.path.match(
-      /\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|otf|eot|webp|avif|map|lottie)$/,
-    )
-  ) {
-    logger.warn(`[SPA] 404 - Asset-like path: ${req.path}`);
-    return res.status(404).type("text/plain").send("Not found");
-  }
+    // Check if file exists in dist
+    const filePath = path.join(frontendDistPath, req.path);
 
-  // Serve index.html for all SPA routes
-  const indexPath = path.join(frontendDistPath, "index.html");
-
-  logger.debug(`[SPA] Serving: ${req.path}`);
-
-  res.sendFile(
-    indexPath,
-    {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    },
-    (err) => {
-      if (err) {
-        logger.error(`[SPA] Failed to serve index.html:`, err);
-        // Send plain text error, NOT JSON
-        if (!res.headersSent) {
-          res.status(500).type("text/plain").send("Failed to load application");
-        }
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const mimeType = getMimeType(filePath);
+      if (mimeType) {
+        res.setHeader("Content-Type", mimeType);
       }
-    },
-  );
-});
+
+      res.setHeader("Cache-Control", "public, max-age=3600");
+
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          logger.error(`[STATIC] Error serving ${req.path}:`, err);
+          if (!res.headersSent) {
+            next();
+          }
+        } else {
+          logger.debug(`[STATIC] ✓ ${req.path}`);
+        }
+      });
+    } else {
+      next();
+    }
+  });
+
+  // =============================================================================
+  // SPA CATCH-ALL - Must be LAST
+  // =============================================================================
+
+  app.get("*", (req, res) => {
+    // If it looks like a static asset that wasn't found, return 404
+    if (
+      req.path.match(
+        /\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|otf|eot|webp|avif|map|lottie)$/,
+      )
+    ) {
+      logger.warn(`[SPA] 404 - Asset-like path: ${req.path}`);
+      return res.status(404).type("text/plain").send("Not found");
+    }
+
+    // Serve index.html for all SPA routes
+    const indexPath = path.join(frontendDistPath, "index.html");
+
+    logger.debug(`[SPA] Serving: ${req.path}`);
+
+    res.sendFile(
+      indexPath,
+      {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      },
+      (err) => {
+        if (err) {
+          logger.error(`[SPA] Failed to serve index.html:`, err);
+          // Send plain text error, NOT JSON
+          if (!res.headersSent) {
+            res.status(500).type("text/plain").send("Failed to load application");
+          }
+        }
+      },
+    );
+  });
+} else {
+  // If frontend is not available, just send 404 for non-API routes
+  app.get("*", (req, res) => {
+    logger.warn(`[SPA] Frontend not available - 404 for non-API route: ${req.path}`);
+    res.status(404).json({
+      success: false,
+      message: "Frontend not available - API only mode"
+    });
+  });
+}
 
 // =============================================================================
 // ERROR HANDLING - Last middleware

@@ -8,10 +8,10 @@ module.exports = {
       script: "./build/backend/main.js",
       cwd: rootDir,
       instances: 1,
-      exec_mode: "cluster",
+      exec_mode: "fork",
       env: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 5002,
         // Add paths to find pnpm modules
         NODE_PATH: [
           path.join(rootDir, "node_modules"),
