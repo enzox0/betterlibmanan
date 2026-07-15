@@ -2,14 +2,10 @@ import dns from "dns";
 // Override DNS servers to bypass local resolver issues
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
-import dotenv from "dotenv";
-import path from "path";
-
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import axios from "axios";
-import { config } from "./shared/config";
-import { logger } from "./shared/logger";
-import { mailer } from "./shared/mailer";
+import { config } from "./shared/config/index.js";
+import { logger } from "./shared/logger/index.js";
+import { mailer } from "./shared/mailer/index.js";
 
 let reportedError = false;
 
