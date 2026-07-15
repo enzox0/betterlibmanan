@@ -6,9 +6,26 @@ dnsPromises.setServers(["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]);
 
 dns.setDefaultResultOrder("ipv4first");
 
-import path from "path";
 import dotenv from "dotenv";
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+import path from "path";
+
+const monorepoRoot = path.resolve(process.cwd(), "../..");
+const envPath = path.join(monorepoRoot, ".env");
+
+console.log(`Loading .env from: ${envPath}`);
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.error(
+    `❌ Failed to load .env from ${envPath}:`,
+    result.error.message,
+  );
+  console.error(`Current working directory: ${process.cwd()}`);
+} else {
+  console.log(`✓ Environment loaded successfully`);
+  console.log(`✓ MONGODB_URI: ${process.env.MONGODB_URI ? "SET" : "NOT SET"}`);
+  console.log(`✓ PORT: ${process.env.PORT || "NOT SET"}`);
+}
 
 import { createServer } from "http";
 import { app } from "@/bootstrap/app";

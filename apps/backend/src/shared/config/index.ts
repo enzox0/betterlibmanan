@@ -3,9 +3,11 @@ import path from "path";
 
 // Load .env files from project root in order of precedence
 // Precedence: .env.<NODE_ENV>.local > .env.<NODE_ENV> > .env.local > .env
-// When compiled, __dirname is in dist folder, so we need to go up more levels
-// From apps/backend/dist/shared/config → go up 5 folders to reach project root
-const projectRoot = path.resolve(__dirname, "../../../../../");
+//
+// Use process.cwd() instead of __dirname so this resolves correctly whether
+// the backend runs via tsx (source), compiled JS (build/backend/), Docker, or
+// VPS deployment. All run commands are invoked from the monorepo root.
+const projectRoot = process.cwd();
 const nodeEnv = process.env.NODE_ENV || "development";
 
 // List of env files to load, in order of precedence (highest first)

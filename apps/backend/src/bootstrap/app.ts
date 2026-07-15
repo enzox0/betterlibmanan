@@ -24,9 +24,9 @@ const getFrontendDistPath = (): string => {
   // 3. Local frontend dist (development)
 
   const possiblePaths = [
-    "/app/apps/frontend/dist", // Docker production
-    path.resolve(__dirname, "../../../build/frontend"), // Monorepo build
-    path.resolve(__dirname, "../../../frontend/dist"), // Local development
+    "/app/apps/frontend/dist", // Docker production (combined.Dockerfile)
+    path.resolve(process.cwd(), "build/frontend"), // Monorepo build (local/VPS)
+    path.resolve(process.cwd(), "apps/frontend/dist"), // Docker dev volume mount
   ];
 
   for (const testPath of possiblePaths) {
@@ -41,7 +41,7 @@ const getFrontendDistPath = (): string => {
 
   // If nothing found, return development path and let validation below handle it
   logger.warn("[SPA] No valid frontend dist found, using development fallback");
-  return path.resolve(__dirname, "../../../frontend/dist");
+  return path.resolve(process.cwd(), "build/frontend");
 };
 
 const frontendDistPath = getFrontendDistPath();
@@ -53,7 +53,7 @@ logger.info(`[SPA] Initializing Production SPA Server`);
 logger.info(`[SPA] ========================================`);
 logger.info(`[SPA] Environment: ${process.env.NODE_ENV}`);
 logger.info(`[SPA] Port: ${process.env.PORT || 5000}`);
-logger.info(`[SPA] __dirname: ${__dirname}`);
+logger.info(`[SPA] CWD: ${process.cwd()}`);
 logger.info(`[SPA] Frontend dist: ${frontendDistPath}`);
 logger.info(`[SPA] Assets path: ${assetsPath}`);
 
@@ -61,10 +61,10 @@ logger.info(`[SPA] Assets path: ${assetsPath}`);
 const isDevelopment = process.env.NODE_ENV !== "production";
 let assetsExists = false;
 if (!fs.existsSync(frontendDistPath)) {
+  logger.warn(`[SPA] Frontend dist NOT FOUND at: ${frontendDistPath}`);
   logger.warn(
-    `[SPA] Frontend dist NOT FOUND at: ${frontendDistPath}`,
+    `[SPA] Application will run in API-only mode - frontend not served!`,
   );
-  logger.warn(`[SPA] Application will run in API-only mode - frontend not served!`);
 } else {
   const indexExists = fs.existsSync(path.join(frontendDistPath, "index.html"));
   assetsExists = fs.existsSync(assetsPath);
@@ -235,7 +235,8 @@ app.use("/api", apiRouter);
 // =============================================================================
 
 // Check if frontend is available
-const frontendAvailable = fs.existsSync(frontendDistPath) &&
+const frontendAvailable =
+  fs.existsSync(frontendDistPath) &&
   fs.existsSync(path.join(frontendDistPath, "index.html")) &&
   fs.existsSync(assetsPath);
 
@@ -416,7 +417,10 @@ if (frontendAvailable) {
           logger.error(`[SPA] Failed to serve index.html:`, err);
           // Send plain text error, NOT JSON
           if (!res.headersSent) {
-            res.status(500).type("text/plain").send("Failed to load application");
+            res
+              .status(500)
+              .type("text/plain")
+              .send("Failed to load application");
           }
         }
       },
@@ -425,10 +429,12 @@ if (frontendAvailable) {
 } else {
   // If frontend is not available, just send 404 for non-API routes
   app.get("*", (req, res) => {
-    logger.warn(`[SPA] Frontend not available - 404 for non-API route: ${req.path}`);
+    logger.warn(
+      `[SPA] Frontend not available - 404 for non-API route: ${req.path}`,
+    );
     res.status(404).json({
       success: false,
-      message: "Frontend not available - API only mode"
+      message: "Frontend not available - API only mode",
     });
   });
 }
