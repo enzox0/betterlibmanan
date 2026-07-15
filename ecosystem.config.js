@@ -12,6 +12,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 5002,
+        DOTENV_CONFIG_PATH: path.join(rootDir, ".env"),
         // Add paths to find pnpm modules
         NODE_PATH: [
           path.join(rootDir, "node_modules"),
@@ -37,6 +38,7 @@ module.exports = {
       exec_mode: "fork",
       env: {
         NODE_ENV: "production",
+        DOTENV_CONFIG_PATH: path.join(rootDir, ".env"),
         // Add paths to find pnpm modules
         NODE_PATH: [
           path.join(rootDir, "node_modules"),

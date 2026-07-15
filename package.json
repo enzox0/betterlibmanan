@@ -11,7 +11,7 @@
   },
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git rev-parse --is-inside-work-tree > /dev/null 2>&1 && git config core.hooksPath .githooks || echo 'Not a git repo, skipping git hooks setup'",
     "hooks:install": "git config core.hooksPath .githooks && echo \"Git hooks installed from .githooks/\"",
     "hooks:uninstall": "git config --unset core.hooksPath && echo \"Git hooks uninstalled (reverted to .git/hooks/)\"",
     "build": "turbo run build",
