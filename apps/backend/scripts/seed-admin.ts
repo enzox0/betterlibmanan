@@ -15,7 +15,6 @@
  *   MONGODB_URI — defaults to mongodb://localhost:27017/betterlibmanan
  */
 
-import path from "path";
 import dns from "dns";
 import dotenv from "dotenv";
 
@@ -24,10 +23,13 @@ import dotenv from "dotenv";
 // `querySrv ECONNREFUSED`. Cloudflare + Google work everywhere.
 dns.setServers(["1.1.1.1", "8.8.8.8", "1.0.0.1", "8.8.4.4"]);
 
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+// Use process.cwd() instead of __dirname so this resolves correctly whether
+// the script runs via tsx (source), compiled JS, Docker, or VPS deployment.
+// All run commands are invoked from the monorepo root.
+dotenv.config({ path: `${process.cwd()}/.env` });
 
 import mongoose from "mongoose";
-import { AdminModel } from "../src/modules/auth/admin.model";
+import { AdminModel } from "@/modules/auth/admin.model";
 
 const MONGO_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/betterlibmanan";

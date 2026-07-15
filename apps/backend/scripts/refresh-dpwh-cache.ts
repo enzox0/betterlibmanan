@@ -2,18 +2,20 @@ import dns from "dns";
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 import dotenv from "dotenv";
-import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
-dotenv.config({ path: path.resolve(__dirname, "../.env"), override: false });
+// Use process.cwd() instead of __dirname so this resolves correctly whether
+// the script runs via tsx (source), compiled JS, Docker, or VPS deployment.
+// All run commands are invoked from the monorepo root.
+dotenv.config({ path: `${process.cwd()}/.env` });
+
 import mongoose from "mongoose";
-import { dpwhProxyRequest } from "../src/modules/dpwh-proxy/dpwh-proxy.service";
+import { dpwhProxyRequest } from "@/modules/dpwh-proxy/dpwh-proxy.service";
 import {
   buildCacheKey,
   setCached,
   DEFAULT_CACHE_TTL_MS,
-} from "../src/modules/dpwh-proxy/dpwh-cache.service";
-import { logger } from "../src/shared/logger";
+} from "@/modules/dpwh-proxy/dpwh-cache.service";
+import { logger } from "@/shared/logger";
 
 interface RefreshTarget {
   path: string;
