@@ -28,11 +28,15 @@ async function main() {
 
   // Start Backend first
   console.log("Starting Backend...");
-  const backendProcess = spawn("pnpm", ["dev"], {
-    cwd: path.join(__dirname, "../apps/backend"),
-    stdio: "inherit",
-    shell: true,
-  });
+  const backendProcess = spawn(
+    "pnpm",
+    ["--filter", "@betterlibmanan/backend", "dev"],
+    {
+      cwd: path.join(__dirname, ".."),
+      stdio: "inherit",
+      shell: true,
+    },
+  );
 
   // Wait for Backend to be healthy
   console.log("Waiting for Backend health check...");
@@ -48,11 +52,15 @@ async function main() {
 
   // Start Worker
   console.log("Starting Worker...");
-  const workerProcess = spawn("pnpm", ["dev"], {
-    cwd: path.join(__dirname, "../apps/worker"),
-    stdio: "inherit",
-    shell: true,
-  });
+  const workerProcess = spawn(
+    "pnpm",
+    ["--filter", "@betterlibmanan/worker", "dev"],
+    {
+      cwd: path.join(__dirname, ".."),
+      stdio: "inherit",
+      shell: true,
+    },
+  );
 
   // Wait a bit for Worker to initialize
   console.log("Waiting for Worker to initialize...");
@@ -62,11 +70,15 @@ async function main() {
 
   // Start Frontend
   console.log("Starting Frontend...");
-  const frontendProcess = spawn("pnpm", ["dev"], {
-    cwd: path.join(__dirname, "../apps/frontend"),
-    stdio: "inherit",
-    shell: true,
-  });
+  const frontendProcess = spawn(
+    "pnpm",
+    ["--filter", "@betterlibmanan/frontend", "dev"],
+    {
+      cwd: path.join(__dirname, ".."),
+      stdio: "inherit",
+      shell: true,
+    },
+  );
 
   // Handle cleanup on exit
   const cleanup = () => {
