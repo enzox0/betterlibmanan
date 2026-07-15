@@ -6,7 +6,7 @@
   "main": "../../build/backend/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc && tsc-alias -p tsconfig.json --resolve-full-paths",
+    "build": "tsc && tsc-alias -p tsconfig.json --resolve-full-paths && node ../../scripts/remove-js-extensions.js",
     "start": "node ../../build/backend/main.js",
     "refresh-dpwh-cache": "tsx scripts/refresh-dpwh-cache.ts",
     "test": "echo \"Tests coming soon\"",

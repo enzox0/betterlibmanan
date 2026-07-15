@@ -1,7 +1,7 @@
 {
   "resolveFullPaths": true,
   "replacers": {
-    "addExtension": {
+    "removeExtension": {
       "file": "\\.js$"
     }
   }
