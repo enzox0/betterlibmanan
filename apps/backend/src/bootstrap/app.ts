@@ -124,6 +124,7 @@ app.use(
           "data:",
           "https://maps.googleapis.com",
           "https://maps.gstatic.com",
+          "https://static.cloudflareinsights.com",
         ],
         scriptSrcElem: [
           "'self'",
@@ -132,6 +133,7 @@ app.use(
           "data:",
           "https://maps.googleapis.com",
           "https://maps.gstatic.com",
+          "https://static.cloudflareinsights.com",
         ],
         styleSrc: [
           "'self'",
