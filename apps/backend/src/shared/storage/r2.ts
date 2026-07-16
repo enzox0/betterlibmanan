@@ -85,7 +85,7 @@ function decodeBase64Image(data: string): Buffer {
 
 async function convertImageToWebp(buffer: Buffer): Promise<Buffer> {
   try {
-    const { imageToWebp } = await import("imgtowebp/node");
+    const { imageToWebp } = await import("imgtowebp/dist/node/index.js");
     const result = await imageToWebp(buffer, { targetBytes: 250_000 });
     const webpArrayBuffer = await result.blob.arrayBuffer();
     return Buffer.from(webpArrayBuffer);
