@@ -767,12 +767,7 @@ function ProjectFormPanel({
 // ─── Upload JSON Dialog ───────────────────────────────────────────────────────
 
 type UploadStep =
-  | "idle"
-  | "parsing"
-  | "preview"
-  | "importing"
-  | "done"
-  | "error";
+  "idle" | "parsing" | "preview" | "importing" | "done" | "error";
 
 interface ParsedProject {
   contractId: string;

@@ -51,11 +51,7 @@ interface AboutPoint {
 }
 
 type LegTab =
-  | "ordinances"
-  | "resolutions"
-  | "ord-process"
-  | "res-process"
-  | "about";
+  "ordinances" | "resolutions" | "ord-process" | "res-process" | "about";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
