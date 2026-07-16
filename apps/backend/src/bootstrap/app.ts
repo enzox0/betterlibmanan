@@ -163,8 +163,8 @@ app.use(
 );
 
 // CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
   : ["http://localhost:3000", "http://localhost:5000"];
 
 app.use(
