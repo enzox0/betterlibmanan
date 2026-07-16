@@ -1,12 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export type SocialLinkPlatform =
-  | "facebook"
-  | "twitter"
-  | "instagram"
-  | "youtube"
-  | "tiktok"
-  | "other";
+  "facebook" | "instagram" | "youtube" | "tiktok" | "twitter" | "other";
 
 export interface ISocialLink extends Document {
   name: string;
@@ -23,7 +18,7 @@ const SocialLinkSchema = new Schema<ISocialLink>(
     href: { type: String, required: true, trim: true, maxlength: 500 },
     platform: {
       type: String,
-      enum: ["facebook", "twitter", "instagram", "youtube", "tiktok", "other"],
+      enum: ["facebook", "instagram", "youtube", "tiktok", "twitter", "other"],
       default: "other",
     },
     order: { type: Number, default: 0 },

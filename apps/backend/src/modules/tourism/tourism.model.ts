@@ -2,12 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export type TourismStatus = "published" | "draft";
 export type TourismCategory =
-  | "nature"
-  | "water"
-  | "heritage"
-  | "viewpoint"
-  | "photo"
-  | "other";
+  "nature" | "water" | "heritage" | "viewpoint" | "photo" | "other";
 
 export interface ITouristSpot extends Document {
   name: string;
