@@ -29,13 +29,19 @@ const getFrontendDistPath = (): string => {
     path.resolve(process.cwd(), "apps/frontend/dist"), // Docker dev volume mount
   ];
 
+  logger.info(`[SPA] Checking possible frontend paths...`);
   for (const testPath of possiblePaths) {
-    if (fs.existsSync(testPath)) {
-      const indexExists = fs.existsSync(path.join(testPath, "index.html"));
-      if (indexExists) {
-        logger.info(`[SPA] Selected frontend path: ${testPath}`);
-        return testPath;
-      }
+    const pathExists = fs.existsSync(testPath);
+    const indexExists = pathExists && fs.existsSync(path.join(testPath, "index.html"));
+    const assetsExists = pathExists && fs.existsSync(path.join(testPath, "assets"));
+    logger.info(`[SPA] Checking path: ${testPath}`, {
+      pathExists,
+      indexExists,
+      assetsExists,
+    });
+    if (pathExists && indexExists) {
+      logger.info(`[SPA] Selected frontend path: ${testPath}`);
+      return testPath;
     }
   }
 
@@ -308,113 +314,63 @@ if (frontendAvailable) {
     return mimeTypes[ext] || null;
   };
 
-  // CRITICAL: Serve /assets/* with explicit MIME types and error handling
-  app.use("/assets", (req, res, next) => {
-    const filePath = path.join(assetsPath, req.path);
+  // (Replaced by express.static above)
 
-    // Security: prevent directory traversal
-    const normalizedPath = path.normalize(filePath);
-    if (!normalizedPath.startsWith(assetsPath)) {
-      logger.error(
-        `[ASSETS] Security: Path traversal attempt blocked: ${req.path}`,
-      );
-      return res.status(403).type("text/plain").send("Forbidden");
+  // Logging middleware for static assets
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/assets")) {
+      logger.debug(`[STATIC] Asset request: ${req.method} ${req.path}`);
     }
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      logger.error(`[ASSETS] 404: ${req.path} (full path: ${filePath})`);
-      return res.status(404).type("text/plain").send("Asset not found");
-    }
-
-    // Check if it's a file (not a directory)
-    try {
-      const stats = fs.statSync(filePath);
-      if (!stats.isFile()) {
-        logger.error(`[ASSETS] Not a file: ${req.path}`);
-        return res.status(404).type("text/plain").send("Asset not found");
-      }
-    } catch (err) {
-      logger.error(`[ASSETS] Error checking file ${req.path}:`, err);
-      return res.status(500).type("text/plain").send("Failed to load asset");
-    }
-
-    // Set MIME type explicitly
-    const mimeType = getMimeType(filePath);
-    if (mimeType) {
-      res.setHeader("Content-Type", mimeType);
-
-      // Security header for JS and CSS
-      if (
-        filePath.endsWith(".js") ||
-        filePath.endsWith(".mjs") ||
-        filePath.endsWith(".css")
-      ) {
-        res.setHeader("X-Content-Type-Options", "nosniff");
-      }
-    } else {
-      // Default to binary if unknown type
-      res.setHeader("Content-Type", "application/octet-stream");
-    }
-
-    // Aggressive caching for content-hashed files
-    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-
-    // Log successful asset serves (useful for debugging)
-    if (process.env.NODE_ENV === "production") {
-      logger.debug(`[ASSETS] ✓ ${req.path} (${mimeType || "unknown"})`);
-    }
-
-    // Serve the file
-    res.sendFile(filePath, { root: "/" }, (err) => {
-      if (err) {
-        logger.error(`[ASSETS] Error serving ${req.path}:`, err);
-        if (!res.headersSent) {
-          res.status(500).type("text/plain").send("Failed to load asset");
-        }
-      }
-    });
+    next();
   });
 
-  // Serve other static files (images, fonts, etc.) from root
-  app.use((req, res, next) => {
-    // Skip index.html and API routes
-    if (req.path === "/index.html" || req.path.startsWith("/api")) {
-      return next();
-    }
-
-    // Check if file exists in dist
-    const filePath = path.join(frontendDistPath, req.path);
-
-    try {
-      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+  // Use express.static for both assets and root static files (more reliable)
+  // First serve /assets with aggressive caching
+  app.use(
+    "/assets",
+    express.static(assetsPath, {
+      maxAge: "1y",
+      immutable: true,
+      setHeaders: (res: any, filePath: any) => {
+        logger.debug(`[STATIC] Serving asset: ${filePath}`);
+        res.setHeader("Access-Control-Allow-Origin", "*");
         const mimeType = getMimeType(filePath);
         if (mimeType) {
           res.setHeader("Content-Type", mimeType);
         }
+        if (
+          filePath.endsWith(".js") ||
+          filePath.endsWith(".mjs") ||
+          filePath.endsWith(".css")
+        ) {
+          res.setHeader("X-Content-Type-Options", "nosniff");
+        }
+      },
+    }),
+  );
 
-        res.setHeader("Cache-Control", "public, max-age=3600");
+  // Then serve other static files from root (like registerSW.js, sw.js, etc.)
+  app.use(
+    express.static(frontendDistPath, {
+      maxAge: "1h",
+      setHeaders: (res: any, filePath: any) => {
+        logger.debug(`[STATIC] Serving file: ${filePath}`);
         res.setHeader("Access-Control-Allow-Origin", "*");
-
-        res.sendFile(filePath, { root: "/" }, (err) => {
-          if (err) {
-            logger.error(`[STATIC] Error serving ${req.path}:`, err);
-            if (!res.headersSent) {
-              next();
-            }
-          } else {
-            logger.debug(`[STATIC] ✓ ${req.path}`);
-          }
-        });
-      } else {
-        next();
-      }
-    } catch (err) {
-      logger.error(`[STATIC] Error checking file ${req.path}:`, err);
-      next();
-    }
-  });
+        const mimeType = getMimeType(filePath);
+        if (mimeType) {
+          res.setHeader("Content-Type", mimeType);
+        }
+        if (
+          filePath.endsWith(".js") ||
+          filePath.endsWith(".mjs") ||
+          filePath.endsWith(".css")
+        ) {
+          res.setHeader("X-Content-Type-Options", "nosniff");
+        }
+      },
+      index: false, // Don't serve index.html here - we'll handle it in the SPA catch-all
+    }),
+  );
 
   // =============================================================================
   // SPA CATCH-ALL - Must be LAST
@@ -502,6 +458,9 @@ app.use(
       stack: err.stack,
       path: req.path,
       method: req.method,
+      frontendDistPath,
+      assetsPath,
+      cwd: process.cwd(),
     });
 
     // If headers already sent, delegate to default Express error handler
@@ -517,7 +476,7 @@ app.use(
       return res
         .status(statusCode)
         .type("text/plain")
-        .send("Internal server error");
+        .send(`Error: ${err.message}`);
     }
 
     // For API requests, send JSON. Surface the upstream status (e.g. 502/504)
@@ -534,7 +493,7 @@ app.use(
     }
 
     // For everything else, send plain text
-    res.status(statusCode).type("text/plain").send("Internal server error");
+    res.status(statusCode).type("text/plain").send(`Error: ${err.message}`);
   },
 );
 
