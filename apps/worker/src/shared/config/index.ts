@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
+import { logger } from "../logger";
 
 // Load .env files from project root in order of precedence
 // Precedence: .env.<NODE_ENV>.local > .env.<NODE_ENV> > .env.local > .env
@@ -20,20 +21,19 @@ const envFiles = [
   `.env`,
 ];
 
-console.log(`[Worker Config] Loading env files (NODE_ENV=${nodeEnv}):`);
+logger.info(`Loading env files (NODE_ENV=${nodeEnv})`, { nodeEnv, projectRoot });
 envFiles.forEach((file) => {
   const fullPath = path.resolve(projectRoot, file);
   const result = dotenv.config({ path: fullPath });
   if (!result.error) {
-    console.log(`[Worker Config] Loaded: ${file}`);
+    logger.info(`Loaded env file: ${file}`, { file, fullPath });
   }
 });
 
-console.log("[Worker Config] SMTP_HOST:", process.env.SMTP_HOST);
-console.log(
-  "[Worker Config] HEALTH_CHECK_INTERVAL_MINUTES:",
-  process.env.HEALTH_CHECK_INTERVAL_MINUTES,
-);
+logger.info("Worker config initialized", {
+  smtpHost: process.env.SMTP_HOST,
+  healthCheckIntervalMinutes: process.env.HEALTH_CHECK_INTERVAL_MINUTES,
+});
 
 // Determine port based on environment (same as backend)
 const getPort = (): number => {

@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 
 /**
  * Get the absolute path to the monorepo root.
@@ -10,12 +11,20 @@ export function getMonorepoRoot(): string {
     return path.dirname(process.env.DOTENV_CONFIG_PATH);
   }
 
-  // Fallback: resolve from this file's location
-  // When running via tsx: apps/backend/src/shared/config/paths.ts (5 levels up)
-  // When running compiled: build/backend/shared/config/paths.js (4 levels up)
-  const levelsUp = __dirname.includes(path.join("build", "backend")) ? 4 : 5;
-  const levels = Array(levelsUp).fill("..");
-  return path.resolve(__dirname, ...levels);
+  // Fallback: search upwards from __dirname for a directory containing package.json
+  let currentDir = __dirname;
+  while (true) {
+    const packageJsonPath = path.join(currentDir, "package.json");
+    if (fs.existsSync(packageJsonPath)) {
+      return currentDir;
+    }
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      // Reached filesystem root, give up and use __dirname
+      return __dirname;
+    }
+    currentDir = parentDir;
+  }
 }
 
 /**

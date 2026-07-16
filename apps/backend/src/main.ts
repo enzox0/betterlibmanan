@@ -8,28 +8,29 @@ dns.setDefaultResultOrder("ipv4first");
 
 import dotenv from "dotenv";
 import { getEnvPath } from "@/shared/config/paths";
+import { logger } from "@/shared/logger";
 
 // Load environment variables from the monorepo root
 const envPath = getEnvPath();
 
-console.log(`Loading .env from: ${envPath}`);
+logger.info(`Loading .env from: ${envPath}`, { envPath });
 const result = dotenv.config({ path: envPath });
 
 if (result.error) {
-  console.error(
-    `❌ Failed to load .env from ${envPath}:`,
-    result.error.message,
-  );
-  console.error(`Current working directory: ${process.cwd()}`);
+  logger.error(`Failed to load .env from ${envPath}: ${result.error.message}`, {
+    error: result.error.message,
+    cwd: process.cwd(),
+    envPath,
+  });
 } else {
-  console.log(`✓ Environment loaded successfully`);
-  console.log(`✓ MONGODB_URI: ${process.env.MONGODB_URI ? "SET" : "NOT SET"}`);
-  console.log(`✓ PORT: ${process.env.PORT || "NOT SET"}`);
+  logger.info("Environment loaded successfully", {
+    mongodbUri: process.env.MONGODB_URI ? "SET" : "NOT SET",
+    port: process.env.PORT || "NOT SET",
+  });
 }
 
 import { createServer } from "http";
 import { app } from "@/bootstrap/app";
-import { logger } from "@/shared/logger";
 import { connectDB } from "@/infrastructure/database";
 import { initSocketIO } from "@/gateway/websocket/socket";
 
