@@ -571,10 +571,7 @@ export function ContentForm({
           value: fieldValues.value?.trim() ?? "",
           type:
             (fieldValues.type?.trim() as
-              | "phone"
-              | "email"
-              | "address"
-              | "fax") || "phone",
+              "phone" | "email" | "address" | "fax") || "phone",
           status,
         };
 
