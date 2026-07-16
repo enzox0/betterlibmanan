@@ -332,8 +332,7 @@ export function WeatherMapSection({
   useEffect(() => {
     if (!sectionVisible) return;
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as
-      | string
-      | undefined;
+      string | undefined;
     if (!apiKey) return;
     let cancelled = false;
     loadGoogleMaps(apiKey)
