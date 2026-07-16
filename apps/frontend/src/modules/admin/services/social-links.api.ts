@@ -12,12 +12,7 @@ const apiClient = attachAdminUnauthorizedInterceptor(
 );
 
 export type SocialLinkPlatform =
-  | "facebook"
-  | "twitter"
-  | "instagram"
-  | "youtube"
-  | "tiktok"
-  | "other";
+  "facebook" | "twitter" | "instagram" | "youtube" | "tiktok" | "other";
 
 export interface SocialLinkPayload {
   name: string;

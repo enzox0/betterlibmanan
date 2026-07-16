@@ -14,12 +14,7 @@ const apiClient = attachAdminUnauthorizedInterceptor(
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type TourismCategory =
-  | "nature"
-  | "water"
-  | "heritage"
-  | "viewpoint"
-  | "photo"
-  | "other";
+  "nature" | "water" | "heritage" | "viewpoint" | "photo" | "other";
 
 export interface TouristSpotRecord {
   id: string;
