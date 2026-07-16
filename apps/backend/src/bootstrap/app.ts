@@ -367,7 +367,7 @@ if (frontendAvailable) {
     }
 
     // Serve the file
-    res.sendFile(filePath, (err) => {
+    res.sendFile(filePath, { root: "/" }, (err) => {
       if (err) {
         logger.error(`[ASSETS] Error serving ${req.path}:`, err);
         if (!res.headersSent) {
@@ -387,25 +387,31 @@ if (frontendAvailable) {
     // Check if file exists in dist
     const filePath = path.join(frontendDistPath, req.path);
 
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      const mimeType = getMimeType(filePath);
-      if (mimeType) {
-        res.setHeader("Content-Type", mimeType);
-      }
-
-      res.setHeader("Cache-Control", "public, max-age=3600");
-
-      res.sendFile(filePath, (err) => {
-        if (err) {
-          logger.error(`[STATIC] Error serving ${req.path}:`, err);
-          if (!res.headersSent) {
-            next();
-          }
-        } else {
-          logger.debug(`[STATIC] ✓ ${req.path}`);
+    try {
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        const mimeType = getMimeType(filePath);
+        if (mimeType) {
+          res.setHeader("Content-Type", mimeType);
         }
-      });
-    } else {
+
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+
+        res.sendFile(filePath, { root: "/" }, (err) => {
+          if (err) {
+            logger.error(`[STATIC] Error serving ${req.path}:`, err);
+            if (!res.headersSent) {
+              next();
+            }
+          } else {
+            logger.debug(`[STATIC] ✓ ${req.path}`);
+          }
+        });
+      } else {
+        next();
+      }
+    } catch (err) {
+      logger.error(`[STATIC] Error checking file ${req.path}:`, err);
       next();
     }
   });
