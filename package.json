@@ -59,7 +59,12 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "^5.0.8"
+      "vite": "^5.0.8",
+      "typescript": "5.9.3",
+      "eslint": "8.57.1",
+      "@typescript-eslint/eslint-plugin": "8.61.1",
+      "@typescript-eslint/parser": "8.61.1",
+      "eslint-plugin-react-refresh": "0.4.4"
     }
   }
 }
