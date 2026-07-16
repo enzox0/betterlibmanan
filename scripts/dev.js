@@ -35,6 +35,10 @@ async function main() {
       cwd: path.join(__dirname, ".."),
       stdio: "inherit",
       shell: true,
+      env: {
+        ...process.env,
+        DOTENV_CONFIG_PATH: path.join(__dirname, "..", ".env"),
+      },
     },
   );
 
@@ -59,6 +63,10 @@ async function main() {
       cwd: path.join(__dirname, ".."),
       stdio: "inherit",
       shell: true,
+      env: {
+        ...process.env,
+        DOTENV_CONFIG_PATH: path.join(__dirname, "..", ".env"),
+      },
     },
   );
 
@@ -77,6 +85,10 @@ async function main() {
       cwd: path.join(__dirname, ".."),
       stdio: "inherit",
       shell: true,
+      env: {
+        ...process.env,
+        DOTENV_CONFIG_PATH: path.join(__dirname, "..", ".env"),
+      },
     },
   );
 
