@@ -6,7 +6,7 @@
   "main": "../../build/worker/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc && tsc-alias -p tsconfig.json --resolve-full-paths",
+    "build": "tsc && tsc-alias -p tsconfig.json --resolve-full-paths && node ../../scripts/remove-js-extensions.js",
     "start": "node ../../build/worker/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"Tests coming soon\""
@@ -24,6 +24,6 @@
     "@types/nodemailer": "^6.4.23",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.6.0",
-    "typescript": "^5.3.0"
+    "typescript": "^7.0.2"
   }
 }
