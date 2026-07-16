@@ -7,10 +7,10 @@ dnsPromises.setServers(["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]);
 dns.setDefaultResultOrder("ipv4first");
 
 import dotenv from "dotenv";
-import path from "path";
+import { getEnvPath } from "@/shared/config/paths";
 
-const monorepoRoot = path.resolve(process.cwd(), "../..");
-const envPath = path.join(monorepoRoot, ".env");
+// Load environment variables from the monorepo root
+const envPath = getEnvPath();
 
 console.log(`Loading .env from: ${envPath}`);
 const result = dotenv.config({ path: envPath });
