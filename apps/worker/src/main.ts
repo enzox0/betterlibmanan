@@ -3,9 +3,9 @@ import dns from "dns";
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 import axios from "axios";
-import { config } from "./shared/config/index.js";
-import { logger } from "./shared/logger/index.js";
-import { mailer } from "./shared/mailer/index.js";
+import { config } from "./shared/config";
+import { logger } from "./shared/logger";
+import { mailer } from "./shared/mailer";
 
 let reportedError = false;
 
