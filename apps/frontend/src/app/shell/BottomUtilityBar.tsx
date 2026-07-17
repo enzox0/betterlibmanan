@@ -34,6 +34,41 @@ const LiveClock = memo(function LiveClock() {
 
   return (
     <>
+      <FaCalendarAlt size={10} />
+      <span>
+        {now.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}
+      </span>
+      <span>•</span>
+      <FaClock size={10} />
+      <span>
+        {now.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Asia/Manila",
+        })}
+      </span>
+      <span>PHT</span>
+    </>
+  );
+});
+
+// Desktop version of LiveClock with larger icons
+const LiveClockDesktop = memo(function LiveClockDesktop() {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <>
       <FaCalendarAlt size={12} />
       <span>
         {now.toLocaleDateString("en-US", {
@@ -133,7 +168,43 @@ export function BottomUtilityBar() {
   const tempLabel = temperature !== null ? `${temperature}°C` : "25°C";
 
   // Static marquee items — clock lives in LiveClock so it never remounts the marquee
-  const MarqueeItems = () => (
+  const MarqueeItemsMobile = () => (
+    <div className="flex items-center gap-8 text-[10px]">
+      <a
+        href="https://www.facebook.com/profile.php?id=61590902231040"
+        className="flex items-center gap-2 whitespace-nowrap hover:text-blue-200 transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FaFacebook size={10} />
+        <span>BetterLibmanan Facebook</span>
+      </a>
+      <a
+        href="https://github.com/enzox0/betterlibmanan"
+        className="flex items-center gap-2 whitespace-nowrap hover:text-blue-200 transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FaGithub size={10} />
+        <span>BetterLibmanan GitHub</span>
+      </a>
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <CurrencyIcon size={10} />
+        <span>
+          {currentCurrency.label} {currencyValue}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <FaThermometerHalf size={10} />
+        <span>Libmanan {tempLabel}</span>
+      </div>
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <LiveClock />
+      </div>
+    </div>
+  );
+
+  const MarqueeItemsDesktop = () => (
     <div className="flex items-center gap-8 text-xs">
       <a
         href="https://www.facebook.com/profile.php?id=61590902231040"
@@ -164,13 +235,13 @@ export function BottomUtilityBar() {
         <span>Libmanan {tempLabel}</span>
       </div>
       <div className="flex items-center gap-2 whitespace-nowrap">
-        <LiveClock />
+        <LiveClockDesktop />
       </div>
     </div>
   );
 
   return (
-    <div className="bg-blue-900 text-white py-1.5 sm:py-2 px-0 sm:px-2 overflow-hidden">
+    <div className="bg-blue-900 text-white py-0.5 sm:py-2 px-0 sm:px-2 overflow-hidden leading-tight">
       <div
         className="mx-auto px-0 sm:px-6 lg:px-8 transition-[max-width] duration-500 ease-in-out"
         style={{ maxWidth: isInHero ? "100%" : "80rem" }}
@@ -214,7 +285,8 @@ export function BottomUtilityBar() {
               <span>Libmanan Camarines Sur {tempLabel}</span>
             </div>
             <div className="flex items-center gap-2">
-              <LiveClock />
+              {/* Use desktop-sized icons for LiveClock on sm+ */}
+              <LiveClockDesktop />
             </div>
           </div>
         </div>
@@ -222,9 +294,9 @@ export function BottomUtilityBar() {
         {/* Mobile: seamless marquee using CSS animation on a stable element */}
         <div className="sm:hidden overflow-hidden pl-2">
           <div className="marquee-track">
-            <MarqueeItems />
+            <MarqueeItemsMobile />
             {/* Exact duplicate for seamless loop */}
-            <MarqueeItems />
+            <MarqueeItemsMobile />
           </div>
         </div>
       </div>

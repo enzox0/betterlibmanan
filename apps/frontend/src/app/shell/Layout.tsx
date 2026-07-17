@@ -15,20 +15,31 @@ import { LazyLoader } from "@/app/router/lazy-loader";
 /** Routes where the footer and contribute CTA should be hidden. */
 const HIDE_FOOTER_PATTERNS = [/^\/community\/groups\/.+/];
 
+/** Routes where floating components should be hidden. */
+const HIDE_FLOATING_PATTERNS = [/^\/community/];
+
 /** Layout with Suspense/lazy-loading fallback — used for all code-split routes. */
 export function Layout({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { pathname } = useLocation();
   const hideFooter = HIDE_FOOTER_PATTERNS.some((p) => p.test(pathname));
+  const hideFloatingComponents = HIDE_FLOATING_PATTERNS.some((p) =>
+    p.test(pathname),
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
       <AutoPageMetadata />
-      <MiniFloatingNav />
+      {!hideFloatingComponents && (
+        <MiniFloatingNav isMobileMenuOpen={isMobileMenuOpen} />
+      )}
       <TopUtilityBar />
       <Navbar
         authModalOpen={authModalOpen}
         setAuthModalOpen={setAuthModalOpen}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
       <BottomUtilityBar />
       <main className="flex-1 flex flex-col">
@@ -36,8 +47,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </main>
       {!hideFooter && <ContributeCTA />}
       {!hideFooter && <Footer />}
-      <BackToTopButton />
-      <InfoFloatingButton setAuthModalOpen={setAuthModalOpen} />
+      {!hideFloatingComponents && (
+        <BackToTopButton isMobileMenuOpen={isMobileMenuOpen} />
+      )}
+      {!hideFloatingComponents && (
+        <InfoFloatingButton
+          setAuthModalOpen={setAuthModalOpen}
+          isMobileMenuOpen={isMobileMenuOpen}
+        />
+      )}
       <UserAuthModal
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
@@ -50,21 +68,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
 /** Layout without Suspense — used for eagerly-loaded routes like Home. */
 export function LayoutEager({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+  const hideFloatingComponents = HIDE_FLOATING_PATTERNS.some((p) =>
+    p.test(pathname),
+  );
   return (
     <div className="min-h-screen flex flex-col">
       <AutoPageMetadata />
-      <MiniFloatingNav />
+      {!hideFloatingComponents && (
+        <MiniFloatingNav isMobileMenuOpen={isMobileMenuOpen} />
+      )}
       <TopUtilityBar />
       <Navbar
         authModalOpen={authModalOpen}
         setAuthModalOpen={setAuthModalOpen}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
       <BottomUtilityBar />
       <main className="flex-1">{children}</main>
       <ContributeCTA />
       <Footer />
-      <BackToTopButton />
-      <InfoFloatingButton setAuthModalOpen={setAuthModalOpen} />
+      {!hideFloatingComponents && (
+        <BackToTopButton isMobileMenuOpen={isMobileMenuOpen} />
+      )}
+      {!hideFloatingComponents && (
+        <InfoFloatingButton
+          setAuthModalOpen={setAuthModalOpen}
+          isMobileMenuOpen={isMobileMenuOpen}
+        />
+      )}
       <UserAuthModal
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}

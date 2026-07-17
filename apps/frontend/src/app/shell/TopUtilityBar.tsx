@@ -18,9 +18,9 @@ export function TopUtilityBar() {
   // Show a subtle placeholder while the first fetch is in flight.
   if (isPublicLoading && publicRecords.length === 0) {
     return (
-      <div className="bg-red-900 text-white py-2 overflow-hidden">
-        <div className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium opacity-60">
-          <span className="inline-block h-2 w-2 rounded-full bg-white animate-pulse" />
+      <div className="bg-red-900 text-white py-0.5 sm:py-2 overflow-hidden">
+        <div className="flex items-center justify-center gap-2 text-[10px] sm:text-xs font-medium opacity-60 leading-tight">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
           <span>Loading emergency contacts…</span>
         </div>
       </div>
@@ -31,7 +31,7 @@ export function TopUtilityBar() {
   if (publicRecords.length === 0) return null;
 
   return (
-    <div className="bg-red-900 text-white py-2 overflow-hidden">
+    <div className="bg-red-900 text-white py-0.5 sm:py-2 overflow-hidden">
       {/*
        * Seamless infinite marquee:
        * Three copies are rendered so that as copy-1 exits the viewport,
@@ -55,9 +55,9 @@ export function TopUtilityBar() {
                 <a
                   key={contact.id}
                   href={`tel:${number.replace(/\s/g, "")}`}
-                  className="flex items-center gap-2 mx-6 sm:mx-12 hover:text-yellow-300 transition-colors text-[11px] sm:text-xs font-medium"
+                  className="flex items-center gap-2 mx-6 sm:mx-12 hover:text-yellow-300 transition-colors text-[10px] sm:text-xs font-medium leading-tight"
                 >
-                  <Icon className="h-3 w-3 shrink-0" />
+                  <Icon className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
                   <span>
                     {name}: {number}
                   </span>

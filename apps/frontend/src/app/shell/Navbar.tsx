@@ -22,12 +22,18 @@ import { getProxiedUrl } from "@/modules/landing/components/ui/SafeImage";
 interface NavbarProps {
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (open: boolean) => void;
 }
 
-export function Navbar({ authModalOpen, setAuthModalOpen }: NavbarProps) {
+export function Navbar({
+  authModalOpen,
+  setAuthModalOpen,
+  isMobileMenuOpen,
+  setIsMobileMenuOpen,
+}: NavbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showLangModal, setShowLangModal] = useState(false);
   const [isInHero, setIsInHero] = useState(false);
@@ -525,7 +531,7 @@ export function Navbar({ authModalOpen, setAuthModalOpen }: NavbarProps) {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                className="lg:hidden border-t border-gray-100 pt-0 pb-4 overflow-hidden"
+                className="lg:hidden border-t border-gray-100 pt-0 overflow-hidden"
               >
                 <motion.div
                   initial={{ y: -20 }}
@@ -536,7 +542,7 @@ export function Navbar({ authModalOpen, setAuthModalOpen }: NavbarProps) {
                     ease: [0.4, 0, 0.2, 1],
                     delay: 0.05,
                   }}
-                  className="overflow-y-auto max-h-[calc(100dvh-80px)]"
+                  className="overflow-y-auto max-h-[calc(100dvh-80px)] pb-4"
                 >
                   {/* NAVIGATION Label */}
                   <motion.div

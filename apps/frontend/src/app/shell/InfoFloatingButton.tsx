@@ -25,11 +25,14 @@ const transition = { ease: EASE, duration: 0.22 };
 
 interface InfoFloatingButtonProps {
   setAuthModalOpen: (open: boolean) => void;
+  isMobileMenuOpen?: boolean;
 }
 
 export function InfoFloatingButton({
   setAuthModalOpen,
+  isMobileMenuOpen = false,
 }: InfoFloatingButtonProps) {
+  if (isMobileMenuOpen) return null;
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const publicRecords = useContactStore((s) => s.publicRecords);
@@ -52,10 +55,10 @@ export function InfoFloatingButton({
 
   return (
     <>
-      <div className="fixed bottom-20 left-4 sm:bottom-8 sm:left-8 z-[9999999]">
+      <div className="fixed bottom-4 left-4 sm:bottom-8 sm:left-8 z-[9999999]">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-white/40 hover:bg-white text-blue-900 p-2.5 rounded-full shadow-lg transition-all duration-300 hover:scale-110 border border-neutral-200/30 hover:border-neutral-200 backdrop-blur-sm"
+          className="bg-white/40 hover:bg-white text-blue-900 w-11 h-11 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:scale-110 border border-neutral-200/30 hover:border-neutral-200 backdrop-blur-sm"
           aria-label="Show information"
         >
           <TiInfoLarge size={20} />
