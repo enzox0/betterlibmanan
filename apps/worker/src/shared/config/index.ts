@@ -21,7 +21,10 @@ const envFiles = [
   `.env`,
 ];
 
-logger.info(`Loading env files (NODE_ENV=${nodeEnv})`, { nodeEnv, projectRoot });
+logger.info(`Loading env files (NODE_ENV=${nodeEnv})`, {
+  nodeEnv,
+  projectRoot,
+});
 envFiles.forEach((file) => {
   const fullPath = path.resolve(projectRoot, file);
   const result = dotenv.config({ path: fullPath });
