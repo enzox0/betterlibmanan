@@ -73,10 +73,10 @@ function SearchCard() {
       className="relative mx-auto w-full max-w-md lg:max-w-none"
     >
       {/* Main card */}
-      <div className="rounded-xl bg-white p-4 shadow-xl sm:p-5">
-        <div className="mb-4 flex items-center gap-2">
+      <div className="rounded-xl bg-white p-3 shadow-xl sm:p-5">
+        <div className="mb-3 flex items-center gap-2">
           <svg
-            className="h-4 w-4 text-neutral-700"
+            className="h-3.5 w-3.5 text-neutral-700 sm:h-4 sm:w-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -89,7 +89,7 @@ function SearchCard() {
               d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
             />
           </svg>
-          <span className="text-base font-bold text-neutral-900 sm:text-lg">
+          <span className="text-sm font-bold text-neutral-900 sm:text-lg">
             Find a Municipal Service
           </span>
         </div>
@@ -132,8 +132,10 @@ function SearchCard() {
           </button>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-neutral-500">Popular:</span>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="text-[10px] text-neutral-500 sm:text-xs">
+            Popular:
+          </span>
           {["Birth Certificate", "Business Permit", "Real Property Tax"].map(
             (tag) => (
               <button
@@ -144,7 +146,7 @@ function SearchCard() {
                     TAG_ROUTES[tag] ?? `/services?q=${encodeURIComponent(tag)}`,
                   );
                 }}
-                className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                className="rounded-full sm:bg-blue-50 px-2 py-0 text-[10px] font-medium text-blue-700 transition-colors hover:bg-blue-100 sm:px-3 sm:py-1 sm:text-xs"
               >
                 {tag}
               </button>
@@ -422,27 +424,27 @@ export function HeroSection() {
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10"
         >
-          <div className="mx-auto flex min-h-[60vh] max-w-7xl items-center px-4 pb-8 pt-8 sm:min-h-[70vh] sm:px-6 lg:px-8 lg:pb-12 lg:pt-10">
-            <div className="grid w-full items-center gap-6 lg:grid-cols-2">
+          <div className="mx-auto flex min-h-[auto] max-w-7xl items-center px-4 pb-6 pt-6 sm:min-h-[70dvh] sm:px-6 lg:px-8 lg:pb-12 lg:pt-10">
+            <div className="grid w-full items-center gap-4 lg:grid-cols-2 lg:gap-6">
               <div className="text-center lg:text-left">
-                <h1 className="mb-4 text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl xl:text-5xl">
+                <h1 className="mb-3 text-xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl xl:text-5xl">
                   Welcome to <span className="text-yellow-400">Better</span>
                   <span className="text-blue-400">Libmanan</span>.org
                 </h1>
-                <p className="mb-6 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base lg:text-lg">
+                <p className="mb-4 max-w-2xl text-xs leading-relaxed text-gray-300 sm:text-base lg:text-lg">
                   Access government services, information, and resources for the
                   people of Libmanan, Camarines Sur.
                 </p>
                 <div className="flex flex-col justify-center gap-2 sm:flex-row lg:justify-start">
                   <button
                     onClick={() => navigate("/services")}
-                    className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700"
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-blue-700 sm:px-4 sm:text-sm"
                   >
                     Browse Municipal Services
                   </button>
                   <button
                     onClick={() => navigate("/contact")}
-                    className="rounded-lg border border-white px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-gray-900"
+                    className="rounded-lg border border-white px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white hover:text-gray-900 sm:px-4 sm:text-sm"
                   >
                     Contact
                   </button>

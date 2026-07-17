@@ -94,9 +94,9 @@ function DiscussionCard({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={(e) => e.key === "Enter" && onClick?.()}
-      className="bg-white border border-neutral-200 rounded-xl p-4 flex flex-col gap-3 hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer"
+      className="bg-white border border-neutral-200 rounded-xl p-4 flex flex-col gap-3 hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer w-full max-w-full"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 w-full">
         <div className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-700 text-[10px] font-bold shrink-0 overflow-hidden">
           {discussion.avatarUrl ? (
             <img
@@ -108,11 +108,11 @@ function DiscussionCard({
             discussion.avatarInitials
           )}
         </div>
-        <span className="text-xs font-semibold text-neutral-600">
+        <span className="text-xs font-semibold text-neutral-600 truncate">
           {discussion.author}
         </span>
         {discussion.isPinned && (
-          <span className="ml-auto text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+          <span className="ml-auto text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full shrink-0">
             Pinned
           </span>
         )}
@@ -120,14 +120,14 @@ function DiscussionCard({
       <p className="text-sm font-semibold text-neutral-900 leading-snug line-clamp-3">
         {discussion.title}
       </p>
-      <div className="flex items-center gap-1.5 text-neutral-400 text-xs">
+      <div className="flex items-center gap-1.5 text-neutral-400 text-xs w-full">
         <FaComment size={10} />
         <span>
           {discussion.replies} {discussion.replies === 1 ? "reply" : "replies"}
         </span>
       </div>
       {discussion.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 w-full">
           {discussion.tags.map((tag) => (
             <span
               key={tag}
@@ -169,7 +169,7 @@ function GroupCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.07 }}
-      className="bg-white border border-neutral-200 rounded-xl overflow-hidden flex items-stretch hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer"
+      className="bg-white border border-neutral-200 rounded-xl overflow-hidden flex items-stretch hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer w-full max-w-full"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -188,16 +188,16 @@ function GroupCard({
         )}
       </div>
       <div className="flex-1 min-w-0 p-4 flex flex-col justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-bold text-neutral-900 leading-snug">
+        <div className="w-full">
+          <h3 className="text-sm font-bold text-neutral-900 leading-snug truncate">
             {group.name}
           </h3>
           <p className="text-xs text-neutral-500 leading-relaxed mt-0.5 line-clamp-2">
             {group.description}
           </p>
         </div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 text-neutral-400 text-xs">
+        <div className="flex items-center justify-between gap-2 w-full">
+          <div className="flex items-center gap-1 text-neutral-400 text-xs shrink-0">
             <FaUsers size={10} />
             <span>{memberLabel} members</span>
           </div>
@@ -951,12 +951,12 @@ export function CommunitySection() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 w-full overflow-x-hidden">
       {/* Page header */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="responsive-container py-6 sm:py-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
+      <div className="bg-white border-b border-neutral-200 w-full">
+        <div className="responsive-container py-6 sm:py-8 w-full">
+          <div className="flex items-center justify-between gap-4 w-full">
+            <div className="min-w-0">
               <h1 className="responsive-heading text-neutral-900 leading-tight">
                 Community
               </h1>
@@ -986,10 +986,10 @@ export function CommunitySection() {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mt-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200"
+              className="mt-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 w-full"
             >
               <FaLock size={12} className="text-blue-500 shrink-0" />
-              <p className="text-sm text-blue-700 flex-1">
+              <p className="text-sm text-blue-700 flex-1 min-w-0">
                 You're browsing as a guest.{" "}
                 <button
                   onClick={() => setAuthModalOpen(true)}
@@ -1005,12 +1005,12 @@ export function CommunitySection() {
       </div>
 
       {/* Content grid */}
-      <div className="responsive-container py-10 sm:py-12 lg:py-16">
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className="responsive-container py-10 sm:py-12 lg:py-16 w-full">
+        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
           {/* ── Main column ── */}
-          <div className="flex-1 min-w-0 flex flex-col gap-8">
+          <div className="flex-1 min-w-0 flex flex-col gap-8 w-full">
             {/* Trending Discussions */}
-            <section>
+            <section className="w-full">
               <SectionHeader
                 icon={<FaFire size={13} className="text-neutral-500" />}
                 title="Trending Discussions"
@@ -1024,7 +1024,7 @@ export function CommunitySection() {
                   No discussions yet — be the first to start one!
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                   {[...discussions]
                     .sort((a, b) => {
                       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
@@ -1046,7 +1046,7 @@ export function CommunitySection() {
             </section>
 
             {/* Peer Groups */}
-            <section>
+            <section className="w-full">
               <SectionHeader
                 icon={<FaUsers size={13} className="text-neutral-500" />}
                 title="Peer Groups"
@@ -1061,7 +1061,7 @@ export function CommunitySection() {
                 </p>
               ) : (
                 <>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 w-full">
                     {[...groups]
                       .sort(
                         (a, b) =>
@@ -1114,7 +1114,7 @@ export function CommunitySection() {
           </div>
 
           {/* ── Sidebar ── */}
-          <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4 sticky top-[13dvh]">
+          <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4 sticky top-[13dvh] max-w-full">
             <FeaturedEventPanel
               event={featuredEvent}
               loading={isFeaturedEventLoading}
@@ -1126,9 +1126,9 @@ export function CommunitySection() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05 }}
-              className="rounded-xl bg-white border border-neutral-200 p-5"
+              className="rounded-xl bg-white border border-neutral-200 p-5 w-full"
             >
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 w-full">
                 <FaHashtag size={12} className="text-neutral-400" />
                 <h3 className="font-bold text-sm text-neutral-900">
                   Trending Hashtags
@@ -1139,7 +1139,7 @@ export function CommunitySection() {
                   No trending tags yet.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 w-full">
                   {trendingTags.map((tag) => (
                     <button
                       key={tag.label}
@@ -1166,9 +1166,9 @@ export function CommunitySection() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="rounded-xl bg-white border border-neutral-200 p-5"
+              className="rounded-xl bg-white border border-neutral-200 p-5 w-full"
             >
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 w-full">
                 <FaUsers size={12} className="text-neutral-400" />
                 <h3 className="font-bold text-sm text-neutral-900">
                   Most Active Members
@@ -1185,11 +1185,11 @@ export function CommunitySection() {
               ) : topContributors.length === 0 ? (
                 <p className="text-xs text-neutral-400">No contributors yet.</p>
               ) : (
-                <ol className="flex flex-col gap-2.5">
+                <ol className="flex flex-col gap-2.5 w-full">
                   {topContributors.map((contributor, idx) => (
                     <li
                       key={contributor.name}
-                      className="flex items-center gap-2.5"
+                      className="flex items-center gap-2.5 w-full"
                     >
                       {/* Rank */}
                       <span className="w-5 shrink-0 text-center text-[11px] font-bold text-neutral-400">

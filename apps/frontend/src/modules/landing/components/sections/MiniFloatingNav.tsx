@@ -51,9 +51,14 @@ const navItems: NavItem[] = [
 
 interface VerticalNavProps {
   visible?: boolean;
+  isMobileMenuOpen?: boolean;
 }
 
-export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
+export function MiniFloatingNav({
+  visible = true,
+  isMobileMenuOpen = false,
+}: VerticalNavProps) {
+  if (isMobileMenuOpen) return null;
   const navigate = useNavigate();
   const location = useLocation();
   const [showByTimeout, setShowByTimeout] = useState(true);
@@ -100,7 +105,7 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
   return (
     <>
       <motion.nav
-        className="fixed left-2 lg:left-6 inset-y-0 z-[100] hidden md:flex items-center pointer-events-none"
+        className="fixed left-2 lg:left-6 inset-y-0 z-[9999999] hidden md:flex items-center pointer-events-none"
         initial={false}
         animate={{
           opacity: shouldShowNav ? 1 : 0,
@@ -128,7 +133,7 @@ export function MiniFloatingNav({ visible = true }: VerticalNavProps) {
       </motion.nav>
 
       {visible && (
-        <nav className="fixed bottom-4 inset-x-0 z-[100] flex md:hidden justify-center px-4">
+        <nav className="fixed bottom-4 inset-x-0 z-[9999999] flex md:hidden justify-center px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
