@@ -32,8 +32,10 @@ const getFrontendDistPath = (): string => {
   logger.info(`[SPA] Checking possible frontend paths...`);
   for (const testPath of possiblePaths) {
     const pathExists = fs.existsSync(testPath);
-    const indexExists = pathExists && fs.existsSync(path.join(testPath, "index.html"));
-    const assetsExists = pathExists && fs.existsSync(path.join(testPath, "assets"));
+    const indexExists =
+      pathExists && fs.existsSync(path.join(testPath, "index.html"));
+    const assetsExists =
+      pathExists && fs.existsSync(path.join(testPath, "assets"));
     logger.info(`[SPA] Checking path: ${testPath}`, {
       pathExists,
       indexExists,
@@ -124,6 +126,7 @@ app.use(
           "data:",
           "https://maps.googleapis.com",
           "https://maps.gstatic.com",
+          "https://static.cloudflareinsights.com",
         ],
         scriptSrcElem: [
           "'self'",
@@ -132,6 +135,7 @@ app.use(
           "data:",
           "https://maps.googleapis.com",
           "https://maps.gstatic.com",
+          "https://static.cloudflareinsights.com",
         ],
         styleSrc: [
           "'self'",
