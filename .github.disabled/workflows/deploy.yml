@@ -1,0 +1,53 @@
+name: Node.js CI/CD to GCP VM
+
+on:
+  push:
+    branches: [ main, develop ]  # Triggers deployment whenever you push to main or develop branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Project
+        run: pnpm run build
+
+      - name: Deploy files to GCP VM via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USERNAME }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          source: "./*"
+          target: "/var/www/my-node-app"
+
+      - name: Restart Application via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USERNAME }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          script: |
+            cd /var/www/my-node-app
+            # Start or restart your app with a 512MB RAM restriction for Free Tier stability
+            pm2 delete app || true
+            pm2 delete worker || true
+            pm2 start "pnpm run start:backend" --name "app" --node-args="--max-old-space-size=512"
+            pm2 start "pnpm run start:worker" --name "worker" --node-args="--max-old-space-size=512"
+            pm2 save

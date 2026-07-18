@@ -1,2 +1,2 @@
 // Infrastructure storage coming soon
-export {}
+export {};

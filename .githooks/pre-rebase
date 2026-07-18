@@ -1,0 +1,50 @@
+#!/bin/sh
+# =============================================================================
+# pre-rebase — Enterprise Git Hook
+# Prevents rebasing protected branches and warns on large rebase ranges.
+# =============================================================================
+
+UPSTREAM=$1
+REBASED_BRANCH=$2
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${CYAN}  BetterLibmanan — Pre-Rebase Check${NC}"
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+TARGET_BRANCH=${REBASED_BRANCH:-$CURRENT_BRANCH}
+
+# -----------------------------------------------------------------------------
+# 1. BLOCK REBASE OF PROTECTED BRANCHES
+# -----------------------------------------------------------------------------
+PROTECTED_BRANCHES="main master staging production"
+for BRANCH in $PROTECTED_BRANCHES; do
+  if [ "$TARGET_BRANCH" = "$BRANCH" ]; then
+    echo "${RED}❌ Rebasing '${TARGET_BRANCH}' is not allowed.${NC}"
+    echo "${YELLOW}   → Protected branches must only be updated via pull requests.${NC}"
+    echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    exit 1
+  fi
+done
+
+# -----------------------------------------------------------------------------
+# 2. LARGE REBASE WARNING (> 20 commits)
+# -----------------------------------------------------------------------------
+if [ -n "$UPSTREAM" ]; then
+  COMMIT_COUNT=$(git log --oneline "${UPSTREAM}..${TARGET_BRANCH}" 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$COMMIT_COUNT" -gt 20 ]; then
+    echo "${YELLOW}⚠️  You are rebasing $COMMIT_COUNT commits onto $UPSTREAM.${NC}"
+    echo "   → Consider using 'git merge' for long-lived branches to avoid complex conflicts."
+    echo "   → Proceeding with rebase..."
+  fi
+fi
+
+echo "${GREEN}✅ Rebase allowed for branch '${TARGET_BRANCH}'.${NC}"
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+exit 0

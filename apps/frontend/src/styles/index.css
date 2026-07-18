@@ -8,10 +8,145 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Prevent font scaling on landscape rotation (iOS) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Smooth scrolling globally */
+  scroll-behavior: smooth;
+
+  /*
+   * Navbar height token — used by fixed elements that need to clear the
+   * sticky navbar (e.g. the Freedom Wall toolbar).
+   * Desktop navbar: logo h-16 (64px) + py-4 top+bottom (32px) = 96px
+   * The TopUtilityBar / BottomUtilityBar are thin (~28–32px each) and
+   * conditionally rendered, so we account for them generously here.
+   */
+  --navbar-h: 96px;
+}
+
+@media (max-width: 1023px) {
+  /* Mobile/tablet navbar is slightly shorter (h-12 logo) */
+  html {
+    --navbar-h: 80px;
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
+  /* Respect safe areas on notched devices */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Ensure images and media are responsive by default */
+img,
+video,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent overflow from long words/URLs on mobile */
+p, h1, h2, h3, h4, h5, h6, li, td, th, a, span {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Better touch targets for mobile (minimum 44px) */
+@media (max-width: 767px) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Prevent zoom on input focus (iOS) */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Responsive container utility */
+@layer components {
+  .responsive-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .responsive-section {
+    @apply py-10 sm:py-12 lg:py-16;
+  }
+
+  .responsive-heading {
+    @apply text-xl sm:text-2xl lg:text-3xl font-bold;
+  }
+
+  .responsive-subheading {
+    @apply text-lg sm:text-xl lg:text-2xl font-semibold;
+  }
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+/* Hide scrollbar on mobile for horizontal scroll containers */
+@media (max-width: 767px) {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* TopUtilityBar marquee */
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 600s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.marquee-set {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.3333%); }
 }

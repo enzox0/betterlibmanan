@@ -1,2 +1,2 @@
 // Monitoring coming soon
-export {}
+export {};

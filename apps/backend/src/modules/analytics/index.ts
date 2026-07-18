@@ -1,2 +1,2 @@
 // Analytics module coming soon
-export {}
+export {};

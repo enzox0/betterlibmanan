@@ -21,6 +21,7 @@ pnpm run dev
 ```
 
 Open in your browser:
+
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 
@@ -82,19 +83,19 @@ Types:
 
 ## Contribution Areas
 
-| Area               | Description                          |
-| ------------------ | ------------------------------------ |
-| Bug Fixes          | Fix reported issues                  |
-| Features           | Implement new functionality          |
-| Content            | Update Libmanan service information  |
+| Area               | Description                              |
+| ------------------ | ---------------------------------------- |
+| Bug Fixes          | Fix reported issues                      |
+| Features           | Implement new functionality              |
+| Content            | Update Libmanan service information      |
 | Translations       | Translate to Filipino or local languages |
-| Design             | Improve UI/UX and accessibility      |
-| Data               | Verify and update statistics         |
-| Documentation      | Improve guides and comments          |
-| API Integration    | Connect real-time data sources       |
-| Backend API        | Enhance Express.js backend           |
-| Frontend UI        | Improve React frontend               |
-| Data Visualization | Enhance charts and graphs            |
+| Design             | Improve UI/UX and accessibility          |
+| Data               | Verify and update statistics             |
+| Documentation      | Improve guides and comments              |
+| API Integration    | Connect real-time data sources           |
+| Backend API        | Enhance Express.js backend               |
+| Frontend UI        | Improve React frontend                   |
+| Data Visualization | Enhance charts and graphs                |
 
 ## Code Guidelines
 

@@ -1,2 +1,2 @@
 // Server bootstrap coming soon
-export {}
+export {};

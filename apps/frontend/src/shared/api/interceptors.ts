@@ -1,2 +1,2 @@
 // Interceptors coming soon
-export {}
+export {};

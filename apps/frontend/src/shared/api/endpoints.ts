@@ -1,2 +1,0 @@
-// Endpoints coming soon
-export {}

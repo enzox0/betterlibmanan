@@ -1,4 +1,4 @@
-import { BaseEntity } from './common';
+import { BaseEntity } from "./common";
 
 export interface Service extends BaseEntity {
   name: string;
@@ -20,14 +20,14 @@ export interface Service extends BaseEntity {
 }
 
 export enum ServiceCategory {
-  CIVIL = 'civil',
-  HEALTH = 'health',
-  EDUCATION = 'education',
-  BUSINESS = 'business',
-  SOCIAL = 'social',
-  PERMITS = 'permits',
-  LICENSES = 'licenses',
-  OTHER = 'other'
+  CIVIL = "civil",
+  HEALTH = "health",
+  EDUCATION = "education",
+  BUSINESS = "business",
+  SOCIAL = "social",
+  PERMITS = "permits",
+  LICENSES = "licenses",
+  OTHER = "other",
 }
 
 export interface ServiceRequirement {

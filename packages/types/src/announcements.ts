@@ -1,4 +1,4 @@
-import { BaseEntity } from './common';
+import { BaseEntity } from "./common";
 
 export interface Announcement extends BaseEntity {
   title: string;
@@ -12,10 +12,10 @@ export interface Announcement extends BaseEntity {
 }
 
 export enum AnnouncementPriority {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  URGENT = 'urgent'
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  URGENT = "urgent",
 }
 
 export interface AnnouncementTranslation {

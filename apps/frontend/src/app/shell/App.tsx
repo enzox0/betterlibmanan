@@ -1,10 +1,39 @@
-import { BrowserRouter } from 'react-router-dom';
-import { Layout } from './Layout.tsx';
+import { useState } from "react";
+import { BrowserRouter } from "react-router-dom";
+import { AppRouter } from "@/app/router";
+import { OfflineBanner, ScrollToTop, PWAInstallBanner } from "@/app/components";
+import {
+  SplashScreen,
+  hasSplashBeenShown,
+} from "@/app/components/SplashScreen";
+import { ToastProvider } from "@/context/ToastContext";
+import { useNetworkStatus } from "@/shared/hooks";
+import { SessionExpiredModal } from "@/modules/admin/components/auth/SessionExpiredModal";
 
 export function App() {
+  // If splash already ran this session, skip it entirely and mount the router right away.
+  const [splashDone, setSplashDone] = useState(() => hasSplashBeenShown());
+  const { isOnline, isChecking, retryCheck } = useNetworkStatus();
+
   return (
-    <BrowserRouter>
-      <Layout />
-    </BrowserRouter>
+    <ToastProvider>
+      {!splashDone && (
+        <SplashScreen duration={2000} onFinish={() => setSplashDone(true)} />
+      )}
+      {splashDone && (
+        <BrowserRouter>
+          <ScrollToTop />
+          <AppRouter />
+        </BrowserRouter>
+      )}
+      <OfflineBanner
+        isOnline={isOnline}
+        isChecking={isChecking}
+        onRetry={retryCheck}
+      />
+      <SessionExpiredModal />
+      {/* PWA install banner — desktop only, works on all platforms */}
+      <PWAInstallBanner />
+    </ToastProvider>
   );
 }

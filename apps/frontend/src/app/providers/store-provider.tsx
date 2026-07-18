@@ -1,2 +1,2 @@
 // Store provider coming soon
-export {}
+export {};

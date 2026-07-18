@@ -1,0 +1,13 @@
+export { HomePage } from "./pages/HomePage";
+export { HomePage as default } from "./pages/HomePage";
+export { AboutPage } from "./pages/AboutPage";
+export { FreedomWallPage } from "./pages/FreedomWallPage";
+export { CommunityPage } from "./pages/CommunityPage";
+export { AllPeerGroupsPage } from "./pages/AllPeerGroupsPage";
+export { AllDiscussionsPage } from "./pages/AllDiscussionsPage";
+export { DiscussionDetailPage } from "./pages/DiscussionDetailPage";
+export { GroupDetailPage } from "./pages/GroupDetailPage";
+export { QuizPage } from "./pages/QuizPage";
+export { InstallPage } from "./pages/InstallPage";
+export { UserProfilePage } from "./pages/UserProfilePage";
+export { LatestUpdatesPage } from "./pages/LatestUpdatesPage";

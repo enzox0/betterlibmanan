@@ -1,2 +1,2 @@
 // Typography coming soon
-export {}
+export {};

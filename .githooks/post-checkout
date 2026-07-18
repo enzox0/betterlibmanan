@@ -1,0 +1,102 @@
+#!/bin/sh
+# =============================================================================
+# post-checkout — Enterprise Git Hook
+# Runs after git checkout or git switch.
+# Handles: dep sync on lockfile change, .env reminder, branch context display.
+# =============================================================================
+
+PREV_HEAD=$1
+NEW_HEAD=$2
+IS_BRANCH_CHECKOUT=$3  # 1 if branch checkout, 0 if file checkout
+
+# Skip file-level checkouts (e.g., git checkout -- src/file.ts)
+if [ "$IS_BRANCH_CHECKOUT" = "0" ]; then
+  exit 0
+fi
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${CYAN}  BetterLibmanan — Post-Checkout${NC}"
+echo "${BLUE}  Switched to: ${CURRENT_BRANCH}${NC}"
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+# Skip dep check when HEAD didn't change (same branch re-checkout)
+if [ "$PREV_HEAD" = "$NEW_HEAD" ]; then
+  exit 0
+fi
+
+# -----------------------------------------------------------------------------
+# 1. DEPENDENCY SYNC
+#    Reinstall if the lockfile differs from the previous HEAD.
+# -----------------------------------------------------------------------------
+echo "\n📦 [1/2] Checking for dependency changes..."
+
+LOCKFILE_CHANGED=$(git diff --name-only "$PREV_HEAD" "$NEW_HEAD" 2>/dev/null | grep -E 'pnpm-lock\.yaml|package-lock\.json' | head -1)
+
+if [ -n "$LOCKFILE_CHANGED" ]; then
+  echo "${YELLOW}⚠️  Lockfile changed between branches ($LOCKFILE_CHANGED).${NC}"
+  echo "   Running pnpm install to sync dependencies..."
+  cd "$ROOT_DIR"
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm install --frozen-lockfile 2>&1
+    echo "${GREEN}✅ Dependencies synced.${NC}"
+  else
+    echo "${YELLOW}⚠️  pnpm not found. Run 'pnpm install' manually.${NC}"
+  fi
+else
+  echo "${GREEN}✅ Dependencies are up to date.${NC}"
+fi
+
+# -----------------------------------------------------------------------------
+# 2. .ENV FILE EXISTENCE CHECK
+#    Reminds developers to create .env if it doesn't exist yet.
+#    This commonly happens when first checking out a new branch or fresh clone.
+# -----------------------------------------------------------------------------
+echo "\n🔐 [2/2] Checking local .env file..."
+
+if [ ! -f "$ROOT_DIR/.env" ]; then
+  echo "${YELLOW}⚠️  No .env file found at project root.${NC}"
+  echo "   → Copy the example and fill in your values:"
+  echo "      cp .env.example .env"
+  echo ""
+  if [ -f "$ROOT_DIR/.env.example" ]; then
+    echo "   Required variables from .env.example:"
+    grep -v '^#' "$ROOT_DIR/.env.example" | grep '=' | sed 's/=.*//' | sed 's/^/     • /'
+  fi
+else
+  # Check if .env.example has keys not in .env (drift detection)
+  if [ -f "$ROOT_DIR/.env.example" ]; then
+    MISSING_KEYS=""
+    while IFS= read -r LINE; do
+      # Skip comments and empty lines
+      case "$LINE" in
+        \#*|"") continue ;;
+      esac
+      KEY=$(echo "$LINE" | cut -d= -f1)
+      if [ -n "$KEY" ] && ! grep -q "^${KEY}=" "$ROOT_DIR/.env" 2>/dev/null; then
+        MISSING_KEYS="$MISSING_KEYS\n     • $KEY"
+      fi
+    done < "$ROOT_DIR/.env.example"
+
+    if [ -n "$MISSING_KEYS" ]; then
+      echo "${YELLOW}⚠️  Your .env is missing keys from .env.example:${NC}"
+      printf "$MISSING_KEYS\n"
+      echo "   → Add these to your .env file."
+    else
+      echo "${GREEN}✅ .env file is present and up to date.${NC}"
+    fi
+  else
+    echo "${GREEN}✅ .env file is present.${NC}"
+  fi
+fi
+
+echo "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+exit 0

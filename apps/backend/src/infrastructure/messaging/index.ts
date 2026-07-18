@@ -1,2 +1,2 @@
 // Messaging coming soon
-export {}
+export {};

@@ -9,26 +9,62 @@
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@8.15.0",
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
+    "prepare": "git rev-parse --is-inside-work-tree > /dev/null 2>&1 && git config core.hooksPath .githooks || echo 'Not a git repo, skipping git hooks setup'",
+    "hooks:install": "git config core.hooksPath .githooks && echo \"Git hooks installed from .githooks/\"",
+    "hooks:uninstall": "git config --unset core.hooksPath && echo \"Git hooks uninstalled (reverted to .git/hooks/)\"",
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "build:prod": "turbo run build --force",
+    "verify": "node scripts/verify-production-build.js",
+    "build:verify": "pnpm run build && pnpm run verify",
+    "start": "concurrently \"pnpm run start:backend\" \"pnpm run start:worker\"",
+    "start:backend": "node build/backend/main.js",
+    "start:worker": "node build/worker/main.js",
+    "dev": "node scripts/dev.js",
+    "dev:turbo": "turbo run dev",
     "dev:frontend": "turbo run dev --filter=@betterlibmanan/frontend",
     "dev:backend": "turbo run dev --filter=@betterlibmanan/backend",
     "dev:worker": "turbo run dev --filter=@betterlibmanan/worker",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules",
+    "clean": "turbo run clean && rm -rf node_modules && rm -rf build",
+    "clean:prod": "rm -rf build && rm -rf node_modules/.pnpm-store",
     "db:migrate": "turbo run db:migrate --filter=@betterlibmanan/backend",
     "db:seed": "turbo run db:seed --filter=@betterlibmanan/backend",
+    "seed": "pnpm --filter @betterlibmanan/backend run seed",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:build": "docker-compose build"
+    "docker:build": "docker-compose build",
+    "test:combined": "node scripts/test-combined.js"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
+    "concurrently": "^10.0.3",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
     "prettier": "^3.2.0",
+    "turbo": "^2.0.0",
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "imgtowebp": "^0.0.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "^5.0.8",
+      "typescript": "5.9.3",
+      "eslint": "8.57.1",
+      "@typescript-eslint/eslint-plugin": "8.61.1",
+      "@typescript-eslint/parser": "8.61.1",
+      "eslint-plugin-react-refresh": "0.4.4"
+    }
   }
 }

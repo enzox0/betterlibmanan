@@ -1,2 +1,2 @@
 // Decorators coming soon
-export {}
+export {};

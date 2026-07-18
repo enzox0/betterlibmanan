@@ -9,12 +9,13 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "lint": "echo \"Lint coming soon\""
   },
   "dependencies": {
     "@betterlibmanan/types": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.3.0"
+    "typescript": "5.9.3"
   }
 }

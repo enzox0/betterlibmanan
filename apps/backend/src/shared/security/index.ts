@@ -1,2 +1,2 @@
 // Security coming soon
-export {}
+export {};

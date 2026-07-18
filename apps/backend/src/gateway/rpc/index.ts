@@ -1,2 +1,2 @@
 // RPC coming soon
-export {}
+export {};

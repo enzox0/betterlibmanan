@@ -1,4 +1,4 @@
-import { BaseEntity } from './common';
+import { BaseEntity } from "./common";
 
 export interface User extends BaseEntity {
   name: string;
@@ -11,11 +11,11 @@ export interface User extends BaseEntity {
 }
 
 export enum UserRole {
-  ADMIN = 'admin',
-  MODERATOR = 'moderator',
-  EDITOR = 'editor',
-  VIEWER = 'viewer',
-  CITIZEN = 'citizen'
+  ADMIN = "admin",
+  MODERATOR = "moderator",
+  EDITOR = "editor",
+  VIEWER = "viewer",
+  CITIZEN = "citizen",
 }
 
 export interface LoginCredentials {

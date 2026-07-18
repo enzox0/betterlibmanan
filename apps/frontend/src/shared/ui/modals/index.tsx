@@ -1,2 +1,2 @@
 // Modals coming soon
-export {}
+export {};

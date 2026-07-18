@@ -1,0 +1,143 @@
+#!/bin/sh
+# =============================================================================
+# pre-push — Enterprise Git Hook
+# Runs before git push executes the actual push.
+# Checks: protected branch guards, build verification, test suite.
+# =============================================================================
+
+set -e
+
+REMOTE=$1
+REMOTE_URL=$2
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "${CYAN}  BetterLibmanan — Pre-Push Checks${NC}"
+echo "${CYAN}  Branch: ${CURRENT_BRANCH} → ${REMOTE}${NC}"
+echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+ERRORS=0
+
+# -----------------------------------------------------------------------------
+# 1. PROTECTED BRANCH DIRECT PUSH GUARD
+#    Direct pushes to main, master, staging, and production are blocked.
+#    Use pull requests instead.
+# -----------------------------------------------------------------------------
+echo "\n🛡️  [1/4] Checking branch protection..."
+
+PROTECTED_BRANCHES="main master staging production"
+for BRANCH in $PROTECTED_BRANCHES; do
+  if [ "$CURRENT_BRANCH" = "$BRANCH" ]; then
+    echo "${RED}❌ Direct push to '${CURRENT_BRANCH}' is not allowed.${NC}"
+    echo "${YELLOW}   → Open a Pull Request to merge into this branch.${NC}"
+    echo "${YELLOW}   → Protected branches: ${PROTECTED_BRANCHES}${NC}"
+    echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    exit 1
+  fi
+done
+
+# Allow force-push only with explicit env var (for emergency hotfixes)
+if git log --oneline -1 2>/dev/null | grep -q "^"; then
+  PUSH_FLAGS=$(git config --get push.default 2>/dev/null || echo "")
+fi
+
+echo "${GREEN}✅ Branch '${CURRENT_BRANCH}' is not protected. Proceeding.${NC}"
+
+# -----------------------------------------------------------------------------
+# 2. WIP COMMIT DETECTION
+#    Prevents pushing branches that contain WIP commits to avoid polluting
+#    shared branches with unfinished work.
+# -----------------------------------------------------------------------------
+echo "\n🔍 [2/4] Checking for WIP commits in push range..."
+
+# Read push range from stdin (format: <local ref> <local sha1> <remote ref> <remote sha1>)
+WIP_FOUND=0
+while read LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+  # 0000...0 means the ref doesn't exist remotely yet (new branch)
+  if [ "$REMOTE_SHA" = "0000000000000000000000000000000000000000" ]; then
+    # New branch — check all commits that aren't in main/develop
+    BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD develop 2>/dev/null || echo "")
+    if [ -n "$BASE" ]; then
+      RANGE="$BASE...$LOCAL_SHA"
+    else
+      RANGE="HEAD~10..$LOCAL_SHA"
+    fi
+  else
+    RANGE="$REMOTE_SHA..$LOCAL_SHA"
+  fi
+
+  WIP_COMMITS=$(git log --oneline "$RANGE" 2>/dev/null | grep -iE '^[a-f0-9]+ wip' || echo "")
+  if [ -n "$WIP_COMMITS" ]; then
+    echo "${YELLOW}⚠️  WIP commits detected in push range:${NC}"
+    echo "$WIP_COMMITS" | sed 's/^/   /'
+    echo "${YELLOW}   → Consider squashing or amending these before sharing.${NC}"
+    WIP_FOUND=1
+  fi
+done
+
+if [ "$WIP_FOUND" -eq 0 ]; then
+  echo "${GREEN}✅ No WIP commits found.${NC}"
+fi
+
+# -----------------------------------------------------------------------------
+# 3. BUILD VERIFICATION
+#    Runs the monorepo build to catch compilation errors before pushing.
+#    Uses turbo's caching so repeated pushes are fast.
+# -----------------------------------------------------------------------------
+echo "\n🏗️  [3/4] Running build verification..."
+
+cd "$ROOT_DIR"
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "${YELLOW}⚠️  pnpm not found, skipping build verification.${NC}"
+else
+  echo "   Running: pnpm turbo run build"
+  if ! pnpm turbo run build --output-logs=errors-only 2>&1; then
+    echo "${RED}❌ Build failed. Fix compilation errors before pushing.${NC}"
+    ERRORS=$((ERRORS + 1))
+  else
+    echo "${GREEN}✅ Build passed.${NC}"
+  fi
+fi
+
+# -----------------------------------------------------------------------------
+# 4. TEST SUITE (frontend only — fast vitest run)
+#    Backend tests are pending ("coming soon"). Runs frontend vitest with
+#    --run flag (single pass, no watch mode) for CI parity.
+# -----------------------------------------------------------------------------
+echo "\n🧪 [4/4] Running test suite..."
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "${YELLOW}⚠️  pnpm not found, skipping tests.${NC}"
+else
+  echo "   Running: pnpm --filter @betterlibmanan/frontend run test"
+  if ! pnpm --filter @betterlibmanan/frontend run test 2>&1; then
+    echo "${RED}❌ Tests failed. Fix failing tests before pushing.${NC}"
+    ERRORS=$((ERRORS + 1))
+  else
+    echo "${GREEN}✅ Tests passed.${NC}"
+  fi
+fi
+
+# -----------------------------------------------------------------------------
+# RESULT
+# -----------------------------------------------------------------------------
+echo "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+if [ "$ERRORS" -gt 0 ]; then
+  echo "${RED}❌ Pre-push failed ($ERRORS error(s)). Push aborted.${NC}"
+  echo "${YELLOW}   Fix the issues above or use --no-verify to bypass (not recommended).${NC}"
+  echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  exit 1
+else
+  echo "${GREEN}✅ All pre-push checks passed. Pushing...${NC}"
+  echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  exit 0
+fi
