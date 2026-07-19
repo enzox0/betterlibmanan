@@ -11,7 +11,9 @@ export type AuditAction =
   | "UPDATE"
   | "DELETE"
   | "ACTIVATE"
-  | "DEACTIVATE";
+  | "DEACTIVATE"
+  | "APPROVE"
+  | "REJECT";
 
 // ─── Interface ────────────────────────────────────────────────────────────────
 
@@ -54,6 +56,8 @@ const AuditLogSchema = new Schema<IAuditLog>(
         "DELETE",
         "ACTIVATE",
         "DEACTIVATE",
+        "APPROVE",
+        "REJECT",
       ],
       required: true,
       index: true,
