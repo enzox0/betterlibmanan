@@ -6,8 +6,15 @@ export class Mailer {
   private static instance: Mailer;
   private transporter: nodemailer.Transporter | null = null;
   private isConfigured: boolean = false;
+  private initialized: boolean = false;
 
   private constructor() {
+    // Don't initialize immediately - wait for lazyInit() to ensure dotenv is loaded
+  }
+
+  private lazyInit() {
+    if (this.initialized) return;
+
     if (
       config.smtp.host !== "smtp.example.com" &&
       config.smtp.user !== "user@example.com"
@@ -20,6 +27,10 @@ export class Mailer {
           user: config.smtp.user,
           pass: config.smtp.pass,
         },
+        tls: {
+          // Accept self-signed certificates in development
+          rejectUnauthorized: config.app.env !== "development",
+        },
       });
       this.isConfigured = true;
       logger.info("Mailer configured with SMTP host:", config.smtp.host);
@@ -28,6 +39,7 @@ export class Mailer {
         "Mailer not configured - using default placeholder SMTP settings",
       );
     }
+    this.initialized = true;
   }
 
   static getInstance(): Mailer {
@@ -38,6 +50,7 @@ export class Mailer {
   }
 
   async sendHealthErrorReport(errorDetails: any): Promise<void> {
+    this.lazyInit();
     if (!this.isConfigured || !this.transporter) {
       logger.warn("Skipping health error report email - SMTP not configured");
       return;
@@ -71,6 +84,7 @@ export class Mailer {
   }
 
   async sendMail(options: nodemailer.SendMailOptions): Promise<void> {
+    this.lazyInit();
     if (!this.isConfigured || !this.transporter) {
       logger.warn("Skipping email - SMTP not configured");
       return;
