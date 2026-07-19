@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import {
-  submitRegistration,
+  initiateRegistration,
+  resendOtp,
+  verifyOtpAndCompleteRegistration,
   listRegistrations,
   getRegistration,
   approveRegistration,
@@ -12,70 +14,53 @@ import {
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import { logger } from "@/shared/logger";
 
-// ─── Validation schemas ───────────────────────────────────────────────────────
+/**
+ * Utility to get client IP
+ */
+const getClientIp = (req: Request): string => {
+  return (
+    (req.headers["x-forwarded-for"] as string) ||
+    req.socket.remoteAddress ||
+    "unknown"
+  );
+};
 
+// Zod schemas
 const submitSchema = z.object({
-  displayName: z.string().min(2).max(64).trim(),
+  displayName: z.string().min(2, "Display name must be at least 2 characters"),
   username: z
     .string()
     .min(3)
     .max(32)
     .regex(
       /^[a-z0-9_]+$/,
-      "Username: lowercase letters, numbers, underscores only",
+      "Username can only contain lowercase letters, numbers, and underscores",
     ),
-  email: z.string().email(),
-  password: z.string().min(8).max(128),
-  phone: z.string().max(32).optional().default(""),
-  department: z.string().max(128).optional().default(""),
-  reason: z.string().max(500).optional().default(""),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  phone: z.string().optional().default(""),
+  department: z.string().optional().default(""),
+  reason: z.string().min(1, "Please provide a reason for admin access"),
 });
 
 const reviewSchema = z.object({
   rejectionReason: z.string().max(500).optional().default(""),
 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const sendOtpSchema = z.object({
+  tempId: z.string().uuid("Invalid tempId"),
+});
 
-function getClientIp(req: Request): string {
-  return (
-    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-    req.socket?.remoteAddress ||
-    "unknown"
-  );
-}
-
-// ─── Handlers ─────────────────────────────────────────────────────────────────
+const verifyOtpSchema = z.object({
+  tempId: z.string().uuid("Invalid tempId"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
 
 /**
- * GET /api/admin-registrations/lookup?email=...
- * Public — returns minimal status info for duplicate-check modal.
+ * Public: POST /api/admin-registrations/initiate
+ * Initiates admin registration, returns tempId
  */
-export async function handleLookupByEmail(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  try {
-    const email = (req.query.email as string | undefined)?.trim();
-    if (!email) {
-      res
-        .status(400)
-        .json({ success: false, message: "email query param is required" });
-      return;
-    }
-    const result = await lookupRegistrationByEmail(email);
-    res.status(200).json({ success: true, data: result ?? null });
-  } catch (err) {
-    next(err);
-  }
-}
-
-/**
- * POST /api/admin-registrations
- * Public — anyone can submit a registration request.
- */
-export async function handleSubmitRegistration(
+export async function handleInitiateRegistration(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -83,14 +68,136 @@ export async function handleSubmitRegistration(
   try {
     const parsed = submitSchema.safeParse(req.body);
     if (!parsed.success) {
-      const errors = parsed.error.errors.map((e) => e.message);
-      res.status(400).json({ success: false, message: errors[0], errors });
+      res.status(400).json({
+        success: false,
+        message: parsed.error.errors[0].message,
+        errors: parsed.error.errors,
+      });
       return;
     }
 
-    const registration = await submitRegistration(parsed.data);
-    logger.info(`[ADMIN-REG] New registration from: ${parsed.data.username}`);
-    res.status(201).json({ success: true, data: registration });
+    const result = await initiateRegistration(parsed.data);
+
+    logger.info(
+      `[ADMIN-REG] Registration initiated for email: ${parsed.data.email}`,
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "OTP sent to your email",
+      data: { tempId: result.tempId },
+    });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({
+        success: false,
+        message: err.message,
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * Public: POST /api/admin-registrations/resend-otp
+ * Resend OTP
+ */
+export async function handleResendOtp(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const parsed = sendOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: parsed.error.errors[0].message,
+        errors: parsed.error.errors,
+      });
+      return;
+    }
+
+    await resendOtp(parsed.data.tempId);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP resent",
+    });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({
+        success: false,
+        message: err.message,
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * Public: POST /api/admin-registrations/verify
+ * Verify OTP and complete registration
+ */
+export async function handleVerifyOtp(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const parsed = verifyOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: parsed.error.errors[0].message,
+        errors: parsed.error.errors,
+      });
+      return;
+    }
+
+    const registration = await verifyOtpAndCompleteRegistration(
+      parsed.data.tempId,
+      parsed.data.otp,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Registration successful! Awaiting admin approval",
+      data: registration,
+    });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({
+        success: false,
+        message: err.message,
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * Protected: GET /api/admin-registrations
+ * List all admin registration requests
+ */
+export async function handleListRegistrations(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.admin) {
+      res.status(401).json({ success: false, message: "Not authenticated" });
+      return;
+    }
+
+    const status = req.query.status as any;
+    const registrations = await listRegistrations(status);
+
+    res.status(200).json({ success: true, data: registrations });
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ success: false, message: err.message });
@@ -101,49 +208,8 @@ export async function handleSubmitRegistration(
 }
 
 /**
- * GET /api/admin-registrations
- * Requires: requireAuth + requireRole("superadmin")
- * Optional query: ?status=pending|approved|rejected
- */
-export async function handleListRegistrations(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  try {
-    const status = req.query.status as string | undefined;
-    const validStatuses = ["pending", "approved", "rejected"];
-    const statusFilter =
-      status && validStatuses.includes(status)
-        ? (status as "pending" | "approved" | "rejected")
-        : undefined;
-
-    const registrations = await listRegistrations(statusFilter);
-
-    if (req.admin) {
-      writeAuditLog(
-        {
-          admin: req.admin,
-          ipAddress: getClientIp(req),
-          userAgent: req.headers["user-agent"],
-        },
-        {
-          action: "READ",
-          module: "AdminRegistrations",
-          description: `Listed admin registrations${statusFilter ? ` (status: ${statusFilter})` : ""}`,
-        },
-      );
-    }
-
-    res.status(200).json({ success: true, data: registrations });
-  } catch (err) {
-    next(err);
-  }
-}
-
-/**
- * GET /api/admin-registrations/:id
- * Requires: requireAuth + requireRole("superadmin")
+ * Protected: GET /api/admin-registrations/:id
+ * Get a single admin registration by ID
  */
 export async function handleGetRegistration(
   req: Request,
@@ -151,7 +217,13 @@ export async function handleGetRegistration(
   next: NextFunction,
 ): Promise<void> {
   try {
+    if (!req.admin) {
+      res.status(401).json({ success: false, message: "Not authenticated" });
+      return;
+    }
+
     const registration = await getRegistration(req.params.id);
+
     res.status(200).json({ success: true, data: registration });
   } catch (err: any) {
     if (err.statusCode) {
@@ -163,8 +235,8 @@ export async function handleGetRegistration(
 }
 
 /**
- * PATCH /api/admin-registrations/:id/approve
- * Requires: requireAuth + requireRole("superadmin")
+ * Protected: POST /api/admin-registrations/:id/approve
+ * Approve an admin registration (super admin only)
  */
 export async function handleApproveRegistration(
   req: Request,
@@ -177,11 +249,11 @@ export async function handleApproveRegistration(
       return;
     }
 
-    const registration = await approveRegistration(req.params.id, {
-      status: "approved",
-      reviewerId: req.admin.sub,
-      reviewerName: req.admin.displayName,
-    });
+    const registration = await approveRegistration(
+      req.params.id,
+      req.admin.sub,
+      req.admin.displayName,
+    );
 
     writeAuditLog(
       {
@@ -190,16 +262,13 @@ export async function handleApproveRegistration(
         userAgent: req.headers["user-agent"],
       },
       {
-        action: "ACTIVATE",
+        action: "APPROVE",
         module: "AdminRegistrations",
         resourceId: req.params.id,
-        description: `Approved admin registration for ${registration.username} (${registration.displayName}) — admin account created`,
+        description: `Approved admin registration request for ${registration.username} (${registration.displayName})`,
       },
     );
 
-    logger.info(
-      `[ADMIN-REG] Approved: ${registration.username} by ${req.admin.username}`,
-    );
     res.status(200).json({ success: true, data: registration });
   } catch (err: any) {
     if (err.statusCode) {
@@ -211,9 +280,8 @@ export async function handleApproveRegistration(
 }
 
 /**
- * PATCH /api/admin-registrations/:id/reject
- * Body: { rejectionReason?: string }
- * Requires: requireAuth + requireRole("superadmin")
+ * Protected: POST /api/admin-registrations/:id/reject
+ * Reject an admin registration (super admin only)
  */
 export async function handleRejectRegistration(
   req: Request,
@@ -233,12 +301,12 @@ export async function handleRejectRegistration(
       return;
     }
 
-    const registration = await rejectRegistration(req.params.id, {
-      status: "rejected",
-      rejectionReason: parsed.data.rejectionReason,
-      reviewerId: req.admin.sub,
-      reviewerName: req.admin.displayName,
-    });
+    const registration = await rejectRegistration(
+      req.params.id,
+      parsed.data.rejectionReason,
+      req.admin.sub,
+      req.admin.displayName,
+    );
 
     writeAuditLog(
       {
@@ -247,16 +315,13 @@ export async function handleRejectRegistration(
         userAgent: req.headers["user-agent"],
       },
       {
-        action: "DEACTIVATE",
+        action: "REJECT",
         module: "AdminRegistrations",
         resourceId: req.params.id,
-        description: `Rejected admin registration for ${registration.username} (${registration.displayName})${parsed.data.rejectionReason ? ` — reason: ${parsed.data.rejectionReason}` : ""}`,
+        description: `Rejected admin registration request for ${registration.username} (${registration.displayName})`,
       },
     );
 
-    logger.info(
-      `[ADMIN-REG] Rejected: ${registration.username} by ${req.admin.username}`,
-    );
     res.status(200).json({ success: true, data: registration });
   } catch (err: any) {
     if (err.statusCode) {
@@ -268,8 +333,8 @@ export async function handleRejectRegistration(
 }
 
 /**
- * DELETE /api/admin-registrations/:id
- * Requires: requireAuth + requireRole("superadmin")
+ * Protected: DELETE /api/admin-registrations/:id
+ * Delete an admin registration record (super admin only)
  */
 export async function handleDeleteRegistration(
   req: Request,
@@ -300,6 +365,37 @@ export async function handleDeleteRegistration(
     );
 
     res.status(200).json({ success: true, message: "Registration deleted" });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * Public: GET /api/admin-registrations/lookup
+ * Lookup a registration by email for the frontend duplicate check
+ */
+export async function handleLookupByEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { email } = req.query;
+    if (!email || typeof email !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Email query parameter is required",
+      });
+      return;
+    }
+
+    const result = await lookupRegistrationByEmail(email);
+
+    res.status(200).json({ success: true, data: result });
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ success: false, message: err.message });
