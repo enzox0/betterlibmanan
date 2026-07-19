@@ -112,8 +112,11 @@ const AdminSchema = new Schema<IAdmin>(
 // Hash password before save, stamp passwordChangedAt
 AdminSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
+  // Only hash if it's a plain text password (not already a bcrypt hash)
+  if (!this.password.startsWith("$2a$") && !this.password.startsWith("$2b$")) {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
   this.passwordChangedAt = new Date();
   next();
 });
