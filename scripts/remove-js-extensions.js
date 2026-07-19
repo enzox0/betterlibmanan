@@ -27,7 +27,9 @@ const buildDir = path.join(__dirname, "..", "build");
 // Only process backend and worker directories (not frontend, which is ES modules)
 const backendDir = path.join(buildDir, "backend");
 const workerDir = path.join(buildDir, "worker");
-console.log(`Removing .js extensions from CommonJS modules in: ${backendDir} and ${workerDir}`);
+console.log(
+  `Removing .js extensions from CommonJS modules in: ${backendDir} and ${workerDir}`,
+);
 if (fs.existsSync(backendDir)) {
   removeJsExtensions(backendDir);
 }
