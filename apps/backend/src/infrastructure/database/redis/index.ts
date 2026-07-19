@@ -1,2 +1,0 @@
-// Redis coming soon
-export {};
