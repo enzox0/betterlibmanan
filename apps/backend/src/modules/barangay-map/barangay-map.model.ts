@@ -2,6 +2,12 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export type BarangayMapStatus = "published" | "draft";
 
+export interface IFestival {
+  name: string;
+  date?: string;
+  description?: string;
+}
+
 export interface IBarangayMap extends Document {
   name: string;
   imageUrl: string;
@@ -10,11 +16,32 @@ export interface IBarangayMap extends Document {
   touristAttractions: string[];
   population: string;
   area: string;
-  festivals: string[];
+  festivals: IFestival[];
   status: BarangayMapStatus;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const FestivalSchema = new Schema<IFestival>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    date: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+  },
+  { _id: false },
+);
 
 const BarangayMapSchema = new Schema<IBarangayMap>(
   {
@@ -57,7 +84,7 @@ const BarangayMapSchema = new Schema<IBarangayMap>(
       maxlength: 120,
     },
     festivals: {
-      type: [String],
+      type: [FestivalSchema],
       default: [],
     },
     status: {
