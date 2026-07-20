@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LuX } from "react-icons/lu";
+import { LuX, LuInfo } from "react-icons/lu";
 import { mockSections } from "../../data/mockSections";
 import { useAdminStore } from "../../store/adminStore";
 import { useBetterLugsStore } from "../../store/betterLugsStore";
@@ -15,12 +15,12 @@ import { useQuizStore } from "../../store/quizStore";
 import { useEmergencyContactsStore } from "../../store/emergencyContactsStore";
 import { useMarqueeImagesStore } from "../../store/marqueeImagesStore";
 import { useMunicipalHallStore } from "../../store/municipalHallStore";
+import { useStatisticsStore } from "../../store/statisticsStore";
 import { ImageUploadPlaceholder } from "./ImageUploadPlaceholder";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { LucideIconPicker } from "./ReactIconPicker";
 import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
 import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
-import { uploadPopularServiceIcon } from "../../services/popular-services.api";
 import { uploadLeadershipAvatarRequest } from "../../services/leadership.api";
 import { uploadMarqueeImageFileRequest } from "../../services/marquee-images.api";
 import { uploadMunicipalHallImageRequest } from "../../services/municipal-hall.api";
@@ -30,6 +30,10 @@ import type {
   ContentRecord,
   ContentStatus,
 } from "../../types/admin.types";
+
+function normalizeBarangayKey(name: string): string {
+  return name.trim().toLowerCase();
+}
 
 function isValidUrl(value: string): boolean {
   try {
@@ -114,6 +118,8 @@ export function ContentForm({
   const updateBetterLug = useBetterLugsStore((s) => s.updateBetterLug);
   const createBarangayMap = useBarangayMapStore((s) => s.createBarangayMap);
   const updateBarangayMap = useBarangayMapStore((s) => s.updateBarangayMap);
+  const barangayMapRecords = useBarangayMapStore((s) => s.adminRecords);
+  const statsBarangays = useStatisticsStore((s) => s.barangays);
   const createPopularService = usePopularServicesStore(
     (s) => s.createPopularService,
   );
@@ -150,8 +156,23 @@ export function ContentForm({
   const section = mockSections.find((s) => s.key === sectionKey);
   const fields = section?.fields ?? [];
   const supportsPreview = section?.supportsPreview ?? false;
-  const isBetterLugsSection = sectionKey === "partner-logos";
   const isBarangayMapSection = sectionKey === "barangay-map";
+
+  const { addedBarangays } = useMemo(() => {
+    const addedSet = new Set(
+      barangayMapRecords
+        .map((b) => normalizeBarangayKey(b.fields.name ?? ""))
+        .filter(
+          (key) =>
+            !initialData ||
+            key !== normalizeBarangayKey(initialData.fields.name ?? ""),
+        ),
+    );
+    return {
+      addedBarangays: addedSet,
+    };
+  }, [barangayMapRecords, initialData]);
+  const isBetterLugsSection = sectionKey === "partner-logos";
   const isPopularServicesSection = sectionKey === "popular-services";
   const isAtAGlanceSection = sectionKey === "at-a-glance";
   const isHistorySection = sectionKey === "history";
@@ -178,6 +199,24 @@ export function ContentForm({
   const [status, setStatus] = useState<ContentStatus>(
     initialData?.status ?? "draft",
   );
+
+  // Festival form state
+  const [festivals, setFestivals] = useState<
+    Array<{ name: string; date: string; description: string }>
+  >(() => {
+    if (
+      sectionKey === "barangay-map" &&
+      initialData &&
+      Array.isArray(initialData.fields.festivals)
+    ) {
+      return initialData.fields.festivals.map((f: any) => ({
+        name: f.name || "",
+        date: f.date || "",
+        description: f.description || "",
+      }));
+    }
+    return [];
+  });
 
   // Field values (excludes image fields — handled by ImageUploadPlaceholder internally)
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
@@ -230,6 +269,22 @@ export function ContentForm({
   useEffect(() => {
     firstFocusableRef.current?.focus();
   }, []);
+
+  // Auto-populate barangay population from statistics
+  useEffect(() => {
+    if (sectionKey === "barangay-map" && fieldValues.name) {
+      const matchedBarangay = statsBarangays.find(
+        (b) => b.name.toLowerCase() === fieldValues.name.toLowerCase(),
+      );
+      if (matchedBarangay) {
+        const formattedPopulation = matchedBarangay.population.toLocaleString();
+        setFieldValues((prev) => ({
+          ...prev,
+          population: formattedPopulation,
+        }));
+      }
+    }
+  }, [fieldValues.name, statsBarangays, sectionKey]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -385,7 +440,11 @@ export function ContentForm({
           touristAttractions?: string;
           population?: string;
           area?: string;
-          festivals?: string;
+          festivals?: Array<{
+            name: string;
+            date: string;
+            description: string;
+          }>;
           status: ContentStatus;
         } = {
           name: fieldValues.name?.trim() ?? title.trim(),
@@ -393,7 +452,7 @@ export function ContentForm({
           touristAttractions: fieldValues.touristAttractions?.trim() ?? "",
           population: fieldValues.population?.trim() ?? "",
           area: fieldValues.area?.trim() ?? "",
-          festivals: fieldValues.festivals?.trim() ?? "",
+          festivals,
           status,
         };
 
@@ -878,30 +937,48 @@ export function ContentForm({
             aria-describedby={error ? `${id}-error` : undefined}
           >
             <option value="">— Select —</option>
-            {(field.options ?? []).map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
+            {(field.options ?? []).map((opt) => {
+              const isDisabled =
+                isBarangayMapSection &&
+                field.key === "name" &&
+                addedBarangays.has(normalizeBarangayKey(opt));
+              return (
+                <option key={opt} value={opt} disabled={isDisabled}>
+                  {opt}
+                </option>
+              );
+            })}
           </select>
         ) : (
-          <input
-            id={id}
-            type={
-              field.type === "url"
-                ? "url"
-                : field.type === "date"
-                  ? "date"
-                  : field.type === "number"
-                    ? "number"
-                    : "text"
-            }
-            value={value}
-            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            className={commonInputClass}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-error` : undefined}
-          />
+          <>
+            <input
+              id={id}
+              type={
+                field.type === "url"
+                  ? "url"
+                  : field.type === "date"
+                    ? "date"
+                    : field.type === "number"
+                      ? "number"
+                      : "text"
+              }
+              value={value}
+              onChange={(e) => handleFieldChange(field.key, e.target.value)}
+              className={commonInputClass}
+              aria-invalid={!!error}
+              aria-describedby={error ? `${id}-error` : undefined}
+              disabled={
+                sectionKey === "barangay-map" && field.key === "population"
+              }
+            />
+            {sectionKey === "barangay-map" && field.key === "population" && (
+              <p className="text-xs text-gray-500 mt-1.5">
+                <LuInfo className="inline h-3.5 w-3.5 mr-1" />
+                Population is auto-populated from Philippine Statistics
+                Authority (PSA) data.
+              </p>
+            )}
+          </>
         )}
 
         {error && (
@@ -999,7 +1076,118 @@ export function ContentForm({
               className="flex flex-1 flex-col gap-4 px-6 py-5"
             >
               {/* Dynamic section fields */}
-              {fields.map((field) => renderField(field))}
+              {fields.map((field) => {
+                // Skip the old festivals text field since we're using the new custom UI
+                if (isBarangayMapSection && field.key === "festivals") {
+                  return null;
+                }
+                return renderField(field);
+              })}
+
+              {/* Festival Management UI */}
+              {isBarangayMapSection && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">
+                      Festivals
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFestivals([
+                          ...festivals,
+                          { name: "", date: "", description: "" },
+                        ])
+                      }
+                      className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      + Add Festival
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {festivals.map((festival, index) => (
+                      <div
+                        key={index}
+                        className="rounded-lg border border-gray-200 bg-gray-50 p-3 flex flex-col gap-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-600">
+                            Festival {index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFestivals(
+                                festivals.filter((_, i) => i !== index),
+                              )
+                            }
+                            className="text-xs text-red-600 hover:text-red-800 font-medium"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-600">
+                              Name
+                            </label>
+                            <input
+                              type="text"
+                              value={festival.name}
+                              onChange={(e) => {
+                                const newFestivals = [...festivals];
+                                newFestivals[index].name = e.target.value;
+                                setFestivals(newFestivals);
+                              }}
+                              className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                              placeholder="Enter festival name"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-600">
+                              Date
+                            </label>
+                            <input
+                              type="date"
+                              value={festival.date}
+                              onChange={(e) => {
+                                const newFestivals = [...festivals];
+                                newFestivals[index].date = e.target.value;
+                                setFestivals(newFestivals);
+                              }}
+                              className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs text-gray-600">
+                            Description
+                          </label>
+                          <textarea
+                            value={festival.description}
+                            onChange={(e) => {
+                              const newFestivals = [...festivals];
+                              newFestivals[index].description = e.target.value;
+                              setFestivals(newFestivals);
+                            }}
+                            rows={2}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                            placeholder="Enter festival description"
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    {festivals.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+                        No festivals added yet. Click "Add Festival" to get
+                        started.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {submitError && (
                 <p
