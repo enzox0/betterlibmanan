@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { BarangayMapModel } from "../barangay-map/barangay-map.model";
 import {
   MunicipalStatModel,
   FinanceStatModel,
@@ -241,6 +242,25 @@ export interface BarangayInput {
   population: number;
 }
 
+/** Sync barangay population to BarangayMapModel (home module) */
+async function syncBarangayPopulationToMap(
+  name: string,
+  population: number,
+): Promise<void> {
+  // Format population with commas for display
+  const formattedPopulation = population.toLocaleString();
+
+  // Find BarangayMap record by name (case-insensitive)
+  const barangayMap = await BarangayMapModel.findOne({
+    name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
+  });
+
+  if (barangayMap) {
+    barangayMap.population = formattedPopulation;
+    await barangayMap.save();
+  }
+}
+
 /** Re-rank all barangays by descending population */
 async function reRankBarangays(): Promise<void> {
   const all = await BarangayModel.find().sort({ population: -1 }).lean();
@@ -271,6 +291,10 @@ export async function createBarangay(
     name: input.name.trim(),
     population: input.population,
   });
+
+  // Sync to BarangayMap
+  await syncBarangayPopulationToMap(input.name.trim(), input.population);
+
   await reRankBarangays();
   return listBarangays();
 }
@@ -295,6 +319,10 @@ export async function updateBarangay(
   existing.name = input.name.trim();
   existing.population = input.population;
   await existing.save();
+
+  // Sync to BarangayMap
+  await syncBarangayPopulationToMap(input.name.trim(), input.population);
+
   await reRankBarangays();
   return listBarangays();
 }

@@ -1,16 +1,9 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// Load .env files from project root in order of precedence
-// Precedence: .env.<NODE_ENV>.local > .env.<NODE_ENV> > .env.local > .env
-//
-// Use process.cwd() instead of __dirname so this resolves correctly whether
-// the backend runs via tsx (source), compiled JS (build/backend/), Docker, or
-// VPS deployment. All run commands are invoked from the monorepo root.
 const projectRoot = process.cwd();
 const nodeEnv = process.env.NODE_ENV || "development";
 
-// List of env files to load, in order of precedence (highest first)
 const envFiles = [
   `.env.${nodeEnv}.local`,
   `.env.${nodeEnv}`,
@@ -27,9 +20,11 @@ envFiles.forEach((file) => {
   }
 });
 
-console.log("[Backend Config] SMTP_HOST:", process.env.SMTP_HOST);
+console.log(
+  "[Backend Config] SMTP_HOST after loading env files:",
+  process.env.SMTP_HOST,
+);
 
-// Determine port based on environment
 const getPort = (): number => {
   const env = process.env.NODE_ENV || "development";
   if (env === "production") {
@@ -40,33 +35,68 @@ const getPort = (): number => {
   } else if (env === "staging") {
     return parseInt(process.env.PORT_STAGING || process.env.PORT || "5001", 10);
   }
-  // Development
   return parseInt(process.env.PORT || "5000", 10);
 };
 
-export const config = {
-  app: {
-    name: process.env.APP_NAME || "BetterLibmanan",
-    url: process.env.APP_URL || "http://localhost:3000",
-    apiUrl: process.env.API_URL || "http://localhost:5000",
-    env: process.env.NODE_ENV || "development",
-    port: getPort(),
-    host: process.env.HOST || "0.0.0.0",
+interface AppConfig {
+  name: string;
+  url: string;
+  apiUrl: string;
+  env: string;
+  port: number;
+  host: string;
+}
+interface HealthConfig {
+  checkIntervalMinutes: number;
+}
+interface SmtpConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  from: string;
+}
+interface AdminConfig {
+  email: string;
+}
+interface Config {
+  readonly app: AppConfig;
+  readonly health: HealthConfig;
+  readonly smtp: SmtpConfig;
+  readonly admin: AdminConfig;
+}
+
+export const config: Config = {
+  get app(): AppConfig {
+    return {
+      name: process.env.APP_NAME || "BetterLibmanan",
+      url: process.env.APP_URL || "http://localhost:3000",
+      apiUrl: process.env.API_URL || "http://localhost:5000",
+      env: process.env.NODE_ENV || "development",
+      port: getPort(),
+      host: process.env.HOST || "0.0.0.0",
+    };
   },
-  health: {
-    checkIntervalMinutes: parseInt(
-      process.env.HEALTH_CHECK_INTERVAL_MINUTES || "3",
-      10,
-    ),
+  get health(): HealthConfig {
+    return {
+      checkIntervalMinutes: parseInt(
+        process.env.HEALTH_CHECK_INTERVAL_MINUTES || "3",
+        10,
+      ),
+    };
   },
-  smtp: {
-    host: process.env.SMTP_HOST || "smtp.example.com",
-    port: parseInt(process.env.SMTP_PORT || "587", 10),
-    user: process.env.SMTP_USER || "user@example.com",
-    pass: process.env.SMTP_PASS || "password",
-    from: process.env.MAIL_FROM || "noreply@betterlibmanan.gov.ph",
+  get smtp(): SmtpConfig {
+    return {
+      host: process.env.SMTP_HOST || "smtp.example.com",
+      port: parseInt(process.env.SMTP_PORT || "587", 10),
+      user: process.env.SMTP_USER || "user@example.com",
+      pass: process.env.SMTP_PASS || "password",
+      from: process.env.MAIL_FROM || "no-reply@betterlibmanan.org",
+    };
   },
-  admin: {
-    email: process.env.ADMIN_EMAIL || "admin@betterlibmanan.gov.ph",
+  get admin(): AdminConfig {
+    return {
+      email: process.env.ADMIN_EMAIL || "admin@betterlibmanan.gov.ph",
+    };
   },
 };

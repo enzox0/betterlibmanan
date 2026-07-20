@@ -9,7 +9,7 @@ import {
   uploadBarangayMapImage,
 } from "./barangay-map.service";
 import { writeAuditLog } from "@/modules/audit/audit.service";
-import type { IBarangayMap } from "./barangay-map.model";
+import type { IBarangayMap, IFestival } from "./barangay-map.model";
 
 function normalizeStringList(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -21,6 +21,20 @@ function normalizeStringList(value: unknown): string[] {
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
+  }
+
+  return [];
+}
+
+function normalizeFestivalList(value: unknown): IFestival[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item: any) => ({
+        name: String(item.name ?? "").trim(),
+        date: String(item.date ?? "").trim(),
+        description: String(item.description ?? "").trim(),
+      }))
+      .filter((festival) => festival.name);
   }
 
   return [];
@@ -68,11 +82,13 @@ function toContentRecord(record: IBarangayMap | any) {
     fields: {
       name: record.name,
       image: record.imageUrl ?? "",
+      imageUrl: record.imageUrl ?? "",
+      imageKey: record.imageKey ?? "",
       description: record.description ?? "",
       touristAttractions: (record.touristAttractions ?? []).join(", "),
       population: record.population ?? "",
       area: record.area ?? "",
-      festivals: (record.festivals ?? []).join(", "),
+      festivals: record.festivals ?? [],
     },
     createdAt: new Date(record.createdAt).toISOString(),
     updatedAt: new Date(record.updatedAt).toISOString(),
@@ -137,7 +153,7 @@ export async function createAdminBarangayMapRecord(
     const record = await createBarangayMap({
       ...parsed.data,
       touristAttractions: normalizeStringList(parsed.data.touristAttractions),
-      festivals: normalizeStringList(parsed.data.festivals),
+      festivals: normalizeFestivalList(parsed.data.festivals),
     });
 
     if (req.admin) {
@@ -178,7 +194,7 @@ export async function updateAdminBarangayMapRecord(
     const record = await updateBarangayMap(req.params.id, {
       ...parsed.data,
       touristAttractions: normalizeStringList(parsed.data.touristAttractions),
-      festivals: normalizeStringList(parsed.data.festivals),
+      festivals: normalizeFestivalList(parsed.data.festivals),
     });
 
     if (req.admin) {

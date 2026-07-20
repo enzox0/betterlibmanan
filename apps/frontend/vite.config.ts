@@ -60,6 +60,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Silence workbox's verbose dev logs in the browser console
+        disableDevLogs: true,
         // 10 MiB — large enough for all real assets; giant outliers excluded via globIgnores
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         globPatterns: ["**/*.{css,html,ico,svg,woff2,js,png}"],
@@ -176,6 +178,14 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:5000",
         changeOrigin: true,
+      },
+      // Proxy Socket.IO in dev so the WS connection also hits the backend.
+      // This is only relevant in dev since socket.ts falls back to
+      // http://localhost:5000 directly, but explicit is better.
+      "/socket.io": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        ws: true,
       },
     },
   },

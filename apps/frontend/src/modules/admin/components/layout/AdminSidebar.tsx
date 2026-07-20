@@ -161,7 +161,7 @@ export function AdminSidebar() {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/admin/login");
   };
 
   return (
@@ -224,7 +224,10 @@ export function AdminSidebar() {
         aria-label="Admin navigation"
       >
         {NAV_SECTIONS.map((section, sectionIndex) => (
-          <div key={section.title} className={sectionIndex > 0 ? "pt-4" : ""}>
+          <div
+            key={section.title ?? sectionIndex}
+            className={sectionIndex > 0 ? "pt-4" : ""}
+          >
             {section.title && (
               <div className="px-3 pb-1">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-400">

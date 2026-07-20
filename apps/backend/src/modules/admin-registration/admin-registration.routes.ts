@@ -2,7 +2,9 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { requireAuth, requireRole } from "@/modules/auth/auth.middleware";
 import {
-  handleSubmitRegistration,
+  handleInitiateRegistration,
+  handleResendOtp,
+  handleVerifyOtp,
   handleListRegistrations,
   handleGetRegistration,
   handleApproveRegistration,
@@ -11,37 +13,84 @@ import {
   handleLookupByEmail,
 } from "./admin-registration.controller";
 
-export const adminRegistrationRouter: Router = Router();
+const adminRegistrationRouter = Router();
 
 /**
- * Rate-limit registration submissions — prevent spam / brute-force.
- * 5 submissions per hour per IP.
+ * Rate-limit registration submissions - prevent spam/abuse
  */
 const submitLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 requests per IP per hour
   message: {
     success: false,
-    message: "Too many registration attempts. Please try again later.",
+    message: "Too many registration attempts, please try again later",
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// ─── Public routes ────────────────────────────────────────────────────────────
+/**
+ * Rate limiter for OTP endpoints to prevent abuse
+ */
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    success: false,
+    message: "Too many OTP requests, please try again later",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-// Lookup by email — for duplicate-check modal (public, light rate-limit via general API limits)
+// PUBLIC ROUTES
+
+// Lookup by email (for frontend duplicate check)
 adminRegistrationRouter.get("/lookup", handleLookupByEmail);
 
-// Anyone can submit an admin registration request
-adminRegistrationRouter.post("/", submitLimiter, handleSubmitRegistration);
+// Initiate registration (first step)
+adminRegistrationRouter.post(
+  "/initiate",
+  submitLimiter,
+  handleInitiateRegistration,
+);
 
-// ─── Protected routes (superadmin only) ──────────────────────────────────────
+// Resend OTP
+adminRegistrationRouter.post("/resend-otp", otpLimiter, handleResendOtp);
 
-adminRegistrationRouter.use(requireAuth, requireRole("superadmin"));
+// Verify OTP and complete registration
+adminRegistrationRouter.post("/verify", otpLimiter, handleVerifyOtp);
 
-adminRegistrationRouter.get("/", handleListRegistrations);
-adminRegistrationRouter.get("/:id", handleGetRegistration);
-adminRegistrationRouter.patch("/:id/approve", handleApproveRegistration);
-adminRegistrationRouter.patch("/:id/reject", handleRejectRegistration);
-adminRegistrationRouter.delete("/:id", handleDeleteRegistration);
+// PROTECTED ROUTES (admin authenticated only)
+
+// List all admin registrations
+adminRegistrationRouter.get("/", requireAuth, handleListRegistrations);
+
+// Get single admin registration by ID
+adminRegistrationRouter.get("/:id", requireAuth, handleGetRegistration);
+
+// Approve an admin registration (super admin only)
+adminRegistrationRouter.post(
+  "/:id/approve",
+  requireAuth,
+  requireRole("superadmin"),
+  handleApproveRegistration,
+);
+
+// Reject an admin registration (super admin only)
+adminRegistrationRouter.post(
+  "/:id/reject",
+  requireAuth,
+  requireRole("superadmin"),
+  handleRejectRegistration,
+);
+
+// Delete an admin registration (super admin only)
+adminRegistrationRouter.delete(
+  "/:id",
+  requireAuth,
+  requireRole("superadmin"),
+  handleDeleteRegistration,
+);
+
+export { adminRegistrationRouter };

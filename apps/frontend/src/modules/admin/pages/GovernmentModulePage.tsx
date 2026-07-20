@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactDOM from "react-dom";
 import {
@@ -19,11 +19,27 @@ import {
   LuLoader,
   LuTriangleAlert,
   LuRefreshCw,
+  LuLayoutPanelLeft,
+  LuUsers,
+  LuGlobe,
+  LuCamera,
+  LuCalendar,
+  LuImageOff,
+  LuUpload,
+  LuEye,
+  LuEyeOff,
 } from "react-icons/lu";
+import SafeImage from "@/modules/landing/components/ui/SafeImage";
 import { useGovernmentStore } from "../store/governmentStore";
+import { useBarangayMapStore } from "../store/barangayMapStore";
+import { mockSections } from "../data/mockSections";
 import { useAdminStore } from "../store/adminStore";
 import { useToast } from "@/context/ToastContext";
-import type { ContentRecord } from "../types/admin.types";
+import {
+  uploadBarangayMapImageRequest,
+  type BarangayMapPayload,
+} from "../services/barangay-map.api";
+import type { ContentRecord, ContentStatus } from "../types/admin.types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1659,6 +1675,645 @@ function OfficesPanel() {
   );
 }
 
+// ─── Barangay details helpers ─────────────────────────────────────────────────
+
+function normalizeBrgyKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function parseBrgyList(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function isValidImageFile(file: File): boolean {
+  return (
+    ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(
+      file.type,
+    ) && file.size <= 5 * 1024 * 1024
+  );
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Failed to read image"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ─── Barangay Details Panel ───────────────────────────────────────────────────
+
+function BarangayDetailsPanel({
+  barangay,
+  onClose,
+  returnFocusRef,
+}: {
+  barangay: ContentRecord;
+  onClose: () => void;
+  returnFocusRef?: React.RefObject<HTMLButtonElement>;
+}) {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const adminRecords = useBarangayMapStore((s) => s.adminRecords);
+  const fetchAdminRecords = useBarangayMapStore((s) => s.fetchAdminRecords);
+  const createBarangayMap = useBarangayMapStore((s) => s.createBarangayMap);
+  const updateBarangayMap = useBarangayMapStore((s) => s.updateBarangayMap);
+
+  const brgyName = f(barangay, "name");
+
+  // Find existing barangay-map record matching this barangay by name
+  const existingRecord = adminRecords.find(
+    (r) =>
+      normalizeBrgyKey(r.fields.name ?? r.title) === normalizeBrgyKey(brgyName),
+  );
+
+  // Form state
+  const [description, setDescription] = useState(
+    existingRecord?.fields.description ?? "",
+  );
+  const [population, setPopulation] = useState(
+    existingRecord?.fields.population ?? "",
+  );
+  const [area, setArea] = useState(existingRecord?.fields.area ?? "");
+  const [touristAttractions, setTouristAttractions] = useState(
+    existingRecord?.fields.touristAttractions ?? "",
+  );
+  const [festivals, setFestivals] = useState(
+    existingRecord?.fields.festivals ?? "",
+  );
+  const [status, setStatus] = useState<ContentStatus>(
+    existingRecord?.status ?? "draft",
+  );
+
+  // Image state
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
+    existingRecord?.fields.imageUrl || null,
+  );
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imageChangeState, setImageChangeState] = useState<
+    "unchanged" | "selected" | "removed"
+  >(existingRecord?.fields.imageUrl ? "unchanged" : "removed");
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // Ensure admin records are loaded
+  useEffect(() => {
+    if (!accessToken || hasFetched) return;
+    setHasFetched(true);
+    fetchAdminRecords(accessToken).catch(() => {});
+  }, [accessToken, fetchAdminRecords, hasFetched]);
+
+  // Sync form when existingRecord resolves after fetch
+  useEffect(() => {
+    if (!existingRecord) return;
+    setDescription(existingRecord.fields.description ?? "");
+    setPopulation(existingRecord.fields.population ?? "");
+    setArea(existingRecord.fields.area ?? "");
+    setTouristAttractions(existingRecord.fields.touristAttractions ?? "");
+    setFestivals(existingRecord.fields.festivals ?? "");
+    setStatus(existingRecord.status ?? "draft");
+    const img = existingRecord.fields.imageUrl || null;
+    setImagePreviewUrl(img);
+    setImageChangeState(img ? "unchanged" : "removed");
+  }, [existingRecord?.id]);
+
+  const handleClose = useCallback(() => {
+    onClose();
+    setTimeout(() => returnFocusRef?.current?.focus(), 0);
+  }, [onClose, returnFocusRef]);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") handleClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleClose]);
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!isValidImageFile(file)) {
+      setImageError("File must be PNG, JPG, GIF, or WEBP and ≤ 5 MB.");
+      return;
+    }
+    const url = await readFileAsDataUrl(file);
+    setSelectedImageFile(file);
+    setImagePreviewUrl(url);
+    setImageChangeState("selected");
+    setImageError(null);
+    e.target.value = "";
+  }
+
+  function handleRemoveImage() {
+    setSelectedImageFile(null);
+    setImagePreviewUrl(null);
+    setImageChangeState("removed");
+    setImageError(null);
+  }
+
+  async function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!accessToken) {
+      toast("You must be signed in.", "error");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload: BarangayMapPayload = {
+        name: brgyName,
+        description: description.trim(),
+        population: population.trim(),
+        area: area.trim(),
+        touristAttractions: touristAttractions.trim(),
+        festivals: festivals.trim(),
+        status,
+      };
+
+      if (imageChangeState === "selected" && selectedImageFile) {
+        const uploaded = await uploadBarangayMapImageRequest(
+          {
+            filename: selectedImageFile.name,
+            mimeType: selectedImageFile.type,
+            data: await readFileAsDataUrl(selectedImageFile),
+          },
+          accessToken,
+        );
+        payload.imageUrl = uploaded.url;
+        payload.imageKey = uploaded.key;
+      } else if (imageChangeState === "removed") {
+        payload.imageUrl = "";
+        payload.imageKey = "";
+      }
+
+      if (existingRecord) {
+        await updateBarangayMap(existingRecord.id, payload, accessToken);
+        toast("Barangay panel details saved.", "success");
+      } else {
+        await createBarangayMap(payload, accessToken);
+        toast("Barangay panel details created.", "success");
+      }
+      handleClose();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save details.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  const attractionsList = parseBrgyList(touristAttractions);
+  const festivalsList = parseBrgyList(festivals);
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="bd-backdrop"
+        variants={backdropVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        transition={{ duration: 0.35, ease: EASE }}
+        className="fixed inset-0 z-40 bg-black/40 !mt-0"
+        onClick={handleClose}
+        aria-hidden="true"
+      />
+      <motion.aside
+        key="bd-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${brgyName} — Explore Panel Details`}
+        variants={slideVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        transition={{ duration: 0.4, ease: EASE }}
+        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-[520px] flex-col bg-white shadow-2xl !mt-0"
+      >
+        {/* Accent bar */}
+        <div
+          className="h-1 bg-gradient-to-r from-emerald-500 to-emerald-700 shrink-0"
+          aria-hidden="true"
+        />
+
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/80 px-6 py-4 shrink-0">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-gray-900">{brgyName}</h2>
+              <span
+                className={[
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                  status === "published"
+                    ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                    : "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+                ].join(" ")}
+              >
+                {status === "published" ? (
+                  <LuEye className="h-2.5 w-2.5" />
+                ) : (
+                  <LuEyeOff className="h-2.5 w-2.5" />
+                )}
+                {status === "published" ? "Published" : "Draft"}
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-gray-400">
+              Explore panel — visible on the public map when published
+            </p>
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={handleClose}
+            aria-label="Close panel"
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-colors"
+          >
+            <LuX className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto">
+          <form
+            id="brgy-details-form"
+            onSubmit={handleSubmit}
+            noValidate
+            className="px-6 py-5 space-y-5"
+          >
+            {/* Image upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Hero Image
+              </label>
+              <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                {imagePreviewUrl ? (
+                  <div className="relative h-44">
+                    <SafeImage
+                      src={imagePreviewUrl}
+                      alt="Barangay hero"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70 transition-colors"
+                      aria-label="Remove image"
+                    >
+                      <LuX className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow hover:bg-white transition-colors"
+                    >
+                      <LuUpload className="h-3 w-3" /> Change
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex w-full flex-col items-center justify-center gap-2 py-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <LuImageOff className="h-8 w-8" />
+                    <span className="text-xs font-medium">
+                      Click to upload an image
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      PNG, JPG, WEBP · max 5 MB
+                    </span>
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                className="hidden"
+                onChange={handleImageChange}
+              />
+              {imageError && (
+                <p className="mt-1 text-xs text-red-600">{imageError}</p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <label
+                htmlFor="bd-description"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
+                Description
+              </label>
+              <textarea
+                id="bd-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className={inputNormal}
+                placeholder="Brief description of the barangay…"
+              />
+            </div>
+
+            {/* Population + Area */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="bd-population"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <LuUsers className="h-3.5 w-3.5 text-gray-400" />
+                    Population
+                  </span>
+                </label>
+                <input
+                  id="bd-population"
+                  type="text"
+                  value={population}
+                  onChange={(e) => setPopulation(e.target.value)}
+                  className={inputNormal}
+                  placeholder="e.g. 1,250"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="bd-area"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <LuGlobe className="h-3.5 w-3.5 text-gray-400" />
+                    Area
+                  </span>
+                </label>
+                <input
+                  id="bd-area"
+                  type="text"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  className={inputNormal}
+                  placeholder="e.g. 4.2 km²"
+                />
+              </div>
+            </div>
+
+            {/* Tourist Attractions */}
+            <div>
+              <label
+                htmlFor="bd-attractions"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
+                <span className="flex items-center gap-1.5">
+                  <LuCamera className="h-3.5 w-3.5 text-gray-400" />
+                  Tourist Attractions{" "}
+                  <span className="text-xs font-normal text-gray-400">
+                    (comma-separated)
+                  </span>
+                </span>
+              </label>
+              <textarea
+                id="bd-attractions"
+                value={touristAttractions}
+                onChange={(e) => setTouristAttractions(e.target.value)}
+                rows={2}
+                className={inputNormal}
+                placeholder="e.g. River Park, Old Chapel"
+              />
+              {attractionsList.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {attractionsList.map((a, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600"
+                    >
+                      {a}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Festivals */}
+            <div>
+              <label
+                htmlFor="bd-festivals"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
+                <span className="flex items-center gap-1.5">
+                  <LuCalendar className="h-3.5 w-3.5 text-gray-400" />
+                  Festivals{" "}
+                  <span className="text-xs font-normal text-gray-400">
+                    (comma-separated)
+                  </span>
+                </span>
+              </label>
+              <input
+                id="bd-festivals"
+                type="text"
+                value={festivals}
+                onChange={(e) => setFestivals(e.target.value)}
+                className={inputNormal}
+                placeholder="e.g. Fiesta de San Isidro, Harvest Festival"
+              />
+              {festivalsList.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {festivalsList.map((f, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700"
+                    >
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Visibility */}
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-gray-700 mb-3">
+                Visibility
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStatus("published")}
+                  className={[
+                    "flex-1 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-1",
+                    status === "published"
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 focus:ring-emerald-400"
+                      : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 focus:ring-gray-400",
+                  ].join(" ")}
+                >
+                  <LuEye className="h-4 w-4" /> Published
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatus("draft")}
+                  className={[
+                    "flex-1 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-1",
+                    status === "draft"
+                      ? "border-amber-300 bg-amber-50 text-amber-700 focus:ring-amber-400"
+                      : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 focus:ring-gray-400",
+                  ].join(" ")}
+                >
+                  <LuEyeOff className="h-4 w-4" /> Draft
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-gray-400">
+                Only published details appear in the public Explore Barangay
+                panel on the map.
+              </p>
+            </div>
+          </form>
+
+          {/* Live preview */}
+          <div className="mx-6 mb-5 rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-100">
+              <LuLayoutPanelLeft className="h-3.5 w-3.5 text-gray-400" />
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Panel Preview
+              </span>
+            </div>
+            <div className="bg-white">
+              {/* Hero image preview */}
+              <div className="relative h-36 bg-gray-100">
+                {imagePreviewUrl ? (
+                  <>
+                    <SafeImage
+                      src={imagePreviewUrl}
+                      alt={brgyName}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <LuImageOff className="h-8 w-8 text-gray-300" />
+                  </div>
+                )}
+                <p className="absolute bottom-3 left-4 text-sm font-bold text-white">
+                  {brgyName}
+                </p>
+              </div>
+              <div className="p-4 space-y-3">
+                {description && (
+                  <p className="text-xs text-gray-500 line-clamp-2">
+                    {description}
+                  </p>
+                )}
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-100 p-2.5">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gray-100">
+                      <LuUsers className="h-3 w-3 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 leading-none">
+                        {population || "N/A"}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        Population
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-100 p-2.5">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gray-100">
+                      <LuGlobe className="h-3 w-3 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 leading-none">
+                        {area || "N/A"}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Area</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Attractions preview */}
+                {attractionsList.length > 0 && (
+                  <div className="rounded-lg border border-gray-100 p-3">
+                    <p className="text-[11px] font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <LuCamera className="h-3 w-3 text-gray-400" />
+                      Tourist Attractions
+                    </p>
+                    <ul className="space-y-1">
+                      {attractionsList.slice(0, 3).map((a, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center gap-1.5 text-[11px] text-gray-600"
+                        >
+                          <span className="h-1 w-1 rounded-full bg-gray-400 shrink-0" />
+                          {a}
+                        </li>
+                      ))}
+                      {attractionsList.length > 3 && (
+                        <li className="text-[11px] text-gray-400">
+                          +{attractionsList.length - 3} more
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {/* Festivals preview */}
+                {festivalsList.length > 0 && (
+                  <div className="rounded-lg border border-gray-100 p-3">
+                    <p className="text-[11px] font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <LuCalendar className="h-3 w-3 text-gray-400" />
+                      Festivals
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {festivalsList.map((fe, i) => (
+                        <span
+                          key={i}
+                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700"
+                        >
+                          {fe}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/80 px-6 py-4 shrink-0">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="brgy-details-form"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all disabled:opacity-60"
+          >
+            {isSubmitting && <LuLoader className="h-3.5 w-3.5 animate-spin" />}
+            {existingRecord ? "Save Details" : "Create Details"}
+          </button>
+        </div>
+      </motion.aside>
+    </AnimatePresence>
+  );
+}
+
 // ─── Barangays Panel ──────────────────────────────────────────────────────────
 
 function BarangaysPanel() {
@@ -1668,10 +2323,24 @@ function BarangaysPanel() {
   const isLoading = useGovernmentStore((s) => s.isBarangaysLoading);
   const { fetchBarangays, createBarangay, updateBarangay, deleteBarangay } =
     useGovernmentStore();
+  const barangayMapRecords = useBarangayMapStore((s) => s.adminRecords);
+  const { fetchAdminRecords } = useBarangayMapStore();
+
+  // Helper to find matching barangay map record by name
+  function getBrgyImage(brgyName: string) {
+    return barangayMapRecords.find((r) => r.fields.name === brgyName);
+  }
+
+  function normalizeBarangayKey(name: string): string {
+    return name.trim().toLowerCase();
+  }
 
   const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
   const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
+  const [detailsTarget, setDetailsTarget] = useState<ContentRecord | null>(
+    null,
+  );
   const [search, setSearch] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1679,6 +2348,15 @@ function BarangaysPanel() {
   const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
     {},
   );
+  const detailsBtnRefs = useRef<
+    Record<string, React.RefObject<HTMLButtonElement>>
+  >({});
+
+  function getDetailsBtnRef(id: string) {
+    if (!detailsBtnRefs.current[id])
+      detailsBtnRefs.current[id] = { current: null };
+    return detailsBtnRefs.current[id];
+  }
 
   const [brgyName, setBrgyName] = useState("");
   const [captain, setCaptain] = useState("");
@@ -1692,7 +2370,33 @@ function BarangaysPanel() {
 
   useEffect(() => {
     fetchBarangays();
-  }, []);
+    if (accessToken) fetchAdminRecords(accessToken);
+  }, [accessToken, fetchAdminRecords]);
+
+  const { allBarangays, addedBarangays } = useMemo(() => {
+    // Get full list of 75 barangays from mockSections
+    const barangayMapSection = mockSections.find(
+      (s) => s.key === "barangay-map",
+    );
+    const allPossibleBrgyNames = (barangayMapSection?.fields.find(
+      (f) => f.key === "name",
+    )?.options || []) as string[];
+
+    // Track which are already added (exclude current if in edit mode)
+    const addedSet = new Set(
+      barangays
+        .map((b) => normalizeBarangayKey(f(b, "name")))
+        .filter(
+          (key) =>
+            !editTarget || key !== normalizeBarangayKey(f(editTarget, "name")),
+        ),
+    );
+
+    return {
+      allBarangays: allPossibleBrgyNames,
+      addedBarangays: addedSet,
+    };
+  }, [barangays, editTarget]);
 
   const filtered = barangays.filter(
     (b) =>
@@ -1897,9 +2601,25 @@ function BarangaysPanel() {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50">
-                          <LuMapPin className="h-3.5 w-3.5 text-emerald-600" />
-                        </div>
+                        {(() => {
+                          const brgyName = f(b, "name");
+                          const brgyRecord = getBrgyImage(brgyName);
+                          const imageUrl = brgyRecord?.fields.imageUrl;
+
+                          return imageUrl ? (
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg overflow-hidden border border-emerald-100">
+                              <SafeImage
+                                src={imageUrl}
+                                alt={brgyName}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50">
+                              <LuMapPin className="h-3.5 w-3.5 text-emerald-600" />
+                            </div>
+                          );
+                        })()}
                         <span className="font-semibold text-gray-900">
                           {f(b, "name")}
                         </span>
@@ -1913,6 +2633,19 @@ function BarangaysPanel() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDetailsTarget(b)}
+                          ref={
+                            getDetailsBtnRef(
+                              b.id,
+                            ) as React.RefObject<HTMLButtonElement>
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all"
+                          aria-label={`Edit explore panel for ${f(b, "name")}`}
+                        >
+                          <LuLayoutPanelLeft className="h-3 w-3" /> Details
+                        </button>
                         <button
                           ref={
                             getEditRef(
@@ -1981,17 +2714,27 @@ function BarangaysPanel() {
                 >
                   Barangay Name <span className="text-red-500">*</span>
                 </label>
-                <input
+                <select
                   id="brgy-name"
-                  type="text"
                   value={brgyName}
                   onChange={(e) => {
                     setBrgyName(e.target.value);
                     setErrors((p) => ({ ...p, name: "" }));
                   }}
                   className={errors.name ? inputError : inputNormal}
-                  placeholder="e.g. Barangay San Isidro"
-                />
+                >
+                  <option value="">— Select —</option>
+                  {allBarangays.map((brgy) => {
+                    const isDisabled = addedBarangays.has(
+                      normalizeBarangayKey(brgy),
+                    );
+                    return (
+                      <option key={brgy} value={brgy} disabled={isDisabled}>
+                        {brgy}
+                      </option>
+                    );
+                  })}
+                </select>
                 <FieldError id="brgy-name-err" msg={errors.name} />
               </div>
               <div>
@@ -2048,6 +2791,21 @@ function BarangaysPanel() {
           />
         )}
       </AnimatePresence>
+
+      {/* Barangay Explore Panel Details — portaled to body */}
+      {detailsTarget &&
+        ReactDOM.createPortal(
+          <BarangayDetailsPanel
+            barangay={detailsTarget}
+            onClose={() => setDetailsTarget(null)}
+            returnFocusRef={
+              getDetailsBtnRef(
+                detailsTarget.id,
+              ) as React.RefObject<HTMLButtonElement>
+            }
+          />,
+          document.body,
+        )}
     </SectionCard>
   );
 }

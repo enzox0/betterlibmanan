@@ -16,11 +16,14 @@ import {
   LuGlobe,
   LuCamera,
   LuCalendar,
+  LuPhone,
+  LuUser,
 } from "react-icons/lu";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 import SafeImage from "../ui/SafeImage";
 import { useBarangayMapStore } from "@/modules/admin/store/barangayMapStore";
 import { useMunicipalHallStore } from "@/modules/admin/store/municipalHallStore";
+import { useGovernmentStore } from "@/modules/admin/store/governmentStore";
 
 // ─── Google Maps loader (singleton promise, safe for StrictMode) ──────────────
 type GMInfoWindow = {
@@ -177,7 +180,8 @@ function normalizeBarangayKey(name: string): string {
   return name.trim().toLowerCase();
 }
 
-function parseList(value: string | undefined): string[] {
+function parseList(value: string | string[] | undefined): string[] {
+  if (Array.isArray(value)) return value.map((s) => s.trim()).filter(Boolean);
   return (value ?? "")
     .split(",")
     .map((s) => s.trim())
@@ -198,7 +202,7 @@ const DEFAULT_BARANGAY = {
   touristAttractions: ["Details coming soon"],
   population: "N/A",
   area: "N/A",
-  festivals: ["To be announced"],
+  festivals: [{ name: "To be announced" }] as Festival[],
 };
 
 // ─── Suppress Google Maps InfoWindow chrome (close button + scrollbar) ────────
@@ -220,6 +224,12 @@ function injectInfoWindowStyles() {
 }
 
 // ─── Barangay panel data type ─────────────────────────────────────────────────
+type Festival = {
+  name: string;
+  date?: string;
+  description?: string;
+};
+
 type BarangayPanelData = {
   name: string;
   image: string;
@@ -227,7 +237,9 @@ type BarangayPanelData = {
   touristAttractions: string[];
   population: string;
   area: string;
-  festivals: string[];
+  festivals: Festival[];
+  captain: string;
+  phone: string;
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -264,6 +276,10 @@ export function WeatherMapSection({
   const publicRecords = useBarangayMapStore((s) => s.publicRecords);
   const fetchPublicRecords = useBarangayMapStore((s) => s.fetchPublicRecords);
 
+  // Government barangay directory (captain + phone)
+  const govBarangays = useGovernmentStore((s) => s.barangays);
+  const fetchGovBarangays = useGovernmentStore((s) => s.fetchBarangays);
+
   // Municipal Hall record from store
   const municipalHallRecords = useMunicipalHallStore((s) => s.publicRecords);
   const fetchMunicipalHall = useMunicipalHallStore((s) => s.fetchPublicRecords);
@@ -271,6 +287,10 @@ export function WeatherMapSection({
   useEffect(() => {
     fetchPublicRecords().catch(() => {});
   }, [fetchPublicRecords]);
+
+  useEffect(() => {
+    fetchGovBarangays().catch(() => {});
+  }, [fetchGovBarangays]);
 
   useEffect(() => {
     fetchMunicipalHall().catch(() => {});
@@ -282,12 +302,26 @@ export function WeatherMapSection({
   // Build a lookup map: normalized name → panel data
   const barangayLookup = useRef<Map<string, BarangayPanelData>>(new Map());
   useEffect(() => {
+    // Build gov directory lookup: normalized name → { captain, phone }
+    const govLookup = new Map<string, { captain: string; phone: string }>();
+    for (const r of govBarangays) {
+      const key = normalizeBarangayKey((r.fields as any).name ?? r.title ?? "");
+      govLookup.set(key, {
+        captain: (r.fields as any).captain ?? "",
+        phone: (r.fields as any).phone ?? "",
+      });
+    }
+
     const map = new Map<string, BarangayPanelData>();
     for (const record of publicRecords) {
       const name = record.fields.name ?? record.title;
+      const key = normalizeBarangayKey(name);
       const touristAttractions = parseList(record.fields.touristAttractions);
-      const festivals = parseList(record.fields.festivals);
-      map.set(normalizeBarangayKey(name), {
+      const festivals: Festival[] = parseList(record.fields.festivals).map(
+        (name) => ({ name }),
+      );
+      const gov = govLookup.get(key);
+      map.set(key, {
         name,
         image: record.fields.image || DEFAULT_BARANGAY.image,
         description: record.fields.description || DEFAULT_BARANGAY.description,
@@ -297,16 +331,35 @@ export function WeatherMapSection({
         population: record.fields.population || DEFAULT_BARANGAY.population,
         area: record.fields.area || DEFAULT_BARANGAY.area,
         festivals: festivals.length ? festivals : DEFAULT_BARANGAY.festivals,
+        captain: gov?.captain ?? "",
+        phone: gov?.phone ?? "",
       });
     }
+
+    // Also add entries for barangays that only exist in gov store (no map record yet)
+    for (const r of govBarangays) {
+      const name = (r.fields as any).name ?? r.title ?? "";
+      const key = normalizeBarangayKey(name);
+      if (!map.has(key)) {
+        map.set(key, {
+          ...DEFAULT_BARANGAY,
+          name,
+          captain: (r.fields as any).captain ?? "",
+          phone: (r.fields as any).phone ?? "",
+        });
+      }
+    }
+
     barangayLookup.current = map;
-  }, [publicRecords]);
+  }, [publicRecords, govBarangays]);
 
   function getBarangayPanelData(featureName: string): BarangayPanelData {
     return (
       barangayLookup.current.get(normalizeBarangayKey(featureName)) ?? {
         ...DEFAULT_BARANGAY,
         name: featureName,
+        captain: "",
+        phone: "",
       }
     );
   }
@@ -351,14 +404,8 @@ export function WeatherMapSection({
   // ── Initialise map once library is ready ──────────────────────────────────
   useEffect(() => {
     if (!mapsLib || !mapRef.current || mapInstanceRef.current) {
-      console.log("Skipping map init:", {
-        mapsLib: !!mapsLib,
-        mapRefCurrent: !!mapRef.current,
-        mapInstanceRefCurrent: !!mapInstanceRef.current,
-      });
       return;
     }
-    console.log("Initializing map!");
     injectInfoWindowStyles();
 
     const map = new mapsLib.Map(mapRef.current, {
@@ -375,7 +422,6 @@ export function WeatherMapSection({
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (mapInstanceRef.current && mapsLib) {
-            console.log("Resizing map and recentering");
             mapsLib.event.trigger(mapInstanceRef.current, "resize");
             mapInstanceRef.current.setCenter({
               lat: MUNICIPAL_LAT,
@@ -974,11 +1020,46 @@ export function WeatherMapSection({
                             key={i}
                             className="px-3 py-1.5 bg-neutral-100 text-neutral-800 rounded-full text-xs font-medium"
                           >
-                            {festival}
+                            {festival.name}
                           </span>
                         ))}
                       </div>
                     </div>
+
+                    {/* Barangay Captain & Phone */}
+                    {(selectedBarangay.captain || selectedBarangay.phone) && (
+                      <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+                        <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
+                            <LuUser
+                              className="w-3.5 h-3.5"
+                              aria-hidden="true"
+                            />
+                          </div>
+                          Barangay Contact
+                        </h3>
+                        <div className="space-y-2">
+                          {selectedBarangay.captain && (
+                            <div className="flex items-center gap-2 text-sm text-neutral-700">
+                              <LuUser
+                                className="w-3.5 h-3.5 text-neutral-400 shrink-0"
+                                aria-hidden="true"
+                              />
+                              <span>{selectedBarangay.captain}</span>
+                            </div>
+                          )}
+                          {selectedBarangay.phone && (
+                            <div className="flex items-center gap-2 text-sm text-neutral-700">
+                              <LuPhone
+                                className="w-3.5 h-3.5 text-neutral-400 shrink-0"
+                                aria-hidden="true"
+                              />
+                              <span>{selectedBarangay.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </div>

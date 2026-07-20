@@ -19,7 +19,7 @@ export interface BarangayMapPayload {
   touristAttractions?: string;
   population?: string;
   area?: string;
-  festivals?: string;
+  festivals?: Array<{ name: string; date: string; description: string }>;
   status: ContentStatus;
 }
 
