@@ -10,6 +10,7 @@ import {
   FaChevronRight,
   FaInfoCircle,
   FaPlusCircle,
+  FaExternalLinkAlt,
 } from "react-icons/fa";
 import { useServicesStore } from "@/modules/admin/store/servicesStore";
 import { resolveIcon } from "../utils/iconMap";
@@ -117,6 +118,24 @@ function ServiceCard({
               </ol>
             </div>
           )}
+        </div>
+      )}
+
+      {/* External link CTA */}
+      {service.link && (
+        <div className="border-t border-neutral-100 px-6 py-4 bg-white flex items-center justify-between gap-4 flex-wrap">
+          <p className="text-xs text-neutral-500">
+            Apply or get more information online
+          </p>
+          <a
+            href={service.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors"
+          >
+            <FaExternalLinkAlt size={10} />
+            Visit Link
+          </a>
         </div>
       )}
     </motion.div>
