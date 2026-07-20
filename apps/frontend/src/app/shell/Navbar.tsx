@@ -18,6 +18,7 @@ import {
 } from "react-icons/fa";
 import { useUserStore } from "@/modules/admin/store/userStore";
 import { getProxiedUrl } from "@/modules/landing/components/ui/SafeImage";
+import { useServicesStore } from "@/modules/admin/store/servicesStore";
 
 interface NavbarProps {
   authModalOpen: boolean;
@@ -44,6 +45,18 @@ export function Navbar({
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
   const currentUser = useUserStore((s) => s.user);
   const logout = useUserStore((s) => s.logout);
+
+  const publicCategories = useServicesStore((s) => s.publicCategories);
+  const fetchPublicCategories = useServicesStore(
+    (s) => s.fetchPublicCategories,
+  );
+
+  // Fetch service categories once on mount
+  useEffect(() => {
+    if (publicCategories.length === 0) {
+      fetchPublicCategories();
+    }
+  }, []);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -96,6 +109,11 @@ export function Navbar({
     items: NavItem[];
   }
 
+  const serviceDropdownItems = publicCategories.map((cat) => ({
+    name: cat.title,
+    path: `/services/${cat.slug}`,
+  }));
+
   const navSections: NavSection[] = [
     {
       title: "Main",
@@ -117,18 +135,7 @@ export function Navbar({
           path: "/services",
           icon: <FaConciergeBell size={16} />,
           hasDropdown: true,
-          dropdownItems: [
-            { name: "Certificates", path: "/services/certificates" },
-            { name: "Business", path: "/services/business" },
-            { name: "Tax Payments", path: "/services/tax-payments" },
-            { name: "Social Services", path: "/services/social-services" },
-            { name: "Health", path: "/services/health" },
-            { name: "Agriculture", path: "/services/agriculture" },
-            { name: "Infrastructure", path: "/services/infrastructure" },
-            { name: "Education", path: "/services/education" },
-            { name: "Public Safety", path: "/services/public-safety" },
-            { name: "Environment", path: "/services/environment" },
-          ],
+          dropdownItems: serviceDropdownItems,
         },
         {
           name: "Legislative",
