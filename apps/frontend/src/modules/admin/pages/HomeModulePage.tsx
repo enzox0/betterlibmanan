@@ -878,8 +878,8 @@ function BarangayMapLayout({
           className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3"
         >
           {record.fields.image ? (
-            <img
-              src={record.fields.image}
+            <SafeImage
+              src={record.fields.image as string}
               alt={record.fields.name ?? record.title}
               className="h-32 w-full rounded-lg border border-gray-100 bg-white object-cover"
             />

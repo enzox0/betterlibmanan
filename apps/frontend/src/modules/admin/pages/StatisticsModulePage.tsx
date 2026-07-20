@@ -1638,7 +1638,7 @@ function PopulationPanel({
     <SectionCard
       title="Population History"
       description="Data points for the area sparkline chart"
-      hint="Each row represents a census year. The public page renders these as an area chart."
+      hint="Data from Philippine Statistics Authority (PSA) census. Each row represents a census year. The public page renders these as an area chart."
       action={
         <button
           ref={addBtnRef}
@@ -1944,7 +1944,7 @@ function BarangaysPanel({
     <SectionCard
       title="Barangay Population"
       description="All 75 barangays — ranks are auto-calculated by population"
-      hint="Ranks are automatically recalculated whenever a barangay's population is updated or a barangay is added/removed."
+      hint="Data from Philippine Statistics Authority (PSA). Ranks are automatically recalculated whenever a barangay's population is updated or a barangay is added/removed."
       action={
         <div className="flex items-center gap-2">
           <div className="relative hidden sm:block">
