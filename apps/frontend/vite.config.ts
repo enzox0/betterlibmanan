@@ -179,9 +179,9 @@ export default defineConfig({
         target: "http://localhost:5000",
         changeOrigin: true,
       },
-      // Proxy Socket.IO in dev so the WS connection also hits the backend.
-      // This is only relevant in dev since socket.ts falls back to
-      // http://localhost:5000 directly, but explicit is better.
+      // Proxy Socket.IO in dev — socket.ts falls back to window.location.origin
+      // (i.e. localhost:3000 in dev), so this proxy is what actually routes
+      // the WebSocket connection to the backend on :5000.
       "/socket.io": {
         target: "http://localhost:5000",
         changeOrigin: true,
