@@ -391,34 +391,44 @@ if (frontendAvailable) {
       return res.status(404).type("text/plain").send("Not found");
     }
 
-    // Serve index.html for all SPA routes
+    // Serve index.html with a runtime window.__ENV__ injection so the frontend
+    // can read live environment values without a rebuild.
+    // Only VITE_* variables are exposed — no secrets cross the wire.
     const indexPath = path.join(frontendDistPath, "index.html");
 
     logger.debug(`[SPA] Serving: ${req.path}`);
 
-    res.sendFile(
-      indexPath,
-      {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      },
-      (err) => {
-        if (err) {
-          logger.error(`[SPA] Failed to serve index.html:`, err);
-          // Send plain text error, NOT JSON
-          if (!res.headersSent) {
-            res
-              .status(500)
-              .type("text/plain")
-              .send("Failed to load application");
-          }
-        }
-      },
-    );
+    let html: string;
+    try {
+      html = fs.readFileSync(indexPath, "utf-8");
+    } catch (err) {
+      logger.error(`[SPA] Failed to read index.html:`, err);
+      return res
+        .status(500)
+        .type("text/plain")
+        .send("Failed to load application");
+    }
+
+    // Build the public runtime config — only VITE_* keys (safe for the browser).
+    const runtimeEnv: Record<string, string> = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (key.startsWith("VITE_") && value !== undefined) {
+        runtimeEnv[key] = value;
+      }
+    }
+
+    // Inject before </head> so it is available before any JS module executes.
+    const envScript = `<script>window.__ENV__ = ${JSON.stringify(runtimeEnv)};</script>`;
+    html = html.replace("</head>", `${envScript}\n</head>`);
+
+    res
+      .set({
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      })
+      .send(html);
   });
 } else {
   // If frontend is not available, just send 404 for non-API routes

@@ -18,6 +18,7 @@
  */
 
 import { io, Socket } from "socket.io-client";
+import { runtimeEnv } from "@/lib/env";
 
 // Match server-side event contracts
 interface ServerToClientEvents {
@@ -55,19 +56,20 @@ export function getSocket(token?: string): AppSocket {
   // Derive the server origin for the Socket.IO connection.
   //
   // Priority:
-  //   1. VITE_SOCKET_URL  — explicit override (e.g. wss://api.yourdomain.com)
-  //   2. VITE_API_URL     — shared API base URL already set for HTTP calls
-  //   3. Safe fallback    — window.location.origin (works in both dev and prod
-  //                         as long as Vite's /socket.io proxy is active in dev,
-  //                         or the frontend/backend share the same origin in prod).
+  //   1. VITE_SOCKET_URL  — runtime env injected by backend into window.__ENV__
+  //                         (or build-time fallback in local dev via import.meta.env)
+  //   2. VITE_API_URL     — shared API base URL, same runtime/build-time lookup
+  //   3. window.location.origin — safe same-origin fallback; works when
+  //                         frontend and backend share the same domain, and
+  //                         in dev when Vite's /socket.io proxy is active.
   //
-  // IMPORTANT: Never use import.meta.env.DEV as a build-time branch here.
-  // If NODE_ENV is not explicitly set to "production" during `vite build`,
-  // DEV evaluates to true and "http://localhost:5000" gets permanently baked
-  // into the production bundle — causing ERR_CONNECTION_REFUSED in browsers.
+  // NOTE: Never use import.meta.env directly here. Values are frozen at build
+  // time — changing .env after a build would have no effect. runtimeEnv()
+  // reads from window.__ENV__ (injected by the backend at request time) first,
+  // so updating .env and restarting PM2 is enough without a frontend rebuild.
   const serverUrl =
-    import.meta.env.VITE_SOCKET_URL ||
-    import.meta.env.VITE_API_URL ||
+    runtimeEnv("VITE_SOCKET_URL") ||
+    runtimeEnv("VITE_API_URL") ||
     window.location.origin;
 
   _socket = io(serverUrl, {
