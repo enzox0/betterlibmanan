@@ -57,14 +57,18 @@ export function getSocket(token?: string): AppSocket {
   // Priority:
   //   1. VITE_SOCKET_URL  — explicit override (e.g. wss://api.yourdomain.com)
   //   2. VITE_API_URL     — shared API base URL already set for HTTP calls
-  //   3. Dev fallback     — direct to backend dev port (Vite proxy only handles /api, not /socket.io)
-  //   4. Prod fallback    — same origin only works when frontend and backend are on the SAME domain.
-  //                         If your backend is on a different domain/port, set VITE_API_URL or
-  //                         VITE_SOCKET_URL in your production .env file.
+  //   3. Safe fallback    — window.location.origin (works in both dev and prod
+  //                         as long as Vite's /socket.io proxy is active in dev,
+  //                         or the frontend/backend share the same origin in prod).
+  //
+  // IMPORTANT: Never use import.meta.env.DEV as a build-time branch here.
+  // If NODE_ENV is not explicitly set to "production" during `vite build`,
+  // DEV evaluates to true and "http://localhost:5000" gets permanently baked
+  // into the production bundle — causing ERR_CONNECTION_REFUSED in browsers.
   const serverUrl =
     import.meta.env.VITE_SOCKET_URL ||
     import.meta.env.VITE_API_URL ||
-    (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin);
+    window.location.origin;
 
   _socket = io(serverUrl, {
     path: "/socket.io",
