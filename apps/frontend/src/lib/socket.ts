@@ -52,9 +52,17 @@ let _socket: AppSocket | null = null;
 export function getSocket(token?: string): AppSocket {
   if (_socket?.connected) return _socket;
 
-  // Derive the server origin.  In dev, the frontend runs on :3000 and the
-  // backend on :5000.  In production they share the same origin.
+  // Derive the server origin for the Socket.IO connection.
+  //
+  // Priority:
+  //   1. VITE_SOCKET_URL  — explicit override (e.g. wss://api.yourdomain.com)
+  //   2. VITE_API_URL     — shared API base URL already set for HTTP calls
+  //   3. Dev fallback     — direct to backend dev port (Vite proxy only handles /api, not /socket.io)
+  //   4. Prod fallback    — same origin only works when frontend and backend are on the SAME domain.
+  //                         If your backend is on a different domain/port, set VITE_API_URL or
+  //                         VITE_SOCKET_URL in your production .env file.
   const serverUrl =
+    import.meta.env.VITE_SOCKET_URL ||
     import.meta.env.VITE_API_URL ||
     (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin);
 
