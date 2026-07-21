@@ -1,14 +1,27 @@
-import { Routes, Route, useRoutes } from "react-router-dom";
+import { useRoutes, Outlet } from "react-router-dom";
+import type { RouteObject } from "react-router-dom";
 import { lazyLoad } from "@/app/router/lazy-loader";
 import { Layout, LayoutEager } from "@/app/shell/Layout";
 import HomePage from "@/modules/landing";
 import { adminRoutes } from "../../modules/admin/routes/adminRouter";
 import { useAdminShortcut } from "../../modules/admin/hooks/useAdminShortcut";
+import { ScrollToTop } from "@/app/components";
 
 // Admin subtree rendered via useRoutes so the RouteObject[] array integrates
 // cleanly with the existing JSX-based <Routes> pattern.
 function AdminRouterOutlet() {
   return useRoutes(adminRoutes);
+}
+
+// Root layout — mounts hooks/side-effects that need router context
+function RootLayout() {
+  useAdminShortcut();
+  return (
+    <>
+      <ScrollToTop />
+      <Outlet />
+    </>
+  );
 }
 
 const NotFoundPage = lazyLoad(() =>
@@ -115,332 +128,340 @@ const LatestUpdatesPage = lazyLoad(() =>
 );
 const TourismPage = lazyLoad(() => import("@/modules/tourism"));
 
-export function AppRouter() {
-  useAdminShortcut();
-
+// Charter coming-soon page needs static props — wrap it once here
+function CharterPage() {
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
+    <ComingSoonPage
+      title="Citizen's Charter"
+      subtitle="The Citizen's Charter page is under construction. Check back soon!"
+    />
+  );
+}
+
+export const appRoutes: RouteObject[] = [
+  {
+    element: <RootLayout />,
+    children: [
+      {
+        path: "/",
+        element: (
           <LayoutEager>
             <HomePage />
           </LayoutEager>
-        }
-      />
-      {/* Admin Routes */}
-      <Route path="/admin/*" element={<AdminRouterOutlet />} />
-      {/* Services Routes */}
-      <Route
-        path="/services"
-        element={
+        ),
+      },
+      // Admin
+      { path: "/admin/*", element: <AdminRouterOutlet /> },
+      // Services
+      {
+        path: "/services",
+        element: (
           <Layout>
             <ServicesPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/certificates"
-        element={
+        ),
+      },
+      {
+        path: "/services/certificates",
+        element: (
           <Layout>
             <CertificatesPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/business"
-        element={
+        ),
+      },
+      {
+        path: "/services/business",
+        element: (
           <Layout>
             <BusinessPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/tax-payments"
-        element={
+        ),
+      },
+      {
+        path: "/services/tax-payments",
+        element: (
           <Layout>
             <TaxPaymentsPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/social-services"
-        element={
+        ),
+      },
+      {
+        path: "/services/social-services",
+        element: (
           <Layout>
             <SocialServicesPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/health"
-        element={
+        ),
+      },
+      {
+        path: "/services/health",
+        element: (
           <Layout>
             <HealthPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/agriculture"
-        element={
+        ),
+      },
+      {
+        path: "/services/agriculture",
+        element: (
           <Layout>
             <AgriculturePage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/infrastructure"
-        element={
+        ),
+      },
+      {
+        path: "/services/infrastructure",
+        element: (
           <Layout>
             <InfrastructurePage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/education"
-        element={
+        ),
+      },
+      {
+        path: "/services/education",
+        element: (
           <Layout>
             <EducationPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/public-safety"
-        element={
+        ),
+      },
+      {
+        path: "/services/public-safety",
+        element: (
           <Layout>
             <PublicSafetyPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/services/environment"
-        element={
+        ),
+      },
+      {
+        path: "/services/environment",
+        element: (
           <Layout>
             <EnvironmentPage />
           </Layout>
-        }
-      />
-      {/* Legislative Routes */}
-      <Route
-        path="/legislative"
-        element={
+        ),
+      },
+      // Legislative
+      {
+        path: "/legislative",
+        element: (
           <Layout>
             <LegislativePage />
           </Layout>
-        }
-      />
-      <Route
-        path="/legislative/ordinances"
-        element={
+        ),
+      },
+      {
+        path: "/legislative/ordinances",
+        element: (
           <Layout>
             <OrdinanceFrameworkPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/legislative/resolutions"
-        element={
+        ),
+      },
+      {
+        path: "/legislative/resolutions",
+        element: (
           <Layout>
             <ResolutionFrameworkPage />
           </Layout>
-        }
-      />
-      {/* Other Nav Items */}
-      <Route
-        path="/government"
-        element={
+        ),
+      },
+      // Other nav
+      {
+        path: "/government",
+        element: (
           <Layout>
             <GovernmentPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/statistics"
-        element={
+        ),
+      },
+      {
+        path: "/statistics",
+        element: (
           <Layout>
             <StatisticsPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/transparency"
-        element={
+        ),
+      },
+      {
+        path: "/transparency",
+        element: (
           <Layout>
             <TransparencyPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/contact"
-        element={
+        ),
+      },
+      {
+        path: "/contact",
+        element: (
           <Layout>
             <ContactPage />
           </Layout>
-        }
-      />
-      {/* 404 Not Found */}
-      <Route
-        path="/coming-soon"
-        element={
+        ),
+      },
+      {
+        path: "/coming-soon",
+        element: (
           <Layout>
             <ComingSoonPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/tourism"
-        element={
+        ),
+      },
+      {
+        path: "/tourism",
+        element: (
           <Layout>
             <TourismPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/about"
-        element={
+        ),
+      },
+      {
+        path: "/about",
+        element: (
           <Layout>
             <AboutPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/freedom-wall"
-        element={
+        ),
+      },
+      {
+        path: "/freedom-wall",
+        element: (
           <Layout>
             <FreedomWallPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/quiz"
-        element={
+        ),
+      },
+      {
+        path: "/quiz",
+        element: (
           <Layout>
             <QuizPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/sitemap"
-        element={
+        ),
+      },
+      {
+        path: "/sitemap",
+        element: (
           <Layout>
             <SitemapPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/charter"
-        element={
+        ),
+      },
+      {
+        path: "/charter",
+        element: (
           <Layout>
-            <ComingSoonPage
-              title="Citizen's Charter"
-              subtitle="The Citizen's Charter page is under construction. Check back soon!"
-            />
+            <CharterPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/terms"
-        element={
+        ),
+      },
+      {
+        path: "/terms",
+        element: (
           <Layout>
             <TermsOfUsePage />
           </Layout>
-        }
-      />
-      <Route
-        path="/privacy"
-        element={
+        ),
+      },
+      {
+        path: "/privacy",
+        element: (
           <Layout>
             <PrivacyPolicyPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/accessibility"
-        element={
+        ),
+      },
+      {
+        path: "/accessibility",
+        element: (
           <Layout>
             <AccessibilityPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/faq"
-        element={
+        ),
+      },
+      {
+        path: "/faq",
+        element: (
           <Layout>
             <FaqPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/community"
-        element={
+        ),
+      },
+      // Community
+      {
+        path: "/community",
+        element: (
           <Layout>
             <CommunityPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/community/groups"
-        element={
+        ),
+      },
+      {
+        path: "/community/groups",
+        element: (
           <Layout>
             <AllPeerGroupsPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/community/groups/:id"
-        element={
+        ),
+      },
+      {
+        path: "/community/groups/:id",
+        element: (
           <Layout>
             <GroupDetailPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/community/discussions"
-        element={
+        ),
+      },
+      {
+        path: "/community/discussions",
+        element: (
           <Layout>
             <AllDiscussionsPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/community/discussions/:id"
-        element={
+        ),
+      },
+      {
+        path: "/community/discussions/:id",
+        element: (
           <Layout>
             <DiscussionDetailPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/install"
-        element={
+        ),
+      },
+      // Misc
+      {
+        path: "/install",
+        element: (
           <Layout>
             <InstallPage />
           </Layout>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
+        ),
+      },
+      {
+        path: "/profile",
+        element: (
           <Layout>
             <UserProfilePage />
           </Layout>
-        }
-      />
-      <Route
-        path="/latest-updates"
-        element={
+        ),
+      },
+      {
+        path: "/latest-updates",
+        element: (
           <Layout>
             <LatestUpdatesPage />
           </Layout>
-        }
-      />
-      <Route
-        path="*"
-        element={
+        ),
+      },
+      // 404
+      {
+        path: "*",
+        element: (
           <Layout>
             <NotFoundPage />
           </Layout>
-        }
-      />
-    </Routes>
-  );
-}
+        ),
+      },
+    ],
+  },
+];

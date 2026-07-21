@@ -133,6 +133,12 @@ export default defineConfig({
     assetsDir: "assets",
     sourcemap: false,
     minify: "esbuild",
+    // Never inline .lottie files — DotLottieReact fetches them via fetch(),
+    // which CSP blocks when the URL is a data: URI
+    assetsInlineLimit: (filePath, content) => {
+      if (filePath.endsWith(".lottie")) return false;
+      return (content?.byteLength ?? 0) <= 4096;
+    },
     rollupOptions: {
       output: {
         // Split vendor libraries into separate cacheable chunks
