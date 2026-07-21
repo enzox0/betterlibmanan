@@ -197,8 +197,12 @@ export function UserAuthModal({
 
             <AnimatePresence mode="wait">
               {tab === "login" ? (
-                <motion.div
+                <motion.form
                   key="login"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleLogin();
+                  }}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 12 }}
@@ -265,7 +269,7 @@ export function UserAuthModal({
                     </div>
                   </div>
                   <button
-                    onClick={handleLogin}
+                    type="submit"
                     disabled={isLoading}
                     className="mt-1 w-full rounded-xl bg-neutral-900 hover:bg-neutral-700 active:bg-black py-2.5 text-sm font-semibold text-white transition-colors shadow disabled:opacity-60"
                   >
@@ -281,10 +285,14 @@ export function UserAuthModal({
                       Create one
                     </button>
                   </p>
-                </motion.div>
+                </motion.form>
               ) : (
-                <motion.div
+                <motion.form
                   key="register"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRegister();
+                  }}
                   initial={{ opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -12 }}
@@ -394,7 +402,7 @@ export function UserAuthModal({
                     </div>
                   </div>
                   <button
-                    onClick={handleRegister}
+                    type="submit"
                     disabled={isLoading}
                     className="mt-1 w-full rounded-xl bg-neutral-900 hover:bg-neutral-700 active:bg-black py-2.5 text-sm font-semibold text-white transition-colors shadow disabled:opacity-60"
                   >
@@ -410,7 +418,7 @@ export function UserAuthModal({
                       Sign in
                     </button>
                   </p>
-                </motion.div>
+                </motion.form>
               )}
             </AnimatePresence>
           </motion.div>
