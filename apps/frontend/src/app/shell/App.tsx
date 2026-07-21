@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { BrowserRouter } from "react-router-dom";
-import { AppRouter } from "@/app/router";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { appRoutes } from "@/app/router";
 import { OfflineBanner, ScrollToTop, PWAInstallBanner } from "@/app/components";
 import {
   SplashScreen,
@@ -9,6 +9,12 @@ import {
 import { ToastProvider } from "@/context/ToastContext";
 import { useNetworkStatus } from "@/shared/hooks";
 import { SessionExpiredModal } from "@/modules/admin/components/auth/SessionExpiredModal";
+
+const router = createBrowserRouter(appRoutes, {
+  future: {
+    v7_relativeSplatPath: true,
+  },
+});
 
 export function App() {
   // If splash already ran this session, skip it entirely and mount the router right away.
@@ -20,12 +26,7 @@ export function App() {
       {!splashDone && (
         <SplashScreen duration={2000} onFinish={() => setSplashDone(true)} />
       )}
-      {splashDone && (
-        <BrowserRouter>
-          <ScrollToTop />
-          <AppRouter />
-        </BrowserRouter>
-      )}
+      {splashDone && <RouterProvider router={router} />}
       <OfflineBanner
         isOnline={isOnline}
         isChecking={isChecking}

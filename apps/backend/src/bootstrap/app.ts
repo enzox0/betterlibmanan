@@ -197,7 +197,9 @@ app.use(
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100,
+  // 100/15 min is too tight for normal browsing — a single page load can easily
+  // fire 10–15 API calls. 500 gives ~33 req/min which is still protective.
+  max: isDevelopment ? 1000 : 500,
   message: { success: false, message: "Too many requests from this IP" },
   standardHeaders: true,
   legacyHeaders: false,
@@ -272,13 +274,17 @@ app.use("/api", apiRouter);
 // STATIC FILE SERVING - CRITICAL SECTION
 // =============================================================================
 
-// Check if frontend is available
-const frontendAvailable =
+// Check if frontend is available — evaluated lazily so a container that writes
+// the build directory after the process starts still serves the frontend correctly.
+const isFrontendAvailable = (): boolean =>
   fs.existsSync(frontendDistPath) &&
   fs.existsSync(path.join(frontendDistPath, "index.html")) &&
   fs.existsSync(assetsPath);
 
-if (frontendAvailable) {
+// Always register static middleware — express.static silently passes through
+// (calls next()) when the directory doesn't exist yet, so requests won't 500.
+// The SPA catch-all below re-checks availability at request time.
+if (true) {
   // MIME type helper - Comprehensive and explicit
   const getMimeType = (filePath: string): string | null => {
     const ext = path.extname(filePath).toLowerCase();
@@ -391,45 +397,54 @@ if (frontendAvailable) {
       return res.status(404).type("text/plain").send("Not found");
     }
 
-    // Serve index.html for all SPA routes
+    // Re-check at request time — handles the case where the build directory
+    // was not yet available when the process started (container cold-start race).
+    if (!isFrontendAvailable()) {
+      logger.warn(`[SPA] Frontend not yet available for: ${req.path}`);
+      return res
+        .status(503)
+        .type("text/plain")
+        .send("Service starting, please retry shortly.");
+    }
+
+    // Serve index.html with a runtime window.__ENV__ injection so the frontend
+    // can read live environment values without a rebuild.
+    // Only VITE_* variables are exposed — no secrets cross the wire.
     const indexPath = path.join(frontendDistPath, "index.html");
 
     logger.debug(`[SPA] Serving: ${req.path}`);
 
-    res.sendFile(
-      indexPath,
-      {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      },
-      (err) => {
-        if (err) {
-          logger.error(`[SPA] Failed to serve index.html:`, err);
-          // Send plain text error, NOT JSON
-          if (!res.headersSent) {
-            res
-              .status(500)
-              .type("text/plain")
-              .send("Failed to load application");
-          }
-        }
-      },
-    );
-  });
-} else {
-  // If frontend is not available, just send 404 for non-API routes
-  app.get("*", (req, res) => {
-    logger.warn(
-      `[SPA] Frontend not available - 404 for non-API route: ${req.path}`,
-    );
-    res.status(404).json({
-      success: false,
-      message: "Frontend not available - API only mode",
-    });
+    let html: string;
+    try {
+      html = fs.readFileSync(indexPath, "utf-8");
+    } catch (err) {
+      logger.error(`[SPA] Failed to read index.html:`, err);
+      return res
+        .status(500)
+        .type("text/plain")
+        .send("Failed to load application");
+    }
+
+    // Build the public runtime config — only VITE_* keys (safe for the browser).
+    const runtimeEnv: Record<string, string> = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (key.startsWith("VITE_") && value !== undefined) {
+        runtimeEnv[key] = value;
+      }
+    }
+
+    // Inject before </head> so it is available before any JS module executes.
+    const envScript = `<script>window.__ENV__ = ${JSON.stringify(runtimeEnv)};</script>`;
+    html = html.replace("</head>", `${envScript}\n</head>`);
+
+    res
+      .set({
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      })
+      .send(html);
   });
 }
 
