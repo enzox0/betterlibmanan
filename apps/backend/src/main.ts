@@ -54,13 +54,22 @@ async function main() {
     const httpServer = createServer(app);
     initSocketIO(httpServer);
 
-    httpServer.listen(PORT, "0.0.0.0", () => {
-      logger.info(`✓ Server running on http://0.0.0.0:${PORT}`);
-      logger.info(`✓ API available at http://0.0.0.0:${PORT}/api`);
-      logger.info(`✓ Socket.IO available at ws://0.0.0.0:${PORT}/socket.io`);
-      logger.info(`✓ Frontend available at http://0.0.0.0:${PORT}/`);
-      logger.info("=".repeat(50));
+    // Wait for the server to fully bind before resolving — this prevents the
+    // race condition where the platform routes traffic to the process before
+    // the listen callback fires and all in-flight initialisation is complete.
+    await new Promise<void>((resolve, reject) => {
+      httpServer.once("error", reject);
+      httpServer.listen(PORT, "0.0.0.0", () => {
+        httpServer.removeListener("error", reject);
+        resolve();
+      });
     });
+
+    logger.info(`✓ Server running on http://0.0.0.0:${PORT}`);
+    logger.info(`✓ API available at http://0.0.0.0:${PORT}/api`);
+    logger.info(`✓ Socket.IO available at ws://0.0.0.0:${PORT}/socket.io`);
+    logger.info(`✓ Frontend available at http://0.0.0.0:${PORT}/`);
+    logger.info("=".repeat(50));
   } catch (error) {
     logger.error("Failed to start server:", error);
     process.exit(1);
