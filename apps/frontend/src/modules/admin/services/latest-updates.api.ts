@@ -15,7 +15,21 @@ export interface LatestUpdatePayload {
   title: string;
   date?: string;
   summary?: string;
+  imageUrl?: string;
+  imageKey?: string;
+  sourceUrl?: string;
   status: ContentStatus;
+}
+
+export interface LatestUpdateUploadPayload {
+  filename: string;
+  mimeType: string;
+  data: string;
+}
+
+export interface UploadedLatestUpdateImage {
+  key: string;
+  url: string;
 }
 
 export async function listPublicLatestUpdates(): Promise<ContentRecord[]> {
@@ -72,4 +86,17 @@ export async function deleteLatestUpdateRecord(
   await apiClient.delete(`/${id}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+}
+
+export async function uploadLatestUpdateImageRequest(
+  payload: LatestUpdateUploadPayload,
+  accessToken: string,
+): Promise<UploadedLatestUpdateImage> {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    data: UploadedLatestUpdateImage;
+  }>("/upload", payload, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return data.data;
 }
