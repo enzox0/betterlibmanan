@@ -6,6 +6,7 @@ import {
   createAdminTouristSpot,
   updateAdminTouristSpot,
   deleteAdminTouristSpot,
+  ratePublicTouristSpot,
   uploadAdminTourismImage,
 } from "./tourism.controller";
 
@@ -16,4 +17,6 @@ tourismRouter.get("/admin", requireAuth, getAdminTouristSpots);
 tourismRouter.post("/", requireAuth, createAdminTouristSpot);
 tourismRouter.patch("/:id", requireAuth, updateAdminTouristSpot);
 tourismRouter.delete("/:id", requireAuth, deleteAdminTouristSpot);
+// Public rating endpoint — no auth required
+tourismRouter.post("/:id/rate", ratePublicTouristSpot);
 tourismRouter.post("/upload", requireAuth, uploadAdminTourismImage);
