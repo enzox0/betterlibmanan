@@ -20,23 +20,6 @@ export function FreedomWallCTASection() {
 
       <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
         <div className="flex flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-12">
-          {/* Lottie illustration — 30% */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.88 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="w-40 sm:w-52 lg:w-[20%] shrink-0 flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <DotLottieReact
-              src={noteLottie}
-              loop
-              autoplay
-              style={{ width: "100%", height: "100%" }}
-            />
-          </motion.div>
-
           {/* Text + CTA — 70% */}
           <motion.div
             initial={{ opacity: 0, y: 28 }}
@@ -106,6 +89,23 @@ export function FreedomWallCTASection() {
             <p className="mt-5 text-xs text-gray-600">
               100% anonymous · No account needed · Community moderated
             </p>
+          </motion.div>
+
+          {/* Lottie illustration — 30% */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.88 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="w-40 sm:w-52 lg:w-[20%] shrink-0 flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <DotLottieReact
+              src={noteLottie}
+              loop
+              autoplay
+              style={{ width: "100%", height: "100%" }}
+            />
           </motion.div>
         </div>
       </div>

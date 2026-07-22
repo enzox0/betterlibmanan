@@ -657,7 +657,7 @@ export function WeatherMapSection({
   const WeatherIcon = weatherInfo?.icon ?? LuCloud;
 
   return (
-    <section ref={sectionRef} className="bg-white py-16">
+    <section ref={sectionRef} className="bg-neutral-100 py-16">
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
