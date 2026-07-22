@@ -1,5 +1,4 @@
 import React from "react";
-import { LeadershipSection } from "@/modules/landing/components/sections/LeadershipSection";
 import { LatestUpdatesSection } from "@/modules/landing/components/sections/LatestUpdatesSection";
 import { PopularServicesSection } from "@/modules/landing/components/sections/PopularServicesSection";
 
@@ -20,12 +19,6 @@ export function PreviewPanel({ sectionKey, formValues }: PreviewPanelProps) {
 
 function SectionPreview({ sectionKey }: { sectionKey: string }) {
   switch (sectionKey) {
-    case "leadership":
-      return (
-        <div className="rounded-xl overflow-hidden border border-neutral-200 pointer-events-none scale-[0.85] origin-top">
-          <LeadershipSection />
-        </div>
-      );
     case "latest-updates":
       return (
         <div className="rounded-xl overflow-hidden border border-neutral-200 pointer-events-none scale-[0.85] origin-top">
