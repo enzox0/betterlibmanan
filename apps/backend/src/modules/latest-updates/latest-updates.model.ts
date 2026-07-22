@@ -6,6 +6,9 @@ export interface ILatestUpdate extends Document {
   title: string;
   date: string;
   summary: string;
+  imageUrl?: string;
+  imageKey?: string;
+  sourceUrl?: string;
   status: LatestUpdateStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -25,6 +28,21 @@ const LatestUpdateSchema = new Schema<ILatestUpdate>(
       default: "",
     },
     summary: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    imageUrl: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    imageKey: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    sourceUrl: {
       type: String,
       trim: true,
       default: "",

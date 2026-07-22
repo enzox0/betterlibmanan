@@ -6,6 +6,7 @@ import {
   createLatestUpdate,
   updateLatestUpdate,
   deleteLatestUpdate,
+  uploadLatestUpdateImage,
 } from "./latest-updates.service";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import type { ILatestUpdate } from "./latest-updates.model";
@@ -14,7 +15,23 @@ const latestUpdateSchema = z.object({
   title: z.string().trim().min(1).max(255),
   date: z.string().trim().optional(),
   summary: z.string().trim().optional(),
+  imageUrl: z.string().trim().url().or(z.literal("")).optional(),
+  imageKey: z.string().trim().optional(),
+  sourceUrl: z.string().trim().url().or(z.literal("")).optional(),
   status: z.enum(["published", "draft"]).default("draft"),
+});
+
+const uploadSchema = z.object({
+  filename: z.string().trim().min(1),
+  mimeType: z
+    .string()
+    .trim()
+    .refine(
+      (value) =>
+        ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(value),
+      "Unsupported image type",
+    ),
+  data: z.string().trim().min(1),
 });
 
 function getClientIp(req: Request): string {
@@ -33,8 +50,12 @@ function toContentRecord(record: ILatestUpdate | any) {
     status: record.status,
     fields: {
       title: record.title,
-      date: record.date ?? "",
-      summary: record.summary ?? "",
+      date: record.date || "",
+      summary: record.summary || "",
+      image: record.imageUrl || "",
+      imageUrl: record.imageUrl || "",
+      imageKey: record.imageKey || "",
+      sourceUrl: record.sourceUrl || "",
     },
     createdAt: new Date(record.createdAt).toISOString(),
     updatedAt: new Date(record.updatedAt).toISOString(),
@@ -186,6 +207,47 @@ export async function deleteAdminLatestUpdate(
     }
 
     res.json({ success: true, message: "Latest Update record deleted" });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function uploadAdminLatestUpdateImage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const parsed = uploadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map((e) => e.message);
+      res.status(400).json({ success: false, message: errors[0], errors });
+      return;
+    }
+
+    const uploaded = await uploadLatestUpdateImage(parsed.data);
+
+    if (req.admin) {
+      writeAuditLog(
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action: "CREATE",
+          module: "LatestUpdates",
+          resourceId: uploaded.key,
+          description: `Uploaded Latest Update image ${parsed.data.filename}`,
+        },
+      );
+    }
+
+    res.status(201).json({ success: true, data: uploaded });
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ success: false, message: err.message });
