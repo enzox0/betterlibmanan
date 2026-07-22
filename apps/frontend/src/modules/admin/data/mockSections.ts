@@ -2,25 +2,15 @@ import type { ContentRecord, SectionSchema } from "../types/admin.types";
 
 export const mockSections: SectionSchema[] = [
   {
-    key: "leadership",
-    displayName: "Leadership",
-    supportsPreview: true,
-    fields: [
-      { key: "name", label: "Name", type: "text", required: true },
-      { key: "position", label: "Position", type: "text", required: false },
-      { key: "email", label: "Email", type: "text", required: false },
-      { key: "phone", label: "Phone", type: "text", required: false },
-      { key: "avatar", label: "Avatar", type: "image", required: false },
-    ],
-  },
-  {
     key: "latest-updates",
-    displayName: "Latest Updates",
+    displayName: "Updates & Info",
     supportsPreview: true,
     fields: [
       { key: "title", label: "Title", type: "text", required: true },
       { key: "date", label: "Date", type: "date", required: false },
+      { key: "image", label: "Image/Banner", type: "image", required: false },
       { key: "summary", label: "Summary", type: "textarea", required: false },
+      { key: "sourceUrl", label: "Source URL", type: "url", required: false },
       {
         key: "status",
         label: "Status",
@@ -335,54 +325,6 @@ export const mockSections: SectionSchema[] = [
 ];
 
 export const mockRecords: Record<string, ContentRecord[]> = {
-  leadership: [
-    {
-      id: "leadership-001",
-      sectionKey: "leadership",
-      title: "Hon. Maria Santos",
-      status: "published",
-      fields: {
-        name: "Hon. Maria Santos",
-        position: "Municipal Mayor",
-        email: "mayor@libmanan.gov.ph",
-        phone: "+63 54 123 4567",
-        avatar: "",
-      },
-      createdAt: "2024-01-10T08:00:00.000Z",
-      updatedAt: "2024-02-20T11:00:00.000Z",
-    },
-    {
-      id: "leadership-002",
-      sectionKey: "leadership",
-      title: "Hon. Jose Reyes",
-      status: "published",
-      fields: {
-        name: "Hon. Jose Reyes",
-        position: "Municipal Vice Mayor",
-        email: "vmmayor@libmanan.gov.ph",
-        phone: "+63 54 123 4568",
-        avatar: "",
-      },
-      createdAt: "2024-01-10T08:05:00.000Z",
-      updatedAt: "2024-02-20T11:05:00.000Z",
-    },
-    {
-      id: "leadership-003",
-      sectionKey: "leadership",
-      title: "Atty. Luz dela Cruz",
-      status: "draft",
-      fields: {
-        name: "Atty. Luz dela Cruz",
-        position: "Municipal Administrator",
-        email: "admin@libmanan.gov.ph",
-        phone: "+63 54 123 4569",
-        avatar: "",
-      },
-      createdAt: "2024-03-05T10:00:00.000Z",
-      updatedAt: "2024-03-05T10:00:00.000Z",
-    },
-  ],
-
   "latest-updates": [
     {
       id: "updates-001",
