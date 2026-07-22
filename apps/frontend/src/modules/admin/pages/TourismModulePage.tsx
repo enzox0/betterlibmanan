@@ -39,6 +39,84 @@ const CATEGORY_OPTIONS: { value: TourismCategory; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
+const LIBMANAN_BARANGAYS = [
+  "Aslong",
+  "Awayan",
+  "Bagacay",
+  "Bagadion",
+  "Bagamelon",
+  "Bagumbayan",
+  "Bahao",
+  "Bahay",
+  "Beguito Nuevo",
+  "Beguito Viejo",
+  "Begajo Norte",
+  "Begajo Sur",
+  "Bikal",
+  "Busak",
+  "Caima",
+  "Calabnigan",
+  "Camambugan",
+  "Cambalidio",
+  "Candami",
+  "Candato",
+  "Cawayan",
+  "Concepcion",
+  "Cuyapi",
+  "Danawan",
+  "Duang Niog",
+  "Handong",
+  "Ibid",
+  "Inalahan",
+  "Labao",
+  "Libod I",
+  "Libod II",
+  "Loba-loba",
+  "Mabini",
+  "Malansad Nuevo",
+  "Malansad Viejo",
+  "Malbogon",
+  "Malinao",
+  "Mambalite",
+  "Mambayawas",
+  "Mambulo Nuevo",
+  "Mambulo Viejo",
+  "Mancawayan",
+  "Mandacanan",
+  "Mantalisay",
+  "Padlos",
+  "Pag-Oring Nuevo",
+  "Pag-Oring Viejo",
+  "Palangon",
+  "Palong",
+  "Patag",
+  "Planza",
+  "Poblacion",
+  "Potot",
+  "Puro-Batia",
+  "Rongos",
+  "Salvacion",
+  "San Isidro",
+  "San Juan",
+  "San Pablo",
+  "San Vicente",
+  "Sibujo",
+  "Sigamot",
+  "Station-Church Site",
+  "Taban-Fundado",
+  "Tampuhan",
+  "Tanag",
+  "Tarum",
+  "Tinalmud Nuevo",
+  "Tinalmud Viejo",
+  "Tinangkihan",
+  "Udoc",
+  "Umalo",
+  "Uson",
+  "Villasocorro",
+  "Villadima",
+];
+
 const CATEGORY_COLORS: Record<TourismCategory, string> = {
   nature: "bg-emerald-50 text-emerald-700",
   water: "bg-blue-50 text-blue-700",
@@ -400,10 +478,9 @@ function DeleteConfirmDialog({
 
 interface SpotFormState {
   name: string;
-  location: string;
+  barangayName: string;
   description: string;
   category: TourismCategory;
-  rating: string;
   entryFee: string;
   tags: string[];
   imageUrl: string;
@@ -413,10 +490,9 @@ interface SpotFormState {
 
 const emptyForm = (): SpotFormState => ({
   name: "",
-  location: "",
+  barangayName: "",
   description: "",
   category: "other",
-  rating: "",
   entryFee: "",
   tags: [],
   imageUrl: "",
@@ -427,10 +503,9 @@ const emptyForm = (): SpotFormState => ({
 function recordToForm(r: TouristSpotRecord): SpotFormState {
   return {
     name: r.fields.name,
-    location: r.fields.location,
+    barangayName: r.fields.barangayName || r.fields.location || "",
     description: r.fields.description,
     category: r.fields.category,
-    rating: r.fields.rating,
     entryFee: r.fields.entryFee,
     tags: r.fields.tags ?? [],
     imageUrl: r.fields.image,
@@ -552,10 +627,9 @@ function TouristSpotsPanel() {
     try {
       const payload: TouristSpotPayload = {
         name: form.name.trim(),
-        location: form.location.trim(),
+        barangayName: form.barangayName,
         description: form.description.trim(),
         category: form.category,
-        rating: form.rating.trim(),
         entryFee: form.entryFee.trim(),
         tags: form.tags,
         imageUrl: form.imageUrl.trim(),
@@ -748,16 +822,19 @@ function TouristSpotsPanel() {
                       </AnimatePresence>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500">
-                      {spot.fields.location && (
+                      {spot.fields.barangayName && (
                         <span className="flex items-center gap-1">
                           <LuMapPin className="h-3 w-3 text-gray-400" />
-                          {spot.fields.location}
+                          {spot.fields.barangayName}
                         </span>
                       )}
-                      {spot.fields.rating && (
+                      {spot.fields.averageRating && (
                         <span className="flex items-center gap-1">
                           <LuStar className="h-3 w-3 text-yellow-400" />
-                          {spot.fields.rating}
+                          {spot.fields.averageRating}
+                          <span className="text-gray-400">
+                            ({spot.fields.ratingCount})
+                          </span>
                         </span>
                       )}
                       {spot.fields.tags.length > 0 && (
@@ -871,24 +948,29 @@ function TouristSpotsPanel() {
                 <FieldError id="spot-cat-err" msg={errors.category} />
               </div>
 
-              {/* Location */}
+              {/* Barangay (Location) */}
               <div>
                 <label
-                  htmlFor="spot-location"
+                  htmlFor="spot-barangay"
                   className="block text-sm font-medium text-gray-700 mb-1.5"
                 >
-                  Location
+                  Barangay
                 </label>
-                <input
-                  id="spot-location"
-                  type="text"
-                  value={form.location}
+                <select
+                  id="spot-barangay"
+                  value={form.barangayName}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, location: e.target.value }))
+                    setForm((p) => ({ ...p, barangayName: e.target.value }))
                   }
                   className={inputNormal}
-                  placeholder="e.g. Barangay Palestina, Libmanan"
-                />
+                >
+                  <option value="">— Select barangay —</option>
+                  {LIBMANAN_BARANGAYS.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Description */}
@@ -911,44 +993,24 @@ function TouristSpotsPanel() {
                 />
               </div>
 
-              {/* Rating & Entry Fee */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="spot-rating"
-                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                  >
-                    Rating
-                  </label>
-                  <input
-                    id="spot-rating"
-                    type="text"
-                    value={form.rating}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, rating: e.target.value }))
-                    }
-                    className={inputNormal}
-                    placeholder="e.g. 4.8"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="spot-fee"
-                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                  >
-                    Entry Fee
-                  </label>
-                  <input
-                    id="spot-fee"
-                    type="text"
-                    value={form.entryFee}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, entryFee: e.target.value }))
-                    }
-                    className={inputNormal}
-                    placeholder="e.g. Free or ₱50"
-                  />
-                </div>
+              {/* Entry Fee */}
+              <div>
+                <label
+                  htmlFor="spot-fee"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Entry Fee
+                </label>
+                <input
+                  id="spot-fee"
+                  type="text"
+                  value={form.entryFee}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, entryFee: e.target.value }))
+                  }
+                  className={inputNormal}
+                  placeholder="e.g. Free or ₱50"
+                />
               </div>
 
               {/* Tags */}
