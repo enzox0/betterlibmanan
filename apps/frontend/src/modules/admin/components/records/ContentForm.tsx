@@ -9,7 +9,6 @@ import { usePopularServicesStore } from "../../store/popular-services.store";
 import { useAtAGlanceStore } from "../../store/atAGlanceStore";
 import { useHistoryStore } from "../../store/historyStore";
 import { useLatestUpdatesStore } from "../../store/latestUpdatesStore";
-import { useLeadershipStore } from "../../store/leadershipStore";
 import { useContactStore } from "../../store/contactStore";
 import { useQuizStore } from "../../store/quizStore";
 import { useEmergencyContactsStore } from "../../store/emergencyContactsStore";
@@ -21,9 +20,9 @@ import { PreviewPanel } from "../preview/PreviewPanel";
 import { LucideIconPicker } from "./ReactIconPicker";
 import { uploadBetterLugImageRequest } from "../../services/better-lugs.api";
 import { uploadBarangayMapImageRequest } from "../../services/barangay-map.api";
-import { uploadLeadershipAvatarRequest } from "../../services/leadership.api";
 import { uploadMarqueeImageFileRequest } from "../../services/marquee-images.api";
 import { uploadMunicipalHallImageRequest } from "../../services/municipal-hall.api";
+import { uploadLatestUpdateImageRequest } from "../../services/latest-updates.api";
 import SafeImage from "@/modules/landing/components/ui/SafeImage";
 import type {
   ContentFormProps,
@@ -132,8 +131,6 @@ export function ContentForm({
   const updateHistory = useHistoryStore((s) => s.updateHistory);
   const createLatestUpdate = useLatestUpdatesStore((s) => s.createLatestUpdate);
   const updateLatestUpdate = useLatestUpdatesStore((s) => s.updateLatestUpdate);
-  const createLeadership = useLeadershipStore((s) => s.createLeadership);
-  const updateLeadership = useLeadershipStore((s) => s.updateLeadership);
   const createContact = useContactStore((s) => s.createContact);
   const updateContact = useContactStore((s) => s.updateContact);
   const createQuiz = useQuizStore((s) => s.createQuiz);
@@ -177,7 +174,6 @@ export function ContentForm({
   const isAtAGlanceSection = sectionKey === "at-a-glance";
   const isHistorySection = sectionKey === "history";
   const isLatestUpdatesSection = sectionKey === "latest-updates";
-  const isLeadershipSection = sectionKey === "leadership";
   const isContactSection = sectionKey === "contact";
   const isQuizSection = sectionKey === "quiz";
   const isEmergencyContactsSection = sectionKey === "emergency-contacts";
@@ -187,8 +183,8 @@ export function ContentForm({
     ? "logo"
     : isBarangayMapSection
       ? "image"
-      : isLeadershipSection
-        ? "avatar"
+      : isLatestUpdatesSection
+        ? "image"
         : isMarqueeImagesSection
           ? "imageUrl"
           : isMunicipalHallSection
@@ -558,44 +554,20 @@ export function ContentForm({
           title: string;
           date?: string;
           summary?: string;
+          imageUrl?: string;
+          imageKey?: string;
+          sourceUrl?: string;
           status: ContentStatus;
         } = {
           title: fieldValues.title?.trim() ?? title.trim(),
           date: fieldValues.date?.trim() ?? "",
           summary: fieldValues.summary?.trim() ?? "",
-          status,
-        };
-
-        if (mode === "create") {
-          await createLatestUpdate(payload, accessToken);
-        } else {
-          await updateLatestUpdate(initialData!.id, payload, accessToken);
-        }
-      } else if (isLeadershipSection) {
-        if (!accessToken) {
-          throw new Error(
-            "You must be signed in to manage Leadership records.",
-          );
-        }
-
-        const payload: {
-          name: string;
-          position?: string;
-          email?: string;
-          phone?: string;
-          avatarUrl?: string;
-          avatarKey?: string;
-          status: ContentStatus;
-        } = {
-          name: fieldValues.name?.trim() ?? title.trim(),
-          position: fieldValues.position?.trim() ?? "",
-          email: fieldValues.email?.trim() ?? "",
-          phone: fieldValues.phone?.trim() ?? "",
+          sourceUrl: fieldValues.sourceUrl?.trim() ?? "",
           status,
         };
 
         if (imageChangeState === "selected" && selectedImageFile) {
-          const uploaded = await uploadLeadershipAvatarRequest(
+          const uploaded = await uploadLatestUpdateImageRequest(
             {
               filename: selectedImageFile.name,
               mimeType: selectedImageFile.type,
@@ -603,17 +575,17 @@ export function ContentForm({
             },
             accessToken,
           );
-          payload.avatarUrl = uploaded.url;
-          payload.avatarKey = uploaded.key;
+          payload.imageUrl = uploaded.url;
+          payload.imageKey = uploaded.key;
         } else if (imageChangeState === "removed") {
-          payload.avatarUrl = "";
-          payload.avatarKey = "";
+          payload.imageUrl = "";
+          payload.imageKey = "";
         }
 
         if (mode === "create") {
-          await createLeadership(payload, accessToken);
+          await createLatestUpdate(payload, accessToken);
         } else {
-          await updateLeadership(initialData!.id, payload, accessToken);
+          await updateLatestUpdate(initialData!.id, payload, accessToken);
         }
       } else if (isContactSection) {
         if (!accessToken) {

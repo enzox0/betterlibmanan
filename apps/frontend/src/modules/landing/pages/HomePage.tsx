@@ -20,14 +20,14 @@ const AtAGlanceSection = lazyLoad(
 const WeatherMapSection = lazyLoad(
   () => import("../components/sections/WeatherMapSection"),
 );
+const TouristSpotsSection = lazyLoad(
+  () => import("../components/sections/TouristSpotsSection"),
+);
 const HistorySection = lazyLoad(
   () => import("../components/sections/HistorySection"),
 );
 const LatestUpdatesSection = lazyLoad(
   () => import("../components/sections/LatestUpdatesSection"),
-);
-const LeadershipSection = lazyLoad(
-  () => import("../components/sections/LeadershipSection"),
 );
 const ContactSection = lazyLoad(
   () => import("../components/sections/ContactSection"),
@@ -45,10 +45,10 @@ const SECTIONS = [
   { id: "section-barangay-map", label: "Barangay Map" },
   { id: "section-services", label: "Services" },
   { id: "section-at-a-glance", label: "At a Glance" },
+  { id: "section-tourist-spots", label: "Tourist Spots" },
   { id: "section-weather", label: "Weather" },
   { id: "section-history", label: "History" },
   { id: "section-updates", label: "Latest Updates" },
-  { id: "section-leadership", label: "Leadership" },
   { id: "section-contact", label: "Contact" },
   { id: "section-freedom-wall-cta", label: "Freedom Wall" },
   { id: "section-quiz", label: "Quiz" },
@@ -84,6 +84,9 @@ export function HomePage() {
       <div id="section-at-a-glance">
         <AtAGlanceSection isLoading={isLoading} />
       </div>
+      <div id="section-tourist-spots">
+        <TouristSpotsSection isLoading={isLoading} />
+      </div>
       <div id="section-weather">
         <WeatherMapSection isLoading={isLoading} />
       </div>
@@ -92,9 +95,6 @@ export function HomePage() {
       </div>
       <div id="section-updates">
         <LatestUpdatesSection isLoading={isLoading} />
-      </div>
-      <div id="section-leadership">
-        <LeadershipSection isLoading={isLoading} />
       </div>
       <div id="section-contact">
         <ContactSection isLoading={isLoading} />

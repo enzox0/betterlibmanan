@@ -23,10 +23,16 @@ export interface TouristSpotRecord {
   status: ContentStatus;
   fields: {
     name: string;
+    /** The barangay this spot is located in */
+    barangayName: string;
+    /** @deprecated alias for barangayName — kept for compat */
     location: string;
     description: string;
     category: TourismCategory;
-    rating: string;
+    /** Computed average of constituent ratings (e.g. "4.3") — empty string if no ratings */
+    averageRating: string;
+    /** Number of ratings submitted */
+    ratingCount: number;
     entryFee: string;
     tags: string[];
     image: string;
@@ -37,10 +43,9 @@ export interface TouristSpotRecord {
 
 export interface TouristSpotPayload {
   name: string;
-  location?: string;
+  barangayName?: string;
   description?: string;
   category: TourismCategory;
-  rating?: string;
   entryFee?: string;
   tags?: string[];
   imageUrl?: string;
@@ -115,6 +120,22 @@ export async function deleteTouristSpotRecord(
   await apiClient.delete(`/${id}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+}
+
+/**
+ * Submit a constituent rating (1–5 stars) for a tourist spot.
+ * sessionId should be a stable anonymous identifier for this browser session.
+ */
+export async function rateTouristSpotRecord(
+  id: string,
+  sessionId: string,
+  value: number,
+): Promise<TouristSpotRecord> {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    data: TouristSpotRecord;
+  }>(`/${id}/rate`, { sessionId, value });
+  return data.data;
 }
 
 export async function uploadTourismImageRequest(

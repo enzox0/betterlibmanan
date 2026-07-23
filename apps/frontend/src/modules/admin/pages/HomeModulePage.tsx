@@ -11,7 +11,6 @@ import {
   LuMapPin,
   LuEye,
   LuChevronRight,
-  LuUser,
   LuUpload,
   LuBuilding2,
   LuUsers,
@@ -27,7 +26,6 @@ import { usePopularServicesStore } from "../store/popular-services.store";
 import { useAtAGlanceStore } from "../store/atAGlanceStore";
 import { useHistoryStore } from "../store/historyStore";
 import { useLatestUpdatesStore } from "../store/latestUpdatesStore";
-import { useLeadershipStore } from "../store/leadershipStore";
 import { useContactStore } from "../store/contactStore";
 import { useQuizStore } from "../store/quizStore";
 import { useEmergencyContactsStore } from "../store/emergencyContactsStore";
@@ -155,79 +153,6 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // ─── Section-specific layouts ─────────────────────────────────────────────────
 
-/** Leadership — profile cards grid with avatar placeholder */
-function LeadershipLayout({
-  records,
-  editRef,
-  onEdit,
-  onDelete,
-  onAdd,
-}: {
-  records: ContentRecord[];
-  editRef: React.RefObject<HTMLButtonElement>;
-  onEdit: (r: ContentRecord) => void;
-  onDelete: (r: ContentRecord) => void;
-  onAdd: () => void;
-}) {
-  if (records.length === 0) return <EmptyState onAdd={onAdd} />;
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {records.map((record) => (
-        <div
-          key={record.id}
-          className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3"
-        >
-          {/* Avatar + name */}
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center flex-shrink-0">
-              <LuUser className="h-6 w-6 text-blue-400" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">
-                {record.fields.name ?? record.title}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {record.fields.position ?? "—"}
-              </p>
-            </div>
-          </div>
-          {/* Contact info */}
-          <div className="flex flex-col gap-1">
-            {record.fields.email && (
-              <p className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
-                <LuMail
-                  className="h-3.5 w-3.5 text-gray-400 flex-shrink-0"
-                  aria-hidden="true"
-                />
-                {record.fields.email}
-              </p>
-            )}
-            {record.fields.phone && (
-              <p className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
-                <LuPhone
-                  className="h-3.5 w-3.5 text-gray-400 flex-shrink-0"
-                  aria-hidden="true"
-                />
-                {record.fields.phone}
-              </p>
-            )}
-          </div>
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-1 border-t border-gray-50 mt-auto">
-            <StatusBadge status={record.status} />
-            <CardActions
-              record={record}
-              editRef={editRef}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /** Latest Updates — news feed cards with date badge */
 function LatestUpdatesLayout({
   records,
@@ -274,6 +199,16 @@ function LatestUpdatesLayout({
               />
             </div>
           )}
+          {/* Image (if available) */}
+          {record.fields.image ? (
+            <div className="flex-shrink-0">
+              <SafeImage
+                src={record.fields.image as string}
+                alt={record.title}
+                className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+              />
+            </div>
+          ) : null}
           {/* Content */}
           <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
             <div>
@@ -1171,8 +1106,6 @@ function SectionContent({
 }) {
   const props = { records, editRef, onEdit, onDelete, onAdd };
   switch (sectionKey) {
-    case "leadership":
-      return <LeadershipLayout {...props} />;
     case "latest-updates":
       return <LatestUpdatesLayout {...props} />;
     case "popular-services":
@@ -1224,8 +1157,6 @@ export function HomeModulePage() {
   const fetchAdminLatestUpdates = useLatestUpdatesStore(
     (s) => s.fetchAdminRecords,
   );
-  const leadershipRecords = useLeadershipStore((s) => s.adminRecords);
-  const fetchAdminLeadership = useLeadershipStore((s) => s.fetchAdminRecords);
   const contactRecords = useContactStore((s) => s.adminRecords);
   const fetchAdminContact = useContactStore((s) => s.fetchAdminRecords);
   const quizRecords = useQuizStore((s) => s.adminRecords);
@@ -1286,9 +1217,6 @@ export function HomeModulePage() {
     fetchAdminLatestUpdates(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
-    fetchAdminLeadership(accessToken).catch(() => {
-      // Preserve the last known records so the page remains usable offline.
-    });
     fetchAdminContact(accessToken).catch(() => {
       // Preserve the last known records so the page remains usable offline.
     });
@@ -1312,7 +1240,6 @@ export function HomeModulePage() {
     fetchAdminAtAGlance,
     fetchAdminHistory,
     fetchAdminLatestUpdates,
-    fetchAdminLeadership,
     fetchAdminContact,
     fetchAdminQuiz,
     fetchAdminEmergencyContacts,
@@ -1328,7 +1255,6 @@ export function HomeModulePage() {
     "at-a-glance": atAGlanceRecords,
     history: historyRecords,
     "latest-updates": latestUpdatesRecords,
-    leadership: leadershipRecords,
     contact: contactRecords,
     quiz: quizRecords,
     "emergency-contacts": emergencyContactsRecords,
@@ -1361,19 +1287,17 @@ export function HomeModulePage() {
             ? historyRecords
             : activeTab === "latest-updates"
               ? latestUpdatesRecords
-              : activeTab === "leadership"
-                ? leadershipRecords
-                : activeTab === "contact"
-                  ? contactRecords
-                  : activeTab === "quiz"
-                    ? quizRecords
-                    : activeTab === "emergency-contacts"
-                      ? emergencyContactsRecords
-                      : activeTab === "marquee-images"
-                        ? marqueeImagesRecords
-                        : activeTab === "municipal-hall"
-                          ? municipalHallRecords
-                          : (mergedRecords[activeTab] ?? []);
+              : activeTab === "contact"
+                ? contactRecords
+                : activeTab === "quiz"
+                  ? quizRecords
+                  : activeTab === "emergency-contacts"
+                    ? emergencyContactsRecords
+                    : activeTab === "marquee-images"
+                      ? marqueeImagesRecords
+                      : activeTab === "municipal-hall"
+                        ? municipalHallRecords
+                        : (mergedRecords[activeTab] ?? []);
   const activePublished = activeRecords.filter(
     (r) => r.status === "published",
   ).length;

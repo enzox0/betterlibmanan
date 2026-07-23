@@ -6,14 +6,25 @@ import {
   createTouristSpot,
   updateTouristSpot,
   deleteTouristSpot,
+  rateTouristSpot,
   uploadTourismImage,
 } from "./tourism.service";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import type { ITouristSpot } from "./tourism.model";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function computeAverageRating(ratings: { value: number }[]): string {
+  if (!ratings || ratings.length === 0) return "";
+  const sum = ratings.reduce((acc, r) => acc + r.value, 0);
+  return (sum / ratings.length).toFixed(1);
+}
+
+// ─── Validation schemas ───────────────────────────────────────────────────────
+
 const touristSpotSchema = z.object({
   name: z.string().trim().min(1).max(255),
-  location: z.string().trim().max(500).optional(),
+  barangayName: z.string().trim().max(160).optional(),
   description: z.string().trim().optional(),
   category: z.enum([
     "nature",
@@ -23,12 +34,16 @@ const touristSpotSchema = z.object({
     "photo",
     "other",
   ]),
-  rating: z.string().trim().max(10).optional(),
   entryFee: z.string().trim().max(255).optional(),
   tags: z.array(z.string().trim()).optional(),
   imageUrl: z.string().trim().url().or(z.literal("")).optional(),
   imageKey: z.string().trim().optional(),
   status: z.enum(["published", "draft"]).default("draft"),
+});
+
+const rateSpotSchema = z.object({
+  sessionId: z.string().trim().min(1).max(128),
+  value: z.number().int().min(1).max(5),
 });
 
 const uploadSchema = z.object({
@@ -44,6 +59,8 @@ const uploadSchema = z.object({
   data: z.string().trim().min(1),
 });
 
+// ─── Serializer ───────────────────────────────────────────────────────────────
+
 function getClientIp(req: Request): string {
   return (
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
@@ -53,6 +70,7 @@ function getClientIp(req: Request): string {
 }
 
 function toContentRecord(record: ITouristSpot | any) {
+  const ratings: { value: number }[] = record.ratings ?? [];
   return {
     id: String(record._id),
     sectionKey: "tourism",
@@ -60,10 +78,13 @@ function toContentRecord(record: ITouristSpot | any) {
     status: record.status,
     fields: {
       name: record.name,
-      location: record.location ?? "",
+      barangayName: record.barangayName ?? record.location ?? "",
+      // keep 'location' alias for backward compat with old clients
+      location: record.barangayName ?? record.location ?? "",
       description: record.description ?? "",
       category: record.category ?? "other",
-      rating: record.rating ?? "",
+      averageRating: computeAverageRating(ratings),
+      ratingCount: ratings.length,
       entryFee: record.entryFee ?? "",
       tags: record.tags ?? [],
       image: record.imageUrl ?? "",
@@ -72,6 +93,8 @@ function toContentRecord(record: ITouristSpot | any) {
     updatedAt: new Date(record.updatedAt).toISOString(),
   };
 }
+
+// ─── Controllers ──────────────────────────────────────────────────────────────
 
 export async function getPublishedTouristSpots(
   _req: Request,
@@ -218,6 +241,40 @@ export async function deleteAdminTouristSpot(
     }
 
     res.json({ success: true, message: "Tourist spot deleted" });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
+ * POST /api/tourism/:id/rate
+ * Public endpoint — constituents submit a 1–5 star rating.
+ * Body: { sessionId: string, value: number }
+ */
+export async function ratePublicTouristSpot(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const parsed = rateSpotSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map((e) => e.message);
+      res.status(400).json({ success: false, message: errors[0], errors });
+      return;
+    }
+
+    const record = await rateTouristSpot(
+      req.params.id,
+      parsed.data.sessionId,
+      parsed.data.value,
+    );
+
+    res.json({ success: true, data: toContentRecord(record) });
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ success: false, message: err.message });

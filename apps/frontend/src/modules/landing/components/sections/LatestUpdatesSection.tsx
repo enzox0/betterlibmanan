@@ -4,6 +4,7 @@ import { FaCalendarAlt, FaArrowRight } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 import { useLatestUpdatesStore } from "@/modules/admin/store/latestUpdatesStore";
+import SafeImage from "../ui/SafeImage";
 
 const MONTH_NAMES = [
   "January",
@@ -65,7 +66,7 @@ export function LatestUpdatesSection({
               <>
                 <div>
                   <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900">
-                    Latest Updates
+                    Updates & Info
                   </h2>
                   <p className="mt-2 text-sm text-neutral-500">
                     Stay informed about what's happening in our municipality
@@ -103,37 +104,53 @@ export function LatestUpdatesSection({
                 No updates available yet.
               </p>
             ) : (
-              displayedRecords.map((record) => (
-                <div
-                  key={record.id}
-                  className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
-                >
-                  <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
-                    <img
-                      src="/betterlibmanan.png"
-                      alt={record.title}
-                      className="h-full w-full object-cover grayscale"
-                    />
-                  </div>
+              displayedRecords.map((record) => {
+                const handleClick = () => {
+                  if (record.fields.sourceUrl) {
+                    window.open(record.fields.sourceUrl as string, "_blank");
+                  }
+                };
+                return (
+                  <div
+                    key={record.id}
+                    className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
+                    onClick={handleClick}
+                  >
+                    <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
+                      {record.fields.image ? (
+                        <SafeImage
+                          src={record.fields.image as string}
+                          alt={record.title}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src="/betterlibmanan.png"
+                          alt={record.title}
+                          className="h-full w-full object-cover grayscale"
+                        />
+                      )}
+                    </div>
 
-                  <div className="p-4 sm:p-6">
-                    {record.fields.date && (
-                      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
-                        <FaCalendarAlt aria-hidden="true" />
-                        <span>{formatDisplayDate(record.fields.date)}</span>
-                      </div>
-                    )}
-                    <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">
-                      {record.title}
-                    </h3>
-                    {record.fields.summary && (
-                      <p className="text-sm text-neutral-600 line-clamp-2 sm:line-clamp-none">
-                        {record.fields.summary}
-                      </p>
-                    )}
+                    <div className="p-4 sm:p-6">
+                      {record.fields.date && (
+                        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
+                          <FaCalendarAlt aria-hidden="true" />
+                          <span>{formatDisplayDate(record.fields.date)}</span>
+                        </div>
+                      )}
+                      <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">
+                        {record.title}
+                      </h3>
+                      {record.fields.summary && (
+                        <p className="text-sm text-neutral-600 line-clamp-2">
+                          {record.fields.summary}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

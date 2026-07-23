@@ -13,10 +13,9 @@ import {
 
 export interface TouristSpotInput {
   name: string;
-  location?: string;
+  barangayName?: string;
   description?: string;
   category: TourismCategory;
-  rating?: string;
   entryFee?: string;
   tags?: string[];
   imageUrl?: string;
@@ -51,14 +50,15 @@ export async function createTouristSpot(
 ): Promise<ITouristSpot> {
   const created = await TouristSpotModel.create({
     name: input.name.trim(),
-    location: (input.location ?? "").trim(),
+    barangayName: (input.barangayName ?? "").trim(),
+    location: (input.barangayName ?? "").trim(), // keep location in sync
     description: (input.description ?? "").trim(),
     category: input.category,
-    rating: (input.rating ?? "").trim(),
     entryFee: (input.entryFee ?? "").trim(),
     tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean),
     imageUrl: (input.imageUrl ?? "").trim(),
     imageKey: (input.imageKey ?? "").trim(),
+    ratings: [],
     status: input.status,
   });
 
@@ -75,14 +75,18 @@ export async function updateTouristSpot(
   if (!existing) throw tourismError("Tourist spot not found", 404);
 
   existing.name = input.name.trim();
-  existing.location = (input.location ?? existing.location ?? "").trim();
+  existing.barangayName = (
+    input.barangayName ??
+    existing.barangayName ??
+    ""
+  ).trim();
+  existing.location = existing.barangayName; // keep in sync
   existing.description = (
     input.description ??
     existing.description ??
     ""
   ).trim();
   existing.category = input.category;
-  existing.rating = (input.rating ?? existing.rating ?? "").trim();
   existing.entryFee = (input.entryFee ?? existing.entryFee ?? "").trim();
   existing.tags = (input.tags ?? existing.tags ?? [])
     .map((t) => t.trim())
@@ -108,14 +112,35 @@ export async function deleteTouristSpot(id: string): Promise<void> {
   const existing = await TouristSpotModel.findById(id);
   if (!existing) throw tourismError("Tourist spot not found", 404);
 
-  // Clean up the image from R2 if one exists
   if (existing.imageKey) {
-    deleteObjectFromR2(existing.imageKey).catch(() => {
-      // Non-fatal — record is deleted regardless
-    });
+    deleteObjectFromR2(existing.imageKey).catch(() => {});
   }
 
   await existing.deleteOne();
+}
+
+/**
+ * Upsert a constituent's rating for a spot (one rating per sessionId).
+ * Returns the updated spot with recalculated average.
+ */
+export async function rateTouristSpot(
+  id: string,
+  sessionId: string,
+  value: number,
+): Promise<ITouristSpot> {
+  if (!Types.ObjectId.isValid(id)) throw tourismError("Invalid ID", 400);
+  if (value < 1 || value > 5) throw tourismError("Rating must be 1–5", 400);
+  if (!sessionId?.trim()) throw tourismError("Session ID required", 400);
+
+  const spot = await TouristSpotModel.findById(id);
+  if (!spot) throw tourismError("Tourist spot not found", 404);
+
+  // Upsert: remove existing rating for this session, then add new one
+  spot.ratings = spot.ratings.filter((r) => r.sessionId !== sessionId);
+  spot.ratings.push({ sessionId, value, ratedAt: new Date() });
+
+  await spot.save();
+  return TouristSpotModel.findById(id).lean() as any;
 }
 
 export async function uploadTourismImage(

@@ -6,6 +6,7 @@ import {
   createTouristSpotRecord,
   updateTouristSpotRecord,
   deleteTouristSpotRecord,
+  rateTouristSpotRecord,
   type TouristSpotRecord,
   type TouristSpotPayload,
 } from "../services/tourism.api";
@@ -14,6 +15,19 @@ import {
 
 function getErrorMessage(error: any, fallback: string): string {
   return error?.response?.data?.message || error?.message || fallback;
+}
+
+/**
+ * Returns a stable anonymous session ID for this browser.
+ * Used for constituent ratings so each person can only rate once.
+ */
+export function getOrCreateSessionId(): string {
+  const KEY = "tourism_session_id";
+  const existing = localStorage.getItem(KEY);
+  if (existing) return existing;
+  const id = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  localStorage.setItem(KEY, id);
+  return id;
 }
 
 function sortByCreatedAt<T extends { createdAt: string }>(items: T[]): T[] {
@@ -45,6 +59,8 @@ interface TourismState {
   isAdminLoading: boolean;
   isPublicLoading: boolean;
   error: string | null;
+  /** Per-spot visit counts, keyed by spot id */
+  visitCounts: Record<string, number>;
 
   clearError: () => void;
   fetchAdminSpots: (accessToken: string) => Promise<TouristSpotRecord[]>;
@@ -59,6 +75,12 @@ interface TourismState {
     accessToken: string,
   ) => Promise<TouristSpotRecord>;
   deleteSpot: (id: string, accessToken: string) => Promise<void>;
+  /** Increment the visit count for a spot */
+  incrementVisit: (id: string) => void;
+  /** Submit a constituent star rating (1–5) for a spot */
+  rateSpot: (id: string, value: number) => Promise<TouristSpotRecord>;
+  /** Per-spot user rating keyed by spot id (the value this session submitted) */
+  myRatings: Record<string, number>;
 }
 
 // Deduplicate in-flight fetches
@@ -75,8 +97,42 @@ export const useTourismStore = create<TourismState>()(
       isAdminLoading: false,
       isPublicLoading: false,
       error: null,
+      visitCounts: {},
+      myRatings: {},
 
       clearError: () => set({ error: null }),
+
+      incrementVisit: (id) =>
+        set((state) => ({
+          visitCounts: {
+            ...state.visitCounts,
+            [id]: (state.visitCounts[id] ?? 0) + 1,
+          },
+        })),
+
+      rateSpot: async (id, value) => {
+        const sessionId = getOrCreateSessionId();
+        try {
+          const record = await rateTouristSpotRecord(id, sessionId, value);
+          // Update the spot in both lists with fresh averageRating/ratingCount
+          const updateList = (list: TouristSpotRecord[]) => {
+            const idx = list.findIndex((s) => s.id === id);
+            if (idx === -1) return list;
+            const next = [...list];
+            next[idx] = record;
+            return next;
+          };
+          set((state) => ({
+            publicSpots: updateList(state.publicSpots),
+            adminSpots: updateList(state.adminSpots),
+            myRatings: { ...state.myRatings, [id]: value },
+          }));
+          return record;
+        } catch (error: any) {
+          set({ error: getErrorMessage(error, "Failed to submit rating.") });
+          throw error;
+        }
+      },
 
       fetchAdminSpots: async (accessToken) => {
         if (adminFetch) return adminFetch;
@@ -175,6 +231,8 @@ export const useTourismStore = create<TourismState>()(
       partialize: (state) => ({
         adminSpots: state.adminSpots,
         publicSpots: state.publicSpots,
+        visitCounts: state.visitCounts,
+        myRatings: state.myRatings,
       }),
     },
   ),

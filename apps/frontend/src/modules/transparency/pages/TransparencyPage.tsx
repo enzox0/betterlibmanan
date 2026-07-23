@@ -1086,6 +1086,30 @@ export function TransparencyPage() {
 
   return (
     <div className="min-h-screen bg-neutral-100">
+      {/* ── Hero Header ──────────────────────────────────────────────── */}
+      <section className="relative bg-gray-900 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={DOT_BG}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-14 sm:pt-16 sm:pb-20"
+        >
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
+              Budget & Financial Transparency
+            </h1>
+            <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
+              Tracking municipal finances and projects for accountability
+            </p>
+          </div>
+        </motion.div>
+      </section>
+
       {/* ── Budget & Financial Transparency ──────────────────────────── */}
       <BudgetSection reports={financialReports} />
 
