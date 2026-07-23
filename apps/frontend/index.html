@@ -8,14 +8,38 @@
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     
-    <!-- SEO Meta Tags (dynamically updated by React Helmet per route) -->
+    <!-- SEO Meta Tags - Static Fallback (dynamically updated by React per route) -->
     <title>BetterLibmanan.org | Official Portal of Libmanan, Camarines Sur</title>
     <meta name="description" content="BetterLibmanan is the official digital transparency portal for the Municipality of Libmanan, Camarines Sur, Philippines. Access government services, public records, legislation, and community resources." />
-    <meta name="keywords" content="Libmanan, BetterLibmanan, LGU Libmanan, Camarines Sur government, official portal, digital transparency, municipal services, Bicol Region" />
+    <meta name="keywords" content="Libmanan, BetterLibmanan, LGU Libmanan, Camarines Sur government, official portal, digital transparency, municipal services, Bicol Region, Philippines" />
     <meta name="author" content="BetterLibmanan Team" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
     <meta name="bingbot" content="index, follow" />
+    
+    <!-- Pre-rendered Open Graph/Fallback for crawlers that don't execute JS -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.betterlibmanan.org/" />
+    <meta property="og:site_name" content="BetterLibmanan" />
+    <meta property="og:title" content="BetterLibmanan.org | Official Portal of Libmanan, Camarines Sur" />
+    <meta property="og:description" content="Official digital transparency portal for the Municipality of Libmanan, Camarines Sur, Philippines. Access government services, public records, legislation, and community resources." />
+    <meta property="og:image" content="https://www.betterlibmanan.org/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:alt" content="BetterLibmanan - Official Portal of Libmanan, Camarines Sur" />
+    <meta property="og:locale" content="en_PH" />
+    <meta property="og:locale:alternate" content="en_US" />
+    
+    <!-- Pre-rendered Twitter Card fallback -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.betterlibmanan.org/" />
+    <meta name="twitter:title" content="BetterLibmanan.org | Official Portal of Libmanan, Camarines Sur" />
+    <meta name="twitter:description" content="Official digital transparency portal for the Municipality of Libmanan, Camarines Sur, Philippines." />
+    <meta name="twitter:image" content="https://www.betterlibmanan.org/og-image.jpg" />
+    <meta name="twitter:image:alt" content="BetterLibmanan - Official Portal of Libmanan, Camarines Sur" />
+    <meta name="twitter:creator" content="@betterlibmanan" />
+    <meta name="twitter:site" content="@betterlibmanan" />
     
     <!-- Canonical URL -->
     <link rel="canonical" href="https://www.betterlibmanan.org/" />
