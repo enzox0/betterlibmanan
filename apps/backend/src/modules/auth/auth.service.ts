@@ -19,9 +19,17 @@ const ACCESS_SECRET =
 const REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET || "change-me-refresh-secret";
 
-const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || "15m"; // short-lived
+const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || "15m"; // short-lived access token
+// Minimum absolute lifetime of a refresh token from issuance (default: 7 days).
 const REFRESH_TOKEN_TTL_MS =
   parseInt(process.env.JWT_REFRESH_TTL_DAYS || "7", 10) * 24 * 60 * 60 * 1000;
+// Sliding-window inactivity timeout: how long a session can go without any
+// activity before the next refresh is rejected (default: 30 minutes).
+// A refresh call resets this window, so active users never get kicked out.
+const INACTIVITY_TIMEOUT_MS =
+  parseInt(process.env.SESSION_INACTIVITY_TIMEOUT_MINUTES || "30", 10) *
+  60 *
+  1000;
 
 const INVALID_SECRET_PATTERNS = [
   "change-me-access-secret",
@@ -167,6 +175,22 @@ export async function refresh(rawRefreshToken: string): Promise<AuthTokens> {
     }
     const err: any = new Error("Refresh token is no longer valid");
     err.statusCode = 401;
+    throw err;
+  }
+
+  // Inactivity check: if the token hasn't been used within the inactivity
+  // window, treat the session as expired due to inactivity.
+  const now = new Date();
+  const timeSinceLastUse = now.getTime() - storedToken.lastUsedAt.getTime();
+  if (timeSinceLastUse > INACTIVITY_TIMEOUT_MS) {
+    storedToken.isRevoked = true;
+    await storedToken.save();
+    logger.info(
+      `[AUTH] Session expired due to inactivity for admin ${storedToken.adminId}`,
+    );
+    const err: any = new Error("Session expired due to inactivity");
+    err.statusCode = 401;
+    err.code = "INACTIVITY_TIMEOUT";
     throw err;
   }
 
@@ -344,6 +368,12 @@ async function issueTokenPair(
   opts: { userAgent?: string; ipAddress?: string } = {},
 ): Promise<AuthTokens> {
   const jti = crypto.randomUUID();
+  const now = Date.now();
+
+  // The absolute expiry of the refresh token (hard ceiling: 7 days from now).
+  // This is enforced on top of the inactivity window so the token is
+  // always cleaned up even if somehow the inactivity check is bypassed.
+  const expiresAt = new Date(now + REFRESH_TOKEN_TTL_MS);
 
   // Build and sign the JWT refresh token
   const refreshPayload: RefreshTokenPayload = {
@@ -359,7 +389,8 @@ async function issueTokenPair(
   await RefreshTokenModel.create({
     token: rawRefreshToken,
     adminId: admin._id,
-    expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    expiresAt,
+    lastUsedAt: new Date(now),
     userAgent: opts.userAgent,
     ipAddress: opts.ipAddress,
   });
