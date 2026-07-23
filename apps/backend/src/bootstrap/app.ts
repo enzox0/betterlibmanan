@@ -220,7 +220,39 @@ app.use((req, res, next) => {
 });
 
 // =============================================================================
-// API ROUTES - Must come BEFORE static file serving
+// SEO STATIC ROUTES — must come before static middleware & SPA catch-all
+// =============================================================================
+
+// robots.txt — allow crawlers, short-cache so changes propagate quickly
+app.get("/robots.txt", (req, res) => {
+  const robotsPath = path.join(frontendDistPath, "robots.txt");
+  if (!fs.existsSync(robotsPath)) {
+    return res.status(404).type("text/plain").send("Not found");
+  }
+  res
+    .set({
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+    })
+    .sendFile(robotsPath);
+});
+
+// sitemap.xml — XML content-type required for search engines to parse it
+app.get("/sitemap.xml", (req, res) => {
+  const sitemapPath = path.join(frontendDistPath, "sitemap.xml");
+  if (!fs.existsSync(sitemapPath)) {
+    return res.status(404).type("text/plain").send("Not found");
+  }
+  res
+    .set({
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, max-age=86400", // 24 h — update weekly
+    })
+    .sendFile(sitemapPath);
+});
+
+// =============================================================================
+// HEALTH CHECK
 // =============================================================================
 
 // Health check with comprehensive frontend verification
@@ -266,6 +298,10 @@ app.post("/api/health/report", async (req, res) => {
       .json({ success: false, message: "Failed to send health error report" });
   }
 });
+
+// =============================================================================
+// API ROUTES - Must come BEFORE static file serving
+// =============================================================================
 
 // API routes (must come before SPA static / catch-all)
 app.use("/api", apiRouter);
@@ -390,7 +426,7 @@ if (true) {
     // If it looks like a static asset that wasn't found, return 404
     if (
       req.path.match(
-        /\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|otf|eot|webp|avif|map|lottie)$/,
+        /\.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|otf|eot|webp|avif|map|lottie|txt|xml|webmanifest)$/,
       )
     ) {
       logger.warn(`[SPA] 404 - Asset-like path: ${req.path}`);

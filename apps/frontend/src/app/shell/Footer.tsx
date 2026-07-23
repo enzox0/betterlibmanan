@@ -5,7 +5,10 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#1A1A1A] text-gray-300 py-12 px-4">
+    <footer
+      className="bg-[#1A1A1A] text-gray-300 py-12 px-4"
+      aria-label="Site footer"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Logo & Tagline */}
@@ -40,7 +43,7 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <nav aria-label="Quick links">
             <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">
               Quick Links
             </h3>
@@ -102,10 +105,10 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Resources */}
-          <div>
+          <nav aria-label="External resources">
             <h3 className="text-gray-500 font-semibold mb-4 uppercase text-xs sm:text-sm tracking-wider">
               Resources
             </h3>
@@ -133,6 +136,8 @@ export function Footer() {
               <li>
                 <a
                   href="https://www.facebook.com/localgovernmentunitoflibmanan/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-white transition-colors text-sm"
                 >
                   LGU Libmanan Facebook
@@ -151,13 +156,15 @@ export function Footer() {
               <li>
                 <a
                   href="https://cmci.dti.gov.ph/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-white transition-colors text-sm"
                 >
                   CMCI DTI Portal
                 </a>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Right Section */}
           <div className="flex flex-col items-start">

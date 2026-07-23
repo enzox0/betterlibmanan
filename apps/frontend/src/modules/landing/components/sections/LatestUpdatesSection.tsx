@@ -111,8 +111,10 @@ export function LatestUpdatesSection({
                   }
                 };
                 return (
-                  <div
+                  <article
                     key={record.id}
+                    itemScope
+                    itemType="https://schema.org/NewsArticle"
                     className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl transition-all cursor-pointer"
                     onClick={handleClick}
                   >
@@ -120,14 +122,16 @@ export function LatestUpdatesSection({
                       {record.fields.image ? (
                         <SafeImage
                           src={record.fields.image as string}
-                          alt={record.title}
+                          alt={`${record.title} — LGU Libmanan`}
                           className="h-full w-full object-cover"
                         />
                       ) : (
                         <img
                           src="/betterlibmanan.png"
-                          alt={record.title}
-                          className="h-full w-full object-cover grayscale"
+                          alt={`${record.title} — BetterLibmanan`}
+                          className="h-full w-full object-cover grayscale opacity-40"
+                          loading="lazy"
+                          decoding="async"
                         />
                       )}
                     </div>
@@ -136,19 +140,30 @@ export function LatestUpdatesSection({
                       {record.fields.date && (
                         <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
                           <FaCalendarAlt aria-hidden="true" />
-                          <span>{formatDisplayDate(record.fields.date)}</span>
+                          <time
+                            dateTime={record.fields.date}
+                            itemProp="datePublished"
+                          >
+                            {formatDisplayDate(record.fields.date)}
+                          </time>
                         </div>
                       )}
-                      <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">
+                      <h3
+                        className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3"
+                        itemProp="headline"
+                      >
                         {record.title}
                       </h3>
                       {record.fields.summary && (
-                        <p className="text-sm text-neutral-600 line-clamp-2">
+                        <p
+                          className="text-sm text-neutral-600 line-clamp-2"
+                          itemProp="description"
+                        >
                           {record.fields.summary}
                         </p>
                       )}
                     </div>
-                  </div>
+                  </article>
                 );
               })
             )}

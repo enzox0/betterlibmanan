@@ -1,0 +1,47 @@
+# robots.txt — BetterLibmanan.org
+# Official Portal of Libmanan, Camarines Sur, Philippines
+# https://www.betterlibmanan.org
+
+User-agent: *
+Allow: /
+
+# Block admin panel from all crawlers
+Disallow: /admin/
+Disallow: /admin/*
+
+# Block user-specific pages
+Disallow: /profile
+Disallow: /profile/
+
+# Block community detail pages — real-time chat rooms, not indexable content
+Disallow: /community/groups/
+Disallow: /community/discussions/
+
+# Block utility/internal pages
+Disallow: /install
+Disallow: /coming-soon
+
+# Block API endpoints
+Disallow: /api/
+Disallow: /api/*
+
+# Allow key public content explicitly
+Allow: /services/
+Allow: /legislative/
+Allow: /government
+Allow: /transparency
+Allow: /statistics
+Allow: /tourism
+Allow: /contact
+Allow: /about
+Allow: /community/
+Allow: /quiz
+Allow: /latest-updates
+Allow: /faq
+Allow: /sitemap
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://www.betterlibmanan.org/sitemap.xml

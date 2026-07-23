@@ -209,13 +209,26 @@ export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
         <section className="relative bg-gray-900 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-10 pb-12 sm:pt-14 sm:pb-16">
-            <Link
-              to="/services"
-              className="inline-flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors uppercase tracking-wider"
-            >
-              <FaArrowLeft size={10} />
-              All Services
-            </Link>
+            <nav aria-label="Breadcrumb">
+              <ol className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <li>
+                  <Link to="/" className="hover:text-white transition-colors">
+                    Home
+                  </Link>
+                </li>
+                <li aria-hidden="true" className="opacity-40">
+                  ›
+                </li>
+                <li>
+                  <Link
+                    to="/services"
+                    className="hover:text-white transition-colors"
+                  >
+                    All Services
+                  </Link>
+                </li>
+              </ol>
+            </nav>
           </div>
         </section>
 
@@ -274,14 +287,33 @@ export function ServiceCategoryPage({ slug }: ServiceCategoryPageProps) {
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
           className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-10 pb-12 sm:pt-14 sm:pb-16"
         >
-          {/* Back link */}
-          <Link
-            to="/services"
-            className="mb-6 inline-flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors uppercase tracking-wider"
-          >
-            <FaArrowLeft size={10} />
-            All Services
-          </Link>
+          {/* Breadcrumb — semantic nav for SEO + accessibility */}
+          <nav aria-label="Breadcrumb" className="mb-6">
+            <ol className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <li>
+                <Link to="/" className="hover:text-white transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li aria-hidden="true" className="opacity-40">
+                ›
+              </li>
+              <li>
+                <Link
+                  to="/services"
+                  className="hover:text-white transition-colors"
+                >
+                  Services
+                </Link>
+              </li>
+              <li aria-hidden="true" className="opacity-40">
+                ›
+              </li>
+              <li className="text-white" aria-current="page">
+                {category.title}
+              </li>
+            </ol>
+          </nav>
 
           <div className="flex items-center gap-4 sm:gap-5">
             {/* Icon */}

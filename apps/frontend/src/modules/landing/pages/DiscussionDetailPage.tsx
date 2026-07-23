@@ -24,6 +24,7 @@ import { UserAuthModal } from "../components/ui/UserAuthModal";
 import { Avatar } from "../components/ui/Avatar";
 import { useDiscussionSocket } from "@/hooks/useDiscussionSocket";
 import { getSocket } from "@/lib/socket";
+import { usePageMeta } from "@/app/hooks";
 import type {
   Discussion,
   DiscussionReply,
@@ -458,6 +459,17 @@ export function DiscussionDetailPage() {
 
   const replies = id ? (repliesByDiscussion[id] ?? []) : [];
   const replyTree = buildReplyTree(replies);
+
+  // Dynamic SEO — updates title/description once discussion data is available
+  usePageMeta({
+    title: discussion
+      ? `${discussion.title} — Libmanan Community`
+      : "Community Discussion — Libmanan",
+    description: discussion
+      ? `Join the discussion: "${discussion.title}" — community forum on BetterLibmanan, the civic portal for Libmanan, Camarines Sur.`
+      : "Join the community discussion on BetterLibmanan — the civic portal for Libmanan, Camarines Sur.",
+    keywords: `Libmanan community, civic discussion, ${discussion?.title ?? "discussion"}, Camarines Sur`,
+  });
 
   // Newest root replies first; children inside each thread stay oldest-first
   // (natural reading order within a conversation thread).

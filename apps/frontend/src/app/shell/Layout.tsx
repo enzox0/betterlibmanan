@@ -10,6 +10,8 @@ import { InfoFloatingButton } from "@/app/shell/InfoFloatingButton";
 import { UserAuthModal } from "@/modules/landing/components/ui/UserAuthModal";
 import { MiniFloatingNav } from "@/modules/landing/components/sections/MiniFloatingNav";
 import { AutoPageMetadata } from "@/app/components";
+import { BreadcrumbJsonLd } from "@/app/components";
+import { useBreadcrumbs } from "@/app/hooks";
 import { LazyLoader } from "@/app/router/lazy-loader";
 
 /** Routes where the footer and contribute CTA should be hidden. */
@@ -27,10 +29,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const hideFloatingComponents = HIDE_FLOATING_PATTERNS.some((p) =>
     p.test(pathname),
   );
+  const breadcrumbs = useBreadcrumbs();
 
   return (
     <div className="min-h-screen flex flex-col">
       <AutoPageMetadata />
+      <BreadcrumbJsonLd items={breadcrumbs} />
       {!hideFloatingComponents && (
         <MiniFloatingNav isMobileMenuOpen={isMobileMenuOpen} />
       )}
@@ -42,7 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
       <BottomUtilityBar />
-      <main className="flex-1 flex flex-col">
+      <main id="main-content" className="flex-1 flex flex-col">
         <LazyLoader>{children}</LazyLoader>
       </main>
       {!hideFooter && <ContributeCTA />}
@@ -73,9 +77,11 @@ export function LayoutEager({ children }: { children: React.ReactNode }) {
   const hideFloatingComponents = HIDE_FLOATING_PATTERNS.some((p) =>
     p.test(pathname),
   );
+  const breadcrumbs = useBreadcrumbs();
   return (
     <div className="min-h-screen flex flex-col">
       <AutoPageMetadata />
+      <BreadcrumbJsonLd items={breadcrumbs} />
       {!hideFloatingComponents && (
         <MiniFloatingNav isMobileMenuOpen={isMobileMenuOpen} />
       )}
@@ -87,7 +93,9 @@ export function LayoutEager({ children }: { children: React.ReactNode }) {
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
       <BottomUtilityBar />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">
+        {children}
+      </main>
       <ContributeCTA />
       <Footer />
       {!hideFloatingComponents && (

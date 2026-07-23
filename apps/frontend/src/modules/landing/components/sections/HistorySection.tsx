@@ -170,6 +170,26 @@ export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
                       Timeline details are adapted from the history section and
                       infobox of the Libmanan article on Wikipedia.
                     </p>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <a
+                        href="/government"
+                        className="text-xs font-semibold text-blue-600 hover:underline"
+                      >
+                        → View current government officials
+                      </a>
+                      <a
+                        href="/tourism"
+                        className="text-xs font-semibold text-blue-600 hover:underline"
+                      >
+                        → Explore Libmanan tourist spots
+                      </a>
+                      <a
+                        href="/about"
+                        className="text-xs font-semibold text-blue-600 hover:underline"
+                      >
+                        → About BetterLibmanan
+                      </a>
+                    </div>
                   </div>
                 </div>
               </>

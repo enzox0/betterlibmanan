@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import type { StructuredDataObject } from "@/app/config/pageMetadata";
 
 interface PageMetadataProps {
   title: string;
@@ -9,21 +10,31 @@ interface PageMetadataProps {
   ogType?: string;
   twitterCard?: "summary" | "summary_large_image" | "app" | "player";
   canonicalUrl?: string;
+  /** Array of JSON-LD structured data objects to inject into <head>. */
+  structuredData?: StructuredDataObject[];
+  /** Set true when title already includes the site name / separator. */
+  isCustomTitle?: boolean;
+  /** Prevent search engines from indexing this page. */
+  noIndex?: boolean;
 }
 
 const DEFAULT_DESCRIPTION =
-  "BetterLibmanan is a comprehensive, enterprise-grade library management system designed for modern libraries. Streamline cataloging, circulation, and patron management with our intuitive platform.";
+  "BetterLibmanan is the official digital transparency portal for the Municipality of Libmanan, Camarines Sur, Philippines. Access government services, public records, legislation, and community resources.";
 const DEFAULT_KEYWORDS =
-  "library management, library system, cataloging software, circulation management, digital library, book management, library automation, patron management";
+  "Libmanan, BetterLibmanan, LGU Libmanan, Camarines Sur, municipal services, government portal, transparency, Bicol";
 const BASE_URL = "https://www.betterlibmanan.org";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.jpg`;
+const STRUCTURED_DATA_ATTR = "data-page-structured";
 
 /**
- * Component to manage page metadata including title, description, and Open Graph tags
+ * Manages all SEO metadata for a page: <title>, meta tags, Open Graph,
+ * Twitter Cards, canonical URL, and JSON-LD structured data.
+ *
  * @example
  * <PageMetadata
  *   title="Services"
- *   description="Explore our comprehensive library services"
+ *   description="Explore Libmanan government services"
+ *   structuredData={[{ "@context": "https://schema.org", "@type": "WebPage" }]}
  * />
  */
 export function PageMetadata({
@@ -34,84 +45,110 @@ export function PageMetadata({
   ogType = "website",
   twitterCard = "summary_large_image",
   canonicalUrl,
+  structuredData,
+  isCustomTitle = false,
+  noIndex = false,
 }: PageMetadataProps) {
   const location = useLocation();
 
-  // Check if title already contains "BetterLibmanan" or "|" (custom format)
-  const isCustomTitle = title.includes("BetterLibmanan") || title.includes("|");
-  const fullTitle = isCustomTitle ? title : `${title} | BetterLibmanan`;
+  const hasNameOrSep = title.includes("BetterLibmanan") || title.includes("|");
+  const fullTitle =
+    isCustomTitle || hasNameOrSep ? title : `${title} | BetterLibmanan`;
 
   const fullCanonicalUrl = canonicalUrl || `${BASE_URL}${location.pathname}`;
 
   useEffect(() => {
-    // Update document title
+    // ── Document title ───────────────────────────────────────────────────
     document.title = fullTitle;
 
-    // Update meta tags
-    updateMetaTag("name", "description", description);
-    updateMetaTag("name", "keywords", keywords);
+    // ── Primary meta ─────────────────────────────────────────────────────
+    setMeta("name", "description", description);
+    setMeta("name", "keywords", keywords);
+    setMeta(
+      "name",
+      "robots",
+      noIndex
+        ? "noindex, nofollow"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+    );
 
-    // Update Open Graph tags
-    updateMetaTag("property", "og:title", fullTitle);
-    updateMetaTag("property", "og:description", description);
-    updateMetaTag("property", "og:image", ogImage);
-    updateMetaTag("property", "og:type", ogType);
-    updateMetaTag("property", "og:url", fullCanonicalUrl);
+    // ── Open Graph ───────────────────────────────────────────────────────
+    setMeta("property", "og:title", fullTitle);
+    setMeta("property", "og:description", description);
+    setMeta("property", "og:image", ogImage);
+    setMeta("property", "og:type", ogType);
+    setMeta("property", "og:url", fullCanonicalUrl);
+    setMeta("property", "og:site_name", "BetterLibmanan");
+    setMeta("property", "og:locale", "en_PH");
 
-    // Update Twitter Card tags
-    updateMetaTag("name", "twitter:title", fullTitle);
-    updateMetaTag("name", "twitter:description", description);
-    updateMetaTag("name", "twitter:image", ogImage);
-    updateMetaTag("name", "twitter:card", twitterCard);
+    // ── Twitter Card ─────────────────────────────────────────────────────
+    setMeta("name", "twitter:title", fullTitle);
+    setMeta("name", "twitter:description", description);
+    setMeta("name", "twitter:image", ogImage);
+    setMeta("name", "twitter:card", twitterCard);
+    setMeta("name", "twitter:url", fullCanonicalUrl);
 
-    // Update canonical URL
-    updateCanonicalLink(fullCanonicalUrl);
+    // ── Canonical URL ────────────────────────────────────────────────────
+    setCanonical(fullCanonicalUrl);
+
+    // ── Structured data ──────────────────────────────────────────────────
+    // Remove any previously injected per-page JSON-LD scripts
+    document
+      .querySelectorAll(
+        `script[type="application/ld+json"][${STRUCTURED_DATA_ATTR}]`,
+      )
+      .forEach((el) => el.remove());
+
+    if (structuredData?.length) {
+      structuredData.forEach((schema) => {
+        const script = document.createElement("script");
+        script.type = "application/ld+json";
+        script.setAttribute(STRUCTURED_DATA_ATTR, "true");
+        script.textContent = JSON.stringify(schema);
+        document.head.appendChild(script);
+      });
+    }
   }, [
-    title,
+    fullTitle,
     description,
     keywords,
     ogImage,
     ogType,
     twitterCard,
-    fullTitle,
     fullCanonicalUrl,
+    structuredData,
+    noIndex,
   ]);
 
   return null;
 }
 
-/**
- * Helper function to update or create meta tags
- */
-function updateMetaTag(
-  attribute: "name" | "property",
-  attributeValue: string,
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function setMeta(
+  attr: "name" | "property",
+  value: string,
   content: string,
 ): void {
-  let element = document.querySelector(
-    `meta[${attribute}="${attributeValue}"]`,
-  ) as HTMLMetaElement;
-
-  if (!element) {
-    element = document.createElement("meta");
-    element.setAttribute(attribute, attributeValue);
-    document.head.appendChild(element);
+  let el = document.querySelector(
+    `meta[${attr}="${value}"]`,
+  ) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, value);
+    document.head.appendChild(el);
   }
-
-  element.content = content;
+  el.content = content;
 }
 
-/**
- * Helper function to update canonical link
- */
-function updateCanonicalLink(url: string): void {
-  let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
-
+function setCanonical(url: string): void {
+  let link = document.querySelector(
+    'link[rel="canonical"]',
+  ) as HTMLLinkElement | null;
   if (!link) {
     link = document.createElement("link");
     link.rel = "canonical";
     document.head.appendChild(link);
   }
-
   link.href = url;
 }
