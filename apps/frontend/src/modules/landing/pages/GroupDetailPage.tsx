@@ -26,6 +26,7 @@ import { UserAuthModal } from "../components/ui/UserAuthModal";
 import SafeImage, { getProxiedUrl } from "../components/ui/SafeImage";
 import { useGroupSocket } from "@/hooks/useGroupSocket";
 import { getSocket } from "@/lib/socket";
+import { usePageMeta } from "@/app/hooks";
 import type {
   CommunityGroup,
   GroupMessage,
@@ -813,6 +814,17 @@ export function GroupDetailPage() {
   const messages: GroupMessage[] = id ? (messagesByGroup[id] ?? []) : [];
   const members: GroupMember[] = id ? (membersByGroup[id] ?? []) : [];
   const isJoined = id ? joinedGroupIds.includes(id) : false;
+
+  // Dynamic SEO — updates once group data is loaded
+  usePageMeta({
+    title: group
+      ? `${group.name} — Libmanan Community`
+      : "Community Group — Libmanan",
+    description: group?.description
+      ? group.description.slice(0, 155).replace(/\s+/g, " ").trim()
+      : "Connect with residents of Libmanan, Camarines Sur in this community peer group on BetterLibmanan.",
+    keywords: `Libmanan community group, ${group?.name ?? "peer group"}, Camarines Sur residents`,
+  });
   const isFounder =
     !!userId && members.length > 0 && members[0].userId === userId;
   const isMember = isFounder || isJoined;

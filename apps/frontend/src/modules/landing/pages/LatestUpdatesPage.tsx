@@ -91,41 +91,64 @@ export function LatestUpdatesPage() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {publicRecords.map((record, index) => (
-              <motion.div
+              <article
                 key={record.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: Math.min(index * 0.04, 0.5),
-                }}
-                className="bg-white rounded-xl overflow-hidden border border-neutral-200 hover:shadow-md transition-all cursor-pointer"
+                itemScope
+                itemType="https://schema.org/NewsArticle"
               >
-                <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
-                  <img
-                    src="/betterlibmanan.png"
-                    alt={record.title}
-                    className="h-full w-full object-cover grayscale"
-                  />
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: Math.min(index * 0.04, 0.5),
+                  }}
+                  className="bg-white rounded-xl overflow-hidden border border-neutral-200 hover:shadow-md transition-all cursor-pointer"
+                >
+                  <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-200">
+                    <img
+                      src={
+                        (record as any).fields?.image ||
+                        (record as any).fields?.thumbnail ||
+                        "/betterlibmanan.png"
+                      }
+                      alt={`${record.title} — LGU Libmanan update`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "/betterlibmanan.png";
+                        (e.target as HTMLImageElement).className =
+                          "h-full w-full object-cover grayscale opacity-40";
+                      }}
+                    />
+                  </div>
 
-                <div className="p-4 sm:p-6">
-                  {record.fields.date && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
-                      <FaCalendarAlt aria-hidden="true" />
-                      <span>{formatDisplayDate(record.fields.date)}</span>
-                    </div>
-                  )}
-                  <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3">
-                    {record.title}
-                  </h3>
-                  {record.fields.summary && (
-                    <p className="text-sm text-neutral-600 line-clamp-3">
-                      {record.fields.summary}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
+                  <div className="p-4 sm:p-6">
+                    {record.fields.date && (
+                      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3 sm:mb-4">
+                        <FaCalendarAlt aria-hidden="true" />
+                        <span>{formatDisplayDate(record.fields.date)}</span>
+                      </div>
+                    )}
+                    <h3
+                      className="text-base sm:text-xl font-semibold text-neutral-900 mb-2 sm:mb-3"
+                      itemProp="headline"
+                    >
+                      {record.title}
+                    </h3>
+                    {record.fields.summary && (
+                      <p
+                        className="text-sm text-neutral-600 line-clamp-3"
+                        itemProp="description"
+                      >
+                        {record.fields.summary}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              </article>
             ))}
           </div>
         )}
