@@ -752,7 +752,7 @@ export function WeatherMapSection({
                       </div>
                       <div>
                         <div className="text-base font-semibold text-neutral-900">
-                          {weatherLoading ? "—" : `${weather!.humidity}%`}
+                          {weatherLoading || weatherError || !weather ? "—" : `${weather.humidity}%`}
                         </div>
                         <div className="text-xs text-neutral-500">Humidity</div>
                       </div>
@@ -763,12 +763,12 @@ export function WeatherMapSection({
                       </div>
                       <div>
                         <div className="text-base font-semibold text-neutral-900">
-                          {weatherLoading ? "—" : `${weather!.windSpeed} km/h`}
+                          {weatherLoading || weatherError || !weather ? "—" : `${weather.windSpeed} km/h`}
                         </div>
                         <div className="text-xs text-neutral-500">
-                          {weatherLoading
+                          {weatherLoading || weatherError || !weather
                             ? "Wind"
-                            : `Wind ${windDirectionLabel(weather!.windDirection)}`}
+                            : `Wind ${windDirectionLabel(weather.windDirection)}`}
                         </div>
                       </div>
                     </div>
@@ -781,7 +781,7 @@ export function WeatherMapSection({
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-neutral-900">
-                          {weatherLoading ? "—" : `${weather!.feelsLike}°C`}
+                          {weatherLoading || weatherError || !weather ? "—" : `${weather.feelsLike}°C`}
                         </div>
                         <div className="text-xs text-neutral-500">
                           Feels like
@@ -794,7 +794,7 @@ export function WeatherMapSection({
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-neutral-900">
-                          {weatherLoading ? "—" : `${weather!.visibility} km`}
+                          {weatherLoading || weatherError || !weather ? "—" : `${weather.visibility} km`}
                         </div>
                         <div className="text-xs text-neutral-500">
                           Visibility
