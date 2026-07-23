@@ -58,12 +58,6 @@ const FALLBACK_LOGOS = [
     title: "Better San Pablo",
     href: "https://bettersanpablo.org",
   },
-  {
-    src: "/betterLGUs/cabuyao-city-seal.png",
-    alt: "Cabuyao City",
-    title: "Cabuyao City",
-    href: "https://bettercabuyao.org",
-  },
 ];
 
 export default function PartnerLogos() {
