@@ -3,6 +3,9 @@ import { Outlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminHeader } from "./AdminHeader";
+import { useAdminStore } from "../../store/adminStore";
+import { useInactivityTimer } from "../../hooks/useInactivityTimer";
+import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -20,9 +23,19 @@ const sidebarMobileVariants = {
 
 export function AdminDashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isAuthenticated = useAdminStore((s) => s.isAuthenticated);
 
   const handleToggleSidebar = () => setSidebarOpen((prev) => !prev);
   const handleCloseSidebar = () => setSidebarOpen(false);
+
+  // Proactively refresh the access token before it expires so authenticated
+  // users are never interrupted by a TOKEN_EXPIRED 401.
+  useTokenRefresh();
+
+  // Monitor user activity. When the user is idle for the inactivity timeout
+  // window, end the session. Any activity (mouse, keyboard, scroll, etc.)
+  // resets the countdown and keeps the session alive.
+  useInactivityTimer({ enabled: isAuthenticated });
 
   return (
     <div className="h-screen overflow-hidden flex">

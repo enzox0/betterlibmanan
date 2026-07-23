@@ -28,6 +28,8 @@ export interface AdminAuthState {
   logout: () => Promise<void>;
   refreshTokens: () => Promise<boolean>;
   expireSession: () => void;
+  /** Called when the inactivity timer fires — distinct from a token expiry */
+  inactivityLogout: () => void;
   clearAuthError: () => void;
   /** Update the cached admin profile in the store after a self-service update */
   setAdmin: (admin: AdminProfile) => void;
@@ -39,6 +41,8 @@ export interface AdminAuthState {
 
   // Session expired modal
   sessionExpiredModalOpen: boolean;
+  /** 'token' = server rejected token, 'inactivity' = client-side idle timeout */
+  sessionExpiredReason: "token" | "inactivity" | null;
   openSessionExpiredModal: () => void;
   closeSessionExpiredModal: () => void;
 }
@@ -61,11 +65,13 @@ export const useAdminStore = create<AdminStore>()(
       authError: null,
       loginModalOpen: false,
       sessionExpiredModalOpen: false,
+      sessionExpiredReason: null,
 
       openLoginModal: () => set({ loginModalOpen: true }),
       closeLoginModal: () => set({ loginModalOpen: false }),
       openSessionExpiredModal: () => set({ sessionExpiredModalOpen: true }),
-      closeSessionExpiredModal: () => set({ sessionExpiredModalOpen: false }),
+      closeSessionExpiredModal: () =>
+        set({ sessionExpiredModalOpen: false, sessionExpiredReason: null }),
       expireSession: () =>
         set({
           isAuthenticated: false,
@@ -76,6 +82,19 @@ export const useAdminStore = create<AdminStore>()(
           authError: null,
           loginModalOpen: false,
           sessionExpiredModalOpen: true,
+          sessionExpiredReason: "token",
+        }),
+      inactivityLogout: () =>
+        set({
+          isAuthenticated: false,
+          accessToken: null,
+          refreshToken: null,
+          admin: null,
+          isAuthLoading: false,
+          authError: null,
+          loginModalOpen: false,
+          sessionExpiredModalOpen: true,
+          sessionExpiredReason: "inactivity",
         }),
       clearAuthError: () => set({ authError: null }),
 

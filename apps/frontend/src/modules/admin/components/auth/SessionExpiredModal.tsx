@@ -39,7 +39,10 @@ function ModalContent() {
   const closeSessionExpiredModal = useAdminStore(
     (s) => s.closeSessionExpiredModal,
   );
+  const reason = useAdminStore((s) => s.sessionExpiredReason);
   const [countdown, setCountdown] = useState(3);
+
+  const isInactivity = reason === "inactivity";
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -122,12 +125,14 @@ function ModalContent() {
             id="session-expired-title"
             className="text-center text-base font-bold text-gray-900 mb-2"
           >
-            Session Expired
+            {isInactivity ? "Session Timed Out" : "Session Expired"}
           </h2>
 
           {/* Body */}
           <p className="text-center text-sm text-gray-500 mb-6">
-            Your session has expired. Please log in again to continue.
+            {isInactivity
+              ? "You were inactive for a while, so your session has been ended for security. Please log in again to continue."
+              : "Your session has expired. Please log in again to continue."}
             <br />
             <span className="text-xs text-gray-400">
               Redirecting in {countdown} second{countdown !== 1 ? "s" : ""}...

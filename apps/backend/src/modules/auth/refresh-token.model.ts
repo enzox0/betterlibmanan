@@ -7,6 +7,8 @@ export interface IRefreshToken extends Document {
   isRevoked: boolean;
   userAgent?: string;
   ipAddress?: string;
+  /** Sliding-window activity tracking: updated on every successful token rotation. */
+  lastUsedAt: Date;
   createdAt: Date;
 }
 
@@ -38,6 +40,10 @@ const RefreshTokenSchema = new Schema<IRefreshToken>(
     },
     ipAddress: {
       type: String,
+    },
+    lastUsedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   {

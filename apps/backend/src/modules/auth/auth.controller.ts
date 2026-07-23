@@ -137,9 +137,11 @@ export async function handleRefresh(
     });
   } catch (err: any) {
     if (err.statusCode === 401) {
-      res
-        .status(401)
-        .json({ success: false, message: err.message, code: "REFRESH_FAILED" });
+      res.status(401).json({
+        success: false,
+        message: err.message,
+        code: err.code || "REFRESH_FAILED",
+      });
       return;
     }
     next(err);
