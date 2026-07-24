@@ -908,7 +908,7 @@ export function StatisticsPage() {
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline inline-flex items-center gap-1"
               >
-                Philippine Statistics Authority (PSA) — 2020 Census; PhilAtlas
+                Philippine Statistics Authority (PSA) — 2024 Census; PhilAtlas
                 barangay profiles <FaExternalLinkAlt size={8} />
               </a>
             </span>
