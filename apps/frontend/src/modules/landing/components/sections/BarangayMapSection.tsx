@@ -11,6 +11,7 @@ import {
   LuPhone,
   LuUser,
   LuChevronDown,
+  LuExternalLink,
 } from "react-icons/lu";
 import { Skeleton } from "@/shared/ui";
 import { useBarangayMapStore } from "@/modules/admin/store/barangayMapStore";
@@ -25,6 +26,7 @@ type Festival = {
 
 type BarangayData = {
   image: string;
+  imageSource: string;
   description: string;
   touristAttractions: string[];
   population: string;
@@ -36,6 +38,7 @@ type BarangayData = {
 
 const defaultBarangayData: BarangayData = {
   image: "/betterlibmanan.png",
+  imageSource: "",
   description:
     "This barangay does not have published details yet. Check back after the admin adds its profile.",
   touristAttractions: ["Details coming soon"],
@@ -58,8 +61,17 @@ function getPatternId(name: string, prefix: string = "img"): string {
 function parseList(value: string | undefined): string[] {
   return (value ?? "")
     .split(",")
-    .map((item) => item.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function formatFestivalDate(raw: string | undefined): string {
+  if (!raw) return "";
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return `${isoMatch[2]}/${isoMatch[3]}`;
+  }
+  return raw;
 }
 
 type Coordinate = [number, number];
@@ -177,7 +189,11 @@ export function BarangayMapSection({
           // Check if festivals is array of objects (new format) or string (old format)
           let festivals: Festival[];
           if (Array.isArray(record.fields.festivals)) {
-            festivals = record.fields.festivals as Festival[];
+            festivals = (record.fields.festivals as Festival[]).map((f) => ({
+              name: f.name ?? "",
+              date: formatFestivalDate(f.date),
+              description: f.description ?? "",
+            }));
           } else {
             // Fallback for old format (string or undefined)
             const parsed = parseList(record.fields.festivals);
@@ -189,6 +205,7 @@ export function BarangayMapSection({
           }
           return {
             image: record.fields.image || defaultBarangayData.image,
+            imageSource: record.fields.imageSource || "",
             description:
               record.fields.description || defaultBarangayData.description,
             touristAttractions:
@@ -473,7 +490,7 @@ export function BarangayMapSection({
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
                         role="listbox"
-                        className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg py-1"
+                        className="relative mt-2 lg:absolute lg:z-50 lg:mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg py-1"
                       >
                         {searchSuggestions.map((name) => (
                           <li
@@ -500,7 +517,7 @@ export function BarangayMapSection({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -4 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute z-50 mt-1 w-full rounded-lg border border-neutral-200 bg-white shadow-lg py-3 px-3"
+                          className="relative mt-2 lg:absolute lg:z-50 lg:mt-1 w-full rounded-lg border border-neutral-200 bg-white shadow-lg py-3 px-3"
                         >
                           <p className="text-sm text-neutral-500">
                             No barangay found.
@@ -672,280 +689,322 @@ export function BarangayMapSection({
       </motion.div>
 
       <AnimatePresence>
-        {selectedBarangay && selectedData && selectedFeature && (
+        {selectedBarangay && selectedData && (
           <div className="fixed inset-0 z-[9999999]">
+            {/* Shared backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/50"
+              className="absolute inset-0 bg-black/60"
               onClick={() => {
                 setSelectedBarangay(null);
                 setSearchQuery("");
               }}
             />
 
+            {/* Mobile / Tablet — full viewport panel (below lg) */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 lg:hidden bg-white flex flex-col"
+            >
+              <button
+                className="absolute top-4 right-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/70 backdrop-blur-md text-neutral-700 hover:text-neutral-900 hover:bg-white/90 transition-all shadow-sm flex items-center justify-center"
+                onClick={() => {
+                  setSelectedBarangay(null);
+                  setSearchQuery("");
+                }}
+                aria-label="Close barangay details"
+              >
+                <LuX className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
+              </button>
+
+              <div className="relative h-56 sm:h-72 shrink-0">
+                <img
+                  src={getProxiedUrl(selectedData.image)}
+                  alt={selectedBarangay}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/betterlibmanan.png";
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <h1 className="absolute bottom-6 left-6 right-16 text-2xl sm:text-4xl font-bold text-white leading-tight">
+                  {selectedBarangay}
+                </h1>
+                {selectedData.imageSource && (
+                  <a
+                    href={selectedData.imageSource}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                  >
+                    <LuExternalLink
+                      className="w-3 h-3 shrink-0"
+                      aria-hidden="true"
+                    />
+                    Source
+                  </a>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 sm:p-8">
+                <BarangayPanelContent
+                  data={selectedData}
+                  name={selectedBarangay}
+                  expandedFestivalIndex={expandedFestivalIndex}
+                  setExpandedFestivalIndex={setExpandedFestivalIndex}
+                />
+              </div>
+            </motion.div>
+
+            {/* Desktop — split view: left dimmed map area clickable + right side panel (lg+) */}
             <div
-              className="absolute left-0 top-0 w-[70%] h-full hidden items-center justify-center p-8 lg:flex cursor-pointer"
+              className="absolute inset-0 hidden lg:flex"
               onClick={() => {
                 setSelectedBarangay(null);
                 setSearchQuery("");
               }}
             >
+              {/* Left region (click-to-close) — occupies everything but the panel */}
+              <div className="w-[67%] h-full" />
+
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="w-full max-w-3xl flex items-center justify-center pointer-events-none"
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 220 }}
+                className="w-[33%] h-full bg-white shadow-2xl overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
               >
-                <svg
-                  viewBox={`0 0 ${modalSvgWidth} ${modalSvgHeight}`}
-                  className="w-full h-auto max-h-[80vh]"
-                  preserveAspectRatio="xMidYMid meet"
+                <button
+                  className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md text-neutral-700 hover:text-neutral-900 hover:bg-white transition-all shadow-sm flex items-center justify-center"
+                  onClick={() => {
+                    setSelectedBarangay(null);
+                    setSearchQuery("");
+                  }}
+                  aria-label="Close barangay details"
                 >
-                  <defs>
-                    <pattern
-                      id={getPatternId(selectedBarangay, "selected-img")}
-                      patternUnits="objectBoundingBox"
-                      patternContentUnits="objectBoundingBox"
-                      width="1"
-                      height="1"
-                      x="0"
-                      y="0"
-                      viewBox="0 0 1 1"
-                      preserveAspectRatio="xMidYMid slice"
-                    >
-                      <image
-                        href={getProxiedUrl(selectedData.image)}
-                        preserveAspectRatio="xMidYMid slice"
-                        width="1"
-                        height="1"
-                        onError={(e) => {
-                          (e.target as SVGImageElement).setAttribute(
-                            "href",
-                            "/betterlibmanan.png",
-                          );
-                        }}
-                      />
-                    </pattern>
-                  </defs>
-                  <path
-                    d={getPathString(
-                      selectedFeature.geometry,
-                      selectedBounds,
-                      modalSvgWidth,
-                      modalSvgHeight,
-                    )}
-                    fill={`url(#${getPatternId(selectedBarangay, "selected-img")})`}
-                    fillOpacity={1}
-                    stroke="#374151"
-                    strokeWidth={4}
-                  />
-                </svg>
-              </motion.div>
-            </div>
+                  <LuX className="w-5 h-5" aria-hidden="true" />
+                </button>
 
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute right-0 top-0 h-full w-full lg:w-[30%] bg-white shadow-2xl overflow-y-auto"
-            >
-              <button
-                className="absolute top-4 right-4 z-10 p-2 text-neutral-500 hover:text-neutral-900 transition-colors"
-                onClick={() => {
-                  setSelectedBarangay(null);
-                  setSearchQuery("");
-                }}
-              >
-                <LuX className="w-6 h-6" aria-hidden="true" />
-              </button>
-
-              <div className="p-0 lg:p-5">
-                <div className="relative lg:hidden">
+                <div className="relative h-64 shrink-0">
                   <img
                     src={getProxiedUrl(selectedData.image)}
                     alt={selectedBarangay}
-                    className="w-full h-64 object-cover"
+                    className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
                         "/betterlibmanan.png";
                     }}
                   />
-                </div>
-
-                <div className="p-5 lg:p-0">
-                  <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <h1 className="absolute bottom-5 left-6 right-16 text-2xl font-bold text-white leading-tight">
                     {selectedBarangay}
                   </h1>
-
-                  <p className="text-sm text-neutral-600 mb-4">
-                    {selectedData.description}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                        <LuUsers className="w-4 h-4" aria-hidden="true" />
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-neutral-900">
-                          {selectedData.population}
-                        </div>
-                        <div className="mt-0.5 text-[10px] text-neutral-500 flex items-center gap-1">
-                          Population
-                          <span className="text-neutral-400">• PSA data</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                        <LuGlobe className="w-4 h-4" aria-hidden="true" />
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-neutral-900">
-                          {selectedData.area}
-                        </div>
-                        <div className="mt-0.5 text-[10px] text-neutral-500">
-                          Area
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-4 rounded-lg border border-neutral-200 bg-white p-4">
-                    <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                        <LuCamera className="w-3.5 h-3.5" aria-hidden="true" />
-                      </div>
-                      Tourist Attractions
-                    </h3>
-                    <ul className="space-y-1.5">
-                      {selectedData.touristAttractions.map(
-                        (attraction, index) => (
-                          <li
-                            key={index}
-                            className="flex items-center gap-2 text-sm text-neutral-700"
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
-                            {attraction}
-                          </li>
-                        ),
-                      )}
-                    </ul>
-                  </div>
-
-                  <div className="rounded-lg border border-neutral-200 bg-white p-4">
-                    <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                        <LuCalendar
-                          className="w-3.5 h-3.5"
-                          aria-hidden="true"
-                        />
-                      </div>
-                      Festivals
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      {selectedData.festivals.map((festival, index) => (
-                        <div
-                          key={index}
-                          className="border border-neutral-200 rounded-lg overflow-hidden"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (expandedFestivalIndex === index) {
-                                setExpandedFestivalIndex(null);
-                              } else {
-                                setExpandedFestivalIndex(index);
-                              }
-                            }}
-                            className="w-full px-3 py-2 flex items-center justify-between text-left bg-neutral-50 hover:bg-neutral-100 transition-colors"
-                          >
-                            <span className="text-sm font-medium text-neutral-800">
-                              {festival.name}
-                            </span>
-                            <LuChevronDown
-                              className={`w-4 h-4 text-neutral-500 transition-transform ${
-                                expandedFestivalIndex === index
-                                  ? "rotate-180"
-                                  : ""
-                              }`}
-                              aria-hidden="true"
-                            />
-                          </button>
-                          <AnimatePresence>
-                            {expandedFestivalIndex === index && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="px-3 pb-3 pt-2 space-y-2 bg-white">
-                                  {festival.date && (
-                                    <div className="flex items-center gap-2 text-xs text-neutral-600">
-                                      <LuCalendar
-                                        className="w-3.5 h-3.5 text-neutral-400 shrink-0"
-                                        aria-hidden="true"
-                                      />
-                                      <span>{festival.date}</span>
-                                    </div>
-                                  )}
-                                  {festival.description && (
-                                    <p className="text-xs text-neutral-600 leading-relaxed">
-                                      {festival.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Barangay Captain & Phone */}
-                  {(selectedData.captain || selectedData.phone) && (
-                    <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-                      <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                          <LuUser className="w-3.5 h-3.5" aria-hidden="true" />
-                        </div>
-                        Barangay Contact
-                      </h3>
-                      <div className="space-y-2">
-                        {selectedData.captain && (
-                          <div className="flex items-center gap-2 text-sm text-neutral-700">
-                            <LuUser
-                              className="w-3.5 h-3.5 text-neutral-400 shrink-0"
-                              aria-hidden="true"
-                            />
-                            <span>{selectedData.captain}</span>
-                          </div>
-                        )}
-                        {selectedData.phone && (
-                          <div className="flex items-center gap-2 text-sm text-neutral-700">
-                            <LuPhone
-                              className="w-3.5 h-3.5 text-neutral-400 shrink-0"
-                              aria-hidden="true"
-                            />
-                            <span>{selectedData.phone}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  {selectedData.imageSource && (
+                    <a
+                      href={selectedData.imageSource}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                    >
+                      <LuExternalLink
+                        className="w-3 h-3 shrink-0"
+                        aria-hidden="true"
+                      />
+                      Source
+                    </a>
                   )}
                 </div>
-              </div>
-            </motion.div>
+
+                <div className="flex-1 overflow-y-auto p-6">
+                  <BarangayPanelContent
+                    data={selectedData}
+                    name={selectedBarangay}
+                    expandedFestivalIndex={expandedFestivalIndex}
+                    setExpandedFestivalIndex={setExpandedFestivalIndex}
+                  />
+                </div>
+              </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>
     </section>
+  );
+}
+
+function BarangayPanelContent({
+  data,
+  name: _name,
+  expandedFestivalIndex,
+  setExpandedFestivalIndex,
+}: {
+  data: BarangayData;
+  name: string;
+  expandedFestivalIndex: number | null;
+  setExpandedFestivalIndex: (i: number | null) => void;
+}) {
+  return (
+    <>
+      <p className="text-sm sm:text-base text-neutral-600 mb-6">
+        {data.description}
+      </p>
+
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white">
+            <LuUsers className="w-4 h-4" aria-hidden="true" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-neutral-900">
+              {data.population}
+            </div>
+            <div className="mt-0.5 text-[10px] sm:text-xs text-neutral-500 flex items-center gap-1">
+              Population
+              <span className="text-neutral-400">• PSA data</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white">
+            <LuGlobe className="w-4 h-4" aria-hidden="true" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-neutral-900">
+              {data.area}
+            </div>
+            <div className="mt-0.5 text-[10px] sm:text-xs text-neutral-500">
+              Area
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-neutral-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
+            <LuCamera className="w-4 h-4" aria-hidden="true" />
+          </div>
+          Tourist Attractions
+        </h3>
+        <ul className="space-y-2">
+          {data.touristAttractions.map((attraction, index) => (
+            <li
+              key={index}
+              className="flex items-start gap-2.5 text-sm text-neutral-700"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-neutral-500 mt-2 shrink-0" />
+              {attraction}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="rounded-xl border border-neutral-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
+            <LuCalendar className="w-4 h-4" aria-hidden="true" />
+          </div>
+          Festivals
+        </h3>
+        <div className="flex flex-col gap-2">
+          {data.festivals.map((festival, index) => (
+            <div
+              key={index}
+              className="border border-neutral-200 rounded-xl overflow-hidden"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (expandedFestivalIndex === index) {
+                    setExpandedFestivalIndex(null);
+                  } else {
+                    setExpandedFestivalIndex(index);
+                  }
+                }}
+                className="w-full px-4 py-3 flex items-center justify-between text-left bg-neutral-50 hover:bg-neutral-100 transition-colors"
+              >
+                <span className="text-sm font-medium text-neutral-800">
+                  {festival.name}
+                </span>
+                <LuChevronDown
+                  className={`w-4 h-4 text-neutral-500 transition-transform ${
+                    expandedFestivalIndex === index ? "rotate-180" : ""
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+              <AnimatePresence>
+                {expandedFestivalIndex === index && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-4 pt-2 space-y-2.5 bg-white">
+                      {festival.date && (
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-600">
+                          <LuCalendar
+                            className="w-3.5 h-3.5 text-neutral-400 shrink-0"
+                            aria-hidden="true"
+                          />
+                          <span>{formatFestivalDate(festival.date)}</span>
+                        </div>
+                      )}
+                      {festival.description && (
+                        <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+                          {festival.description}
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {(data.captain || data.phone) && (
+        <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
+              <LuUser className="w-4 h-4" aria-hidden="true" />
+            </div>
+            Barangay Contact
+          </h3>
+          <div className="space-y-2.5">
+            {data.captain && (
+              <div className="flex items-center gap-2.5 text-sm text-neutral-700">
+                <LuUser
+                  className="w-4 h-4 text-neutral-400 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{data.captain}</span>
+              </div>
+            )}
+            {data.phone && (
+              <div className="flex items-center gap-2.5 text-sm text-neutral-700">
+                <LuPhone
+                  className="w-4 h-4 text-neutral-400 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{data.phone}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

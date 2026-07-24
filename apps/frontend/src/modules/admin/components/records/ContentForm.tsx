@@ -196,6 +196,40 @@ export function ContentForm({
     initialData?.status ?? "draft",
   );
 
+  function normalizeFestivalDate(raw: string): string {
+    if (!raw) return "";
+    const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+      return `${isoMatch[2]}/${isoMatch[3]}`;
+    }
+    const mdMatch = raw.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (mdMatch) {
+      const mm = mdMatch[1].padStart(2, "0");
+      const dd = mdMatch[2].padStart(2, "0");
+      return `${mm}/${dd}`;
+    }
+    return raw;
+  }
+
+  const MONTH_OPTIONS = [
+    { value: "01", label: "01 — January" },
+    { value: "02", label: "02 — February" },
+    { value: "03", label: "03 — March" },
+    { value: "04", label: "04 — April" },
+    { value: "05", label: "05 — May" },
+    { value: "06", label: "06 — June" },
+    { value: "07", label: "07 — July" },
+    { value: "08", label: "08 — August" },
+    { value: "09", label: "09 — September" },
+    { value: "10", label: "10 — October" },
+    { value: "11", label: "11 — November" },
+    { value: "12", label: "12 — December" },
+  ];
+  const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
+    const d = String(i + 1).padStart(2, "0");
+    return { value: d, label: d };
+  });
+
   // Festival form state
   const [festivals, setFestivals] = useState<
     Array<{ name: string; date: string; description: string }>
@@ -207,7 +241,7 @@ export function ContentForm({
     ) {
       return initialData.fields.festivals.map((f: any) => ({
         name: f.name || "",
-        date: f.date || "",
+        date: normalizeFestivalDate(f.date || ""),
         description: f.description || "",
       }));
     }
@@ -414,6 +448,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.logoUrl = "";
           payload.logoKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.logoUrl = initialData.fields.logo ?? "";
+          payload.logoKey = initialData.fields.logoKey ?? "";
         }
 
         if (mode === "create") {
@@ -432,6 +469,7 @@ export function ContentForm({
           name: string;
           imageUrl?: string;
           imageKey?: string;
+          imageSource?: string;
           description?: string;
           touristAttractions?: string;
           population?: string;
@@ -448,6 +486,7 @@ export function ContentForm({
           touristAttractions: fieldValues.touristAttractions?.trim() ?? "",
           population: fieldValues.population?.trim() ?? "",
           area: fieldValues.area?.trim() ?? "",
+          imageSource: fieldValues.imageSource?.trim() ?? "",
           festivals,
           status,
         };
@@ -466,6 +505,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.imageUrl = "";
           payload.imageKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.imageUrl = initialData.fields.image ?? "";
+          payload.imageKey = initialData.fields.imageKey ?? "";
         }
 
         if (mode === "create") {
@@ -580,6 +622,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.imageUrl = "";
           payload.imageKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.imageUrl = initialData.fields.image ?? "";
+          payload.imageKey = initialData.fields.imageKey ?? "";
         }
 
         if (mode === "create") {
@@ -755,6 +800,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.imageUrl = "";
           payload.imageKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.imageUrl = initialData.fields.imageUrl ?? "";
+          payload.imageKey = initialData.fields.imageKey ?? "";
         }
 
         if (mode === "create") {
@@ -1099,8 +1147,8 @@ export function ContentForm({
                             Remove
                           </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="flex flex-col gap-1">
+                        <div className="grid grid-cols-5 gap-2">
+                          <div className="flex flex-col gap-1 col-span-2">
                             <label className="text-xs text-gray-600">
                               Name
                             </label>
@@ -1116,20 +1164,66 @@ export function ContentForm({
                               placeholder="Enter festival name"
                             />
                           </div>
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1 col-span-3">
                             <label className="text-xs text-gray-600">
                               Date
                             </label>
-                            <input
-                              type="date"
-                              value={festival.date}
-                              onChange={(e) => {
-                                const newFestivals = [...festivals];
-                                newFestivals[index].date = e.target.value;
-                                setFestivals(newFestivals);
-                              }}
-                              className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            />
+                            <div className="grid grid-cols-5 gap-2 min-w-0">
+                              <select
+                                value={
+                                  festival.date ? festival.date.slice(0, 2) : ""
+                                }
+                                onChange={(e) => {
+                                  const newFestivals = [...festivals];
+                                  const mm = e.target.value;
+                                  const currentDd = newFestivals[index].date
+                                    ? newFestivals[index].date.slice(3, 5)
+                                    : "";
+                                  newFestivals[index].date =
+                                    mm && currentDd
+                                      ? `${mm}/${currentDd}`
+                                      : mm
+                                        ? `${mm}/01`
+                                        : "";
+                                  setFestivals(newFestivals);
+                                }}
+                                className="col-span-3 w-full min-w-0 truncate rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                              >
+                                <option value="">Month</option>
+                                {MONTH_OPTIONS.map((m) => (
+                                  <option key={m.value} value={m.value}>
+                                    {m.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                value={
+                                  festival.date ? festival.date.slice(3, 5) : ""
+                                }
+                                onChange={(e) => {
+                                  const newFestivals = [...festivals];
+                                  const dd = e.target.value;
+                                  const currentMm = newFestivals[index].date
+                                    ? newFestivals[index].date.slice(0, 2)
+                                    : "";
+                                  newFestivals[index].date =
+                                    currentMm && dd
+                                      ? `${currentMm}/${dd}`
+                                      : dd
+                                        ? `01/${dd}`
+                                        : "";
+                                  setFestivals(newFestivals);
+                                }}
+                                className="col-span-2 w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                              >
+                                <option value="">Day</option>
+                                {DAY_OPTIONS.map((d) => (
+                                  <option key={d.value} value={d.value}>
+                                    {d.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-col gap-1">

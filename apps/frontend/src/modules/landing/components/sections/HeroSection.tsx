@@ -163,10 +163,13 @@ function SearchCard() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
+            className="absolute left-0 right-0 top-full z-[9999999] mt-1.5 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
           >
             {/* Category pills */}
-            <div className="flex flex-wrap gap-1.5 px-3 py-3 sm:px-4">
+            <div
+              className="hero-search-categories flex gap-1.5 overflow-x-auto px-3 py-3 sm:px-4 whitespace-nowrap"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.label}
@@ -180,7 +183,7 @@ function SearchCard() {
                     }
                     setFocused(false);
                   }}
-                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                     activeCategory === cat.label
                       ? "border-blue-600 bg-blue-600 text-white"
                       : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50"
@@ -388,12 +391,15 @@ export function HeroSection() {
           from { transform: translateX(0); }
           to   { transform: translateX(-25%); }
         }
+        .hero-search-categories::-webkit-scrollbar {
+          display: none;
+        }
       `}</style>
 
-      <section className="relative overflow-hidden bg-gray-950">
+      <section className="relative z-20 bg-gray-950">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 flex flex-col"
+          className="pointer-events-none absolute inset-0 flex flex-col overflow-hidden"
         >
           <MarqueeRow images={rowImages[0]} duration={90} reverse />
           <MarqueeRow images={rowImages[1]} duration={70} />
@@ -427,11 +433,15 @@ export function HeroSection() {
           <div className="mx-auto flex min-h-[auto] max-w-7xl items-center px-4 pb-6 pt-6 sm:min-h-[70dvh] sm:px-6 lg:px-8 lg:pb-12 lg:pt-10">
             <div className="grid w-full items-center gap-4 lg:grid-cols-2 lg:gap-6">
               <div className="text-center lg:text-left">
-                <h1 className="mb-3 text-xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl xl:text-5xl">
-                  Welcome to <span className="text-yellow-400">Better</span>
-                  <span className="text-blue-400">Libmanan</span>.org
+                <h1 className="mb-3 text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl xl:text-5xl">
+                  Welcome to
+                  <br />
+                  <span className="text-4xl sm:text-4xl lg:text-5xl xl:text-6xl">
+                    <span className="text-yellow-400">Better</span>
+                    <span className="text-blue-400">Libmanan</span>.org
+                  </span>
                 </h1>
-                <p className="mb-4 max-w-2xl text-xs leading-relaxed text-gray-300 sm:text-base lg:text-lg">
+                <p className="mb-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base lg:text-lg">
                   Access government services, information, and resources for the
                   people of Libmanan, Camarines Sur.
                 </p>

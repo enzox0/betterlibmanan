@@ -146,6 +146,15 @@ function normalizeKey(name: string) {
   return name.trim().toLowerCase();
 }
 
+function formatFestivalDate(raw: string | undefined): string {
+  if (!raw) return "";
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return `${isoMatch[2]}/${isoMatch[3]}`;
+  }
+  return raw;
+}
+
 type BarangayDetailData = {
   image: string;
   description: string;
@@ -444,7 +453,9 @@ function BarangayDetailPanel({
                         >
                           <div className="px-3 pb-3 pt-1 space-y-1">
                             {f.date && (
-                              <p className="text-xs text-gray-500">{f.date}</p>
+                              <p className="text-xs text-gray-500">
+                                {formatFestivalDate(f.date)}
+                              </p>
                             )}
                             {f.description && (
                               <p className="text-xs text-gray-600 leading-relaxed">
@@ -758,7 +769,11 @@ export function TourismPage() {
           .filter(Boolean);
         let festivals: { name: string; date?: string; description?: string }[];
         if (Array.isArray(record.fields.festivals)) {
-          festivals = record.fields.festivals as any;
+          festivals = (record.fields.festivals as any[]).map((f) => ({
+            name: f.name ?? "",
+            date: formatFestivalDate(f.date),
+            description: f.description ?? "",
+          }));
         } else {
           festivals = (record.fields.festivals ?? "")
             .split(",")

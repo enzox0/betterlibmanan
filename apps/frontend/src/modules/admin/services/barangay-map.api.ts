@@ -15,6 +15,7 @@ export interface BarangayMapPayload {
   name: string;
   imageUrl?: string;
   imageKey?: string;
+  imageSource?: string;
   description?: string;
   touristAttractions?: string;
   population?: string;

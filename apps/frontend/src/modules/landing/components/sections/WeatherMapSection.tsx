@@ -176,16 +176,28 @@ function windDirectionLabel(deg: number): string {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function normalizeBarangayKey(name: string): string {
-  return name.trim().toLowerCase();
+function normalizeBarangayKey(name: string | undefined | null): string {
+  return (name ?? "").trim().toLowerCase();
 }
 
 function parseList(value: string | string[] | undefined): string[] {
-  if (Array.isArray(value)) return value.map((s) => s.trim()).filter(Boolean);
+  if (Array.isArray(value))
+    return value
+      .map((s) => (typeof s === "string" ? s.trim() : ""))
+      .filter(Boolean);
   return (value ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function formatFestivalDate(raw: string | undefined): string {
+  if (!raw) return "";
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return `${isoMatch[2]}/${isoMatch[3]}`;
+  }
+  return raw;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -314,12 +326,29 @@ export function WeatherMapSection({
 
     const map = new Map<string, BarangayPanelData>();
     for (const record of publicRecords) {
-      const name = record.fields.name ?? record.title;
+      const name = record.fields.name ?? record.title ?? "";
       const key = normalizeBarangayKey(name);
       const touristAttractions = parseList(record.fields.touristAttractions);
-      const festivals: Festival[] = parseList(record.fields.festivals).map(
-        (name) => ({ name }),
-      );
+      let festivals: Festival[];
+      if (Array.isArray(record.fields.festivals)) {
+        const raw = record.fields.festivals as any[];
+        if (raw.length > 0 && typeof raw[0] === "object") {
+          festivals = raw.map((f) => ({
+            name: f.name ?? "",
+            date: formatFestivalDate(f.date),
+            description: f.description ?? "",
+          }));
+        } else {
+          festivals = raw
+            .map((n) => (typeof n === "string" ? n.trim() : ""))
+            .filter(Boolean)
+            .map((name) => ({ name }));
+        }
+      } else {
+        festivals = parseList(record.fields.festivals).map((name) => ({
+          name,
+        }));
+      }
       const gov = govLookup.get(key);
       map.set(key, {
         name,
@@ -907,34 +936,36 @@ export function WeatherMapSection({
             )}
           </AnimatePresence>
 
-          {/* ── Barangay info panel — fixed overlay matching BarangayMapSection ── */}
+          {/* ── Barangay info panel — responsive: fullscreen (<lg), right-side (lg+) ── */}
           <AnimatePresence>
             {selectedBarangay && (
               <div className="fixed inset-0 z-[9999999]">
-                {/* Backdrop */}
-                <div
-                  className="absolute inset-0 bg-black/50"
+                {/* Shared backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-black/60"
                   onClick={() => setSelectedBarangay(null)}
                 />
 
-                {/* Right panel — full viewport height, no left image */}
+                {/* Mobile / Tablet — full viewport panel (below lg) */}
                 <motion.div
-                  initial={{ x: "100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "100%" }}
-                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                  className="absolute right-0 top-0 h-full w-full sm:w-[420px] bg-white shadow-2xl overflow-y-auto"
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 24 }}
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-0 lg:hidden bg-white flex flex-col"
                 >
                   <button
-                    className="absolute top-4 right-4 z-10 p-2 text-neutral-500 hover:text-neutral-900 transition-colors"
+                    className="absolute top-4 right-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/70 backdrop-blur-md text-neutral-700 hover:text-neutral-900 hover:bg-white/90 transition-all shadow-sm flex items-center justify-center"
                     onClick={() => setSelectedBarangay(null)}
                     aria-label="Close barangay panel"
                   >
-                    <LuX className="w-6 h-6" aria-hidden="true" />
+                    <LuX className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
                   </button>
 
-                  {/* Hero image — always shown at the top of the panel */}
-                  <div className="relative h-56 shrink-0">
+                  <div className="relative h-56 sm:h-72 shrink-0">
                     <img
                       src={selectedBarangay.image}
                       alt={selectedBarangay.name}
@@ -944,132 +975,61 @@ export function WeatherMapSection({
                           "/betterlibmanan.png";
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <h1 className="absolute bottom-4 left-5 right-12 text-xl sm:text-2xl font-bold text-white leading-tight">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <h1 className="absolute bottom-6 left-6 right-16 text-2xl sm:text-4xl font-bold text-white leading-tight">
                       {selectedBarangay.name}
                     </h1>
                   </div>
 
-                  <div className="p-5">
-                    <p className="text-sm text-neutral-600 mb-4">
-                      {selectedBarangay.description}
-                    </p>
-
-                    {/* Population + Area */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                          <LuUsers className="w-4 h-4" aria-hidden="true" />
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-neutral-900">
-                            {selectedBarangay.population}
-                          </div>
-                          <div className="mt-0.5 text-[10px] text-neutral-500">
-                            Population
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                          <LuGlobe className="w-4 h-4" aria-hidden="true" />
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-neutral-900">
-                            {selectedBarangay.area}
-                          </div>
-                          <div className="mt-0.5 text-[10px] text-neutral-500">
-                            Area
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Tourist Attractions */}
-                    <div className="mb-4 rounded-lg border border-neutral-200 bg-white p-4">
-                      <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                          <LuCamera
-                            className="w-3.5 h-3.5"
-                            aria-hidden="true"
-                          />
-                        </div>
-                        Tourist Attractions
-                      </h3>
-                      <ul className="space-y-1.5">
-                        {selectedBarangay.touristAttractions.map(
-                          (attraction, i) => (
-                            <li
-                              key={i}
-                              className="flex items-center gap-2 text-sm text-neutral-700"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full bg-neutral-500 shrink-0" />
-                              {attraction}
-                            </li>
-                          ),
-                        )}
-                      </ul>
-                    </div>
-
-                    {/* Festivals */}
-                    <div className="rounded-lg border border-neutral-200 bg-white p-4">
-                      <h3 className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                          <LuCalendar
-                            className="w-3.5 h-3.5"
-                            aria-hidden="true"
-                          />
-                        </div>
-                        Festivals
-                      </h3>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedBarangay.festivals.map((festival, i) => (
-                          <span
-                            key={i}
-                            className="px-3 py-1.5 bg-neutral-100 text-neutral-800 rounded-full text-xs font-medium"
-                          >
-                            {festival.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Barangay Captain & Phone */}
-                    {(selectedBarangay.captain || selectedBarangay.phone) && (
-                      <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-                        <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
-                            <LuUser
-                              className="w-3.5 h-3.5"
-                              aria-hidden="true"
-                            />
-                          </div>
-                          Barangay Contact
-                        </h3>
-                        <div className="space-y-2">
-                          {selectedBarangay.captain && (
-                            <div className="flex items-center gap-2 text-sm text-neutral-700">
-                              <LuUser
-                                className="w-3.5 h-3.5 text-neutral-400 shrink-0"
-                                aria-hidden="true"
-                              />
-                              <span>{selectedBarangay.captain}</span>
-                            </div>
-                          )}
-                          {selectedBarangay.phone && (
-                            <div className="flex items-center gap-2 text-sm text-neutral-700">
-                              <LuPhone
-                                className="w-3.5 h-3.5 text-neutral-400 shrink-0"
-                                aria-hidden="true"
-                              />
-                              <span>{selectedBarangay.phone}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex-1 overflow-y-auto p-5 sm:p-8">
+                    <WeatherPanelContent data={selectedBarangay} />
                   </div>
                 </motion.div>
+
+                {/* Desktop — split view: left click-to-close + right side panel (lg+) */}
+                <div
+                  className="absolute inset-0 hidden lg:flex"
+                  onClick={() => setSelectedBarangay(null)}
+                >
+                  <div className="w-[67%] h-full" />
+
+                  <motion.div
+                    initial={{ x: "100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "100%" }}
+                    transition={{ type: "spring", damping: 28, stiffness: 220 }}
+                    className="w-[33%] h-full bg-white shadow-2xl overflow-hidden flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md text-neutral-700 hover:text-neutral-900 hover:bg-white transition-all shadow-sm flex items-center justify-center"
+                      onClick={() => setSelectedBarangay(null)}
+                      aria-label="Close barangay panel"
+                    >
+                      <LuX className="w-5 h-5" aria-hidden="true" />
+                    </button>
+
+                    <div className="relative h-64 shrink-0">
+                      <img
+                        src={selectedBarangay.image}
+                        alt={selectedBarangay.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "/betterlibmanan.png";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <h1 className="absolute bottom-5 left-6 right-16 text-2xl font-bold text-white leading-tight">
+                        {selectedBarangay.name}
+                      </h1>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6">
+                      <WeatherPanelContent data={selectedBarangay} />
+                    </div>
+                  </motion.div>
+                </div>
               </div>
             )}
           </AnimatePresence>
@@ -1191,7 +1151,7 @@ function MunicipalHallContent({
         </h2>
 
         <button
-          className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
+          className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors flex items-center justify-center"
           onClick={onClose}
           aria-label="Close"
         >
@@ -1277,6 +1237,115 @@ function MunicipalHallContent({
         )}
       </div>
     </div>
+  );
+}
+
+function WeatherPanelContent({ data }: { data: BarangayPanelData }) {
+  return (
+    <>
+      <p className="text-sm sm:text-base text-neutral-600 mb-6">
+        {data.description}
+      </p>
+
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white">
+            <LuUsers className="w-4 h-4" aria-hidden="true" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-neutral-900">
+              {data.population}
+            </div>
+            <div className="mt-0.5 text-[10px] sm:text-xs text-neutral-500">
+              Population
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white">
+            <LuGlobe className="w-4 h-4" aria-hidden="true" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-neutral-900">
+              {data.area}
+            </div>
+            <div className="mt-0.5 text-[10px] sm:text-xs text-neutral-500">
+              Area
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-neutral-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
+            <LuCamera className="w-4 h-4" aria-hidden="true" />
+          </div>
+          Tourist Attractions
+        </h3>
+        <ul className="space-y-2">
+          {data.touristAttractions.map((attraction, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-2.5 text-sm text-neutral-700"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-neutral-500 mt-2 shrink-0" />
+              {attraction}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="rounded-xl border border-neutral-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
+            <LuCalendar className="w-4 h-4" aria-hidden="true" />
+          </div>
+          Festivals
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {data.festivals.map((festival, i) => (
+            <span
+              key={i}
+              className="px-4 py-2 bg-neutral-100 text-neutral-800 rounded-full text-xs sm:text-sm font-medium"
+            >
+              {festival.name}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {(data.captain || data.phone) && (
+        <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700">
+              <LuUser className="w-4 h-4" aria-hidden="true" />
+            </div>
+            Barangay Contact
+          </h3>
+          <div className="space-y-2.5">
+            {data.captain && (
+              <div className="flex items-center gap-2.5 text-sm text-neutral-700">
+                <LuUser
+                  className="w-4 h-4 text-neutral-400 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{data.captain}</span>
+              </div>
+            )}
+            {data.phone && (
+              <div className="flex items-center gap-2.5 text-sm text-neutral-700">
+                <LuPhone
+                  className="w-4 h-4 text-neutral-400 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{data.phone}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
