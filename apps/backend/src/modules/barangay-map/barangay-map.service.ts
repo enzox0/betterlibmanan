@@ -16,6 +16,7 @@ export interface BarangayMapInput {
   name: string;
   imageUrl?: string;
   imageKey?: string;
+  imageSource?: string;
   description?: string;
   touristAttractions?: string[];
   population?: string;
@@ -106,6 +107,7 @@ export async function createBarangayMap(
     name: input.name.trim(),
     imageUrl: normalizeString(input.imageUrl),
     imageKey: normalizeString(input.imageKey),
+    imageSource: normalizeString(input.imageSource),
     description: normalizeString(input.description),
     touristAttractions: normalizeList(input.touristAttractions),
     population: normalizeString(input.population),
@@ -148,6 +150,7 @@ export async function updateBarangayMap(
   existing.area = normalizeString(input.area);
   existing.festivals = normalizeFestivals(input.festivals);
   existing.status = input.status;
+  existing.imageSource = normalizeString(input.imageSource);
 
   if (input.imageUrl !== undefined) {
     existing.imageUrl = normalizeString(input.imageUrl);

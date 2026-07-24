@@ -12,6 +12,7 @@ export interface IBarangayMap extends Document {
   name: string;
   imageUrl: string;
   imageKey: string;
+  imageSource: string;
   description: string;
   touristAttractions: string[];
   population: string;
@@ -60,6 +61,12 @@ const BarangayMapSchema = new Schema<IBarangayMap>(
       type: String,
       trim: true,
       default: "",
+    },
+    imageSource: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 2048,
     },
     description: {
       type: String,
