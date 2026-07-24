@@ -448,6 +448,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.logoUrl = "";
           payload.logoKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.logoUrl = initialData.fields.logo ?? "";
+          payload.logoKey = initialData.fields.logoKey ?? "";
         }
 
         if (mode === "create") {
@@ -466,6 +469,7 @@ export function ContentForm({
           name: string;
           imageUrl?: string;
           imageKey?: string;
+          imageSource?: string;
           description?: string;
           touristAttractions?: string;
           population?: string;
@@ -482,6 +486,7 @@ export function ContentForm({
           touristAttractions: fieldValues.touristAttractions?.trim() ?? "",
           population: fieldValues.population?.trim() ?? "",
           area: fieldValues.area?.trim() ?? "",
+          imageSource: fieldValues.imageSource?.trim() ?? "",
           festivals,
           status,
         };
@@ -500,6 +505,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.imageUrl = "";
           payload.imageKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.imageUrl = initialData.fields.image ?? "";
+          payload.imageKey = initialData.fields.imageKey ?? "";
         }
 
         if (mode === "create") {
@@ -614,6 +622,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.imageUrl = "";
           payload.imageKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.imageUrl = initialData.fields.image ?? "";
+          payload.imageKey = initialData.fields.imageKey ?? "";
         }
 
         if (mode === "create") {
@@ -789,6 +800,9 @@ export function ContentForm({
         } else if (imageChangeState === "removed") {
           payload.imageUrl = "";
           payload.imageKey = "";
+        } else if (imageChangeState === "unchanged" && initialData) {
+          payload.imageUrl = initialData.fields.imageUrl ?? "";
+          payload.imageKey = initialData.fields.imageKey ?? "";
         }
 
         if (mode === "create") {
