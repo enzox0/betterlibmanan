@@ -20,7 +20,7 @@ import {
   LuUser,
 } from "react-icons/lu";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
-import SafeImage from "../ui/SafeImage";
+import SafeImage, { getProxiedUrl } from "../ui/SafeImage";
 import { useBarangayMapStore } from "@/modules/admin/store/barangayMapStore";
 import { useMunicipalHallStore } from "@/modules/admin/store/municipalHallStore";
 import { useGovernmentStore } from "@/modules/admin/store/governmentStore";
@@ -967,7 +967,7 @@ export function WeatherMapSection({
 
                   <div className="relative h-56 sm:h-72 shrink-0">
                     <img
-                      src={selectedBarangay.image}
+                      src={getProxiedUrl(selectedBarangay.image)}
                       alt={selectedBarangay.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -1011,7 +1011,7 @@ export function WeatherMapSection({
 
                     <div className="relative h-64 shrink-0">
                       <img
-                        src={selectedBarangay.image}
+                        src={getProxiedUrl(selectedBarangay.image)}
                         alt={selectedBarangay.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
