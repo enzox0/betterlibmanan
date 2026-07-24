@@ -41,29 +41,15 @@ export const COUNTRY = "Philippines";
 
 const ORGANIZATION_SCHEMA: StructuredDataObject = {
   "@context": "https://schema.org",
-  "@type": "GovernmentOrganization",
-  name: "Local Government Unit of Libmanan",
-  alternateName: "LGU Libmanan",
+  "@type": "Organization",
+  name: "BetterLibmanan",
   url: BASE_URL,
   logo: `${BASE_URL}/betterlibmanan.png`,
   sameAs: [
+    "https://bettergov.ph",
     "https://www.facebook.com/profile.php?id=61590902231040",
     "https://github.com/enzox0/betterlibmanan",
   ],
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: MUNICIPALITY,
-    addressRegion: PROVINCE,
-    addressCountry: "PH",
-  },
-  areaServed: {
-    "@type": "City",
-    name: MUNICIPALITY,
-    containedInPlace: {
-      "@type": "AdministrativeArea",
-      name: PROVINCE,
-    },
-  },
 };
 
 // ---------------------------------------------------------------------------
@@ -86,23 +72,12 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         name: SITE_NAME,
         url: BASE_URL,
         description:
-          "Official digital transparency portal for the Municipality of Libmanan, Camarines Sur.",
+          "Digital transparency portal for the Municipality of Libmanan, Camarines Sur — built by tech volunteers.",
         potentialAction: {
           "@type": "SearchAction",
           target: `${BASE_URL}/search?q={search_term_string}`,
           "query-input": "required name=search_term_string",
         },
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "GovernmentService",
-        name: "BetterLibmanan Digital Portal",
-        description:
-          "One-stop digital portal for Libmanan residents to access government services, public information, and community resources.",
-        provider: { "@type": "GovernmentOrganization", name: "LGU Libmanan" },
-        serviceType: "Municipal Government Portal",
-        areaServed: { "@type": "City", name: "Libmanan" },
-        url: BASE_URL,
       },
     ],
   },
@@ -147,7 +122,6 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     keywords:
       "Libmanan government, municipal officials, LGU Libmanan, mayor, councilors, government structure, Camarines Sur",
     structuredData: [
-      ORGANIZATION_SCHEMA,
       {
         "@context": "https://schema.org",
         "@type": "GovernmentBuilding",

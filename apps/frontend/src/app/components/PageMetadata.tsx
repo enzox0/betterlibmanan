@@ -23,7 +23,7 @@ const DEFAULT_DESCRIPTION =
 const DEFAULT_KEYWORDS =
   "Libmanan, BetterLibmanan, LGU Libmanan, Camarines Sur, municipal services, government portal, transparency, Bicol";
 const BASE_URL = "https://www.betterlibmanan.org";
-const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.jpg`;
+const DEFAULT_OG_IMAGE = `${BASE_URL}/betterlibmanan-extended-logo.png`;
 const STRUCTURED_DATA_ATTR = "data-page-structured";
 
 /**
