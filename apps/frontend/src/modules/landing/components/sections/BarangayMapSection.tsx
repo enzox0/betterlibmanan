@@ -11,6 +11,7 @@ import {
   LuPhone,
   LuUser,
   LuChevronDown,
+  LuExternalLink,
 } from "react-icons/lu";
 import { Skeleton } from "@/shared/ui";
 import { useBarangayMapStore } from "@/modules/admin/store/barangayMapStore";
@@ -25,6 +26,7 @@ type Festival = {
 
 type BarangayData = {
   image: string;
+  imageSource: string;
   description: string;
   touristAttractions: string[];
   population: string;
@@ -36,6 +38,7 @@ type BarangayData = {
 
 const defaultBarangayData: BarangayData = {
   image: "/betterlibmanan.png",
+  imageSource: "",
   description:
     "This barangay does not have published details yet. Check back after the admin adds its profile.",
   touristAttractions: ["Details coming soon"],
@@ -202,6 +205,7 @@ export function BarangayMapSection({
           }
           return {
             image: record.fields.image || defaultBarangayData.image,
+            imageSource: record.fields.imageSource || "",
             description:
               record.fields.description || defaultBarangayData.description,
             touristAttractions:
@@ -731,6 +735,21 @@ export function BarangayMapSection({
                 <h1 className="absolute bottom-6 left-6 right-16 text-2xl sm:text-4xl font-bold text-white leading-tight">
                   {selectedBarangay}
                 </h1>
+                {selectedData.imageSource && (
+                  <a
+                    href={selectedData.imageSource}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                  >
+                    <LuExternalLink
+                      className="w-3 h-3 shrink-0"
+                      aria-hidden="true"
+                    />
+                    Source
+                  </a>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto p-5 sm:p-8">
@@ -787,6 +806,21 @@ export function BarangayMapSection({
                   <h1 className="absolute bottom-5 left-6 right-16 text-2xl font-bold text-white leading-tight">
                     {selectedBarangay}
                   </h1>
+                  {selectedData.imageSource && (
+                    <a
+                      href={selectedData.imageSource}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                    >
+                      <LuExternalLink
+                        className="w-3 h-3 shrink-0"
+                        aria-hidden="true"
+                      />
+                      Source
+                    </a>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">

@@ -176,8 +176,8 @@ function windDirectionLabel(deg: number): string {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function normalizeBarangayKey(name: string): string {
-  return name.trim().toLowerCase();
+function normalizeBarangayKey(name: string | undefined | null): string {
+  return (name ?? "").trim().toLowerCase();
 }
 
 function parseList(value: string | string[] | undefined): string[] {
@@ -326,7 +326,7 @@ export function WeatherMapSection({
 
     const map = new Map<string, BarangayPanelData>();
     for (const record of publicRecords) {
-      const name = record.fields.name ?? record.title;
+      const name = record.fields.name ?? record.title ?? "";
       const key = normalizeBarangayKey(name);
       const touristAttractions = parseList(record.fields.touristAttractions);
       let festivals: Festival[];
