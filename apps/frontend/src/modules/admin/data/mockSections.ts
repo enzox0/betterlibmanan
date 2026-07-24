@@ -248,6 +248,12 @@ export const mockSections: SectionSchema[] = [
         type: "text",
         required: false,
       },
+      {
+        key: "imageSource",
+        label: "Image Source URL",
+        type: "url",
+        required: false,
+      },
     ],
   },
   {
