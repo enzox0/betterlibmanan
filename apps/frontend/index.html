@@ -92,66 +92,34 @@
     <link rel="preconnect" href="https://pub.r2.dev" crossorigin />
     <link rel="dns-prefetch" href="https://pub.r2.dev" />
     
-    <!-- Structured Data (JSON-LD) — GovernmentOrganization + WebSite -->
+    <!-- Structured Data (JSON-LD) — WebSite + Organization -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "BetterLibmanan",
-      "description": "Official digital transparency portal for the Municipality of Libmanan, Camarines Sur, Philippines.",
+      "description": "Digital transparency portal for the Municipality of Libmanan, Camarines Sur, Philippines — built by tech volunteers.",
       "url": "https://www.betterlibmanan.org",
       "inLanguage": "en",
       "publisher": {
-        "@type": "GovernmentOrganization",
-        "name": "BetterLibmanan / LGU Libmanan",
+        "@type": "Organization",
+        "name": "BetterLibmanan",
         "logo": {
           "@type": "ImageObject",
           "url": "https://www.betterlibmanan.org/betterlibmanan.png",
           "width": 192,
           "height": 192
-        }
+        },
+        "sameAs": [
+          "https://bettergov.ph",
+          "https://www.facebook.com/profile.php?id=61590902231040",
+          "https://github.com/enzox0/betterlibmanan"
+        ]
       },
       "potentialAction": {
         "@type": "SearchAction",
         "target": "https://www.betterlibmanan.org/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
-      }
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "GovernmentOrganization",
-      "name": "Local Government Unit of Libmanan",
-      "alternateName": "LGU Libmanan",
-      "url": "https://www.betterlibmanan.org",
-      "logo": "https://www.betterlibmanan.org/betterlibmanan.png",
-      "description": "The Municipal Government of Libmanan, Camarines Sur, Philippines. BetterLibmanan is the official digital transparency portal.",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Libmanan",
-        "addressRegion": "Camarines Sur",
-        "addressCountry": "PH"
-      },
-      "areaServed": {
-        "@type": "City",
-        "name": "Libmanan",
-        "containedInPlace": {
-          "@type": "AdministrativeArea",
-          "name": "Camarines Sur"
-        }
-      },
-      "sameAs": [
-        "https://www.facebook.com/profile.php?id=61590902231040",
-        "https://github.com/enzox0/betterlibmanan"
-      ],
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer support",
-        "email": "support@betterlibmanan.org",
-        "url": "https://www.betterlibmanan.org/contact",
-        "availableLanguage": ["English", "Filipino"]
       }
     }
     </script>
