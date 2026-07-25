@@ -430,7 +430,7 @@ export function HeroSection() {
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10"
         >
-          <div className="mx-auto flex min-h-[auto] max-w-7xl items-center px-4 pb-6 pt-6 sm:min-h-[70dvh] sm:px-6 lg:px-8 lg:pb-12 lg:pt-10">
+          <div className="mx-auto flex min-h-[64dvh] max-w-7xl items-center px-4 pb-8 pt-10 sm:min-h-[70dvh] sm:px-6 sm:pt-8 lg:px-8 lg:pb-12 lg:pt-10">
             <div className="grid w-full items-center gap-4 lg:grid-cols-2 lg:gap-6">
               <div className="text-center lg:text-left">
                 <h1 className="mb-3 text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl xl:text-5xl">
