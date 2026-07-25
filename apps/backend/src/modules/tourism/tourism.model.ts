@@ -21,6 +21,7 @@ export interface ITouristSpot extends Document {
   tags: string[];
   imageUrl: string;
   imageKey: string;
+  imageSource: string;
   ratings: ISpotRating[];
   status: TourismStatus;
   createdAt: Date;
@@ -87,6 +88,12 @@ const TouristSpotSchema = new Schema<ITouristSpot>(
       type: String,
       trim: true,
       default: "",
+    },
+    imageSource: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 2048,
     },
     ratings: {
       type: [SpotRatingSchema],
