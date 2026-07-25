@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { LuImage, LuGripVertical } from "react-icons/lu";
 import type { ContentRecord } from "../../types/admin.types";
+import SafeImage, {
+  getProxiedUrl,
+} from "@/modules/landing/components/ui/SafeImage";
 import {
   DndContext,
   closestCenter,
@@ -123,8 +126,8 @@ function SortableImageCard({
       </button>
 
       {record.fields.imageUrl ? (
-        <img
-          src={record.fields.imageUrl}
+        <SafeImage
+          src={record.fields.imageUrl as string}
           alt={record.fields.alt ?? record.title}
           className="h-20 w-32 rounded-lg border border-gray-100 bg-white object-cover flex-shrink-0"
         />
@@ -379,7 +382,7 @@ export function MarqueeImagesLayout({
                     className="relative h-full w-40 flex-shrink-0 mx-1"
                   >
                     <img
-                      src={img.url}
+                      src={getProxiedUrl(img.url)}
                       alt={img.alt}
                       className="h-full w-full object-cover rounded"
                     />
