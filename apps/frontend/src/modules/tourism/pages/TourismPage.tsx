@@ -41,6 +41,7 @@ import {
   LuUser,
   LuPhone,
   LuMapPin,
+  LuExternalLink,
 } from "react-icons/lu";
 
 // ─── Category config ──────────────────────────────────────────────────────────
@@ -157,6 +158,7 @@ function formatFestivalDate(raw: string | undefined): string {
 
 type BarangayDetailData = {
   image: string;
+  imageSource: string;
   description: string;
   touristAttractions: string[];
   population: string;
@@ -168,6 +170,7 @@ type BarangayDetailData = {
 
 const defaultBgy: BarangayDetailData = {
   image: "/betterlibmanan.png",
+  imageSource: "",
   description: "This barangay does not have published details yet.",
   touristAttractions: [],
   population: "N/A",
@@ -360,7 +363,7 @@ function BarangayDetailPanel({
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {data.image && (
-            <div className="rounded-xl overflow-hidden border border-gray-200">
+            <div className="rounded-xl overflow-hidden border border-gray-200 relative">
               <img
                 src={getProxiedUrl(data.image)}
                 alt={barangayName}
@@ -369,6 +372,21 @@ function BarangayDetailPanel({
                   (e.target as HTMLImageElement).src = "/betterlibmanan.png";
                 }}
               />
+              {data.imageSource && (
+                <a
+                  href={data.imageSource}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                >
+                  <LuExternalLink
+                    className="w-3 h-3 shrink-0"
+                    aria-hidden="true"
+                  />
+                  Source
+                </a>
+              )}
             </div>
           )}
           {data.description && (
@@ -603,12 +621,26 @@ function SpotDetailPanel({
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             {spot.fields.image && (
-              <div className="rounded-xl overflow-hidden border border-gray-200">
+              <div className="rounded-xl overflow-hidden border border-gray-200 relative">
                 <SafeImage
                   src={spot.fields.image}
                   alt={spot.fields.name}
                   className="h-48 w-full object-cover"
                 />
+                {spot.fields.imageSource && (
+                  <a
+                    href={spot.fields.imageSource}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                  >
+                    <LuExternalLink
+                      className="w-3 h-3 shrink-0"
+                      aria-hidden="true"
+                    />
+                    Source
+                  </a>
+                )}
               </div>
             )}
             {spot.fields.description && (
@@ -784,6 +816,7 @@ export function TourismPage() {
           key,
           {
             image: record.fields.image || "/betterlibmanan.png",
+            imageSource: (record.fields as any).imageSource || "",
             description: record.fields.description || defaultBgy.description,
             touristAttractions: touristAttractions.length
               ? touristAttractions
@@ -980,6 +1013,21 @@ export function TourismPage() {
                             <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
                               <CategoryIcon className="text-[120px] text-white" />
                             </div>
+                          )}
+                          {spot.fields.imageSource && (
+                            <a
+                              href={spot.fields.imageSource}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                            >
+                              <LuExternalLink
+                                className="w-3 h-3 shrink-0"
+                                aria-hidden="true"
+                              />
+                              Source
+                            </a>
                           )}
                           <h3 className="relative text-lg font-bold text-white leading-snug drop-shadow">
                             {spot.fields.name}
