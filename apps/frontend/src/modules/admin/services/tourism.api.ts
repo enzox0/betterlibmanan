@@ -36,6 +36,7 @@ export interface TouristSpotRecord {
     entryFee: string;
     tags: string[];
     image: string;
+    imageSource: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -50,6 +51,7 @@ export interface TouristSpotPayload {
   tags?: string[];
   imageUrl?: string;
   imageKey?: string;
+  imageSource?: string;
   status: ContentStatus;
 }
 

@@ -14,6 +14,7 @@ import {
   LuTag,
   LuImage,
   LuRefreshCw,
+  LuExternalLink,
 } from "react-icons/lu";
 import { useTourismStore } from "../store/tourismStore";
 import { useAdminStore } from "../store/adminStore";
@@ -485,6 +486,7 @@ interface SpotFormState {
   tags: string[];
   imageUrl: string;
   imageKey: string;
+  imageSource: string;
   status: "published" | "draft";
 }
 
@@ -497,6 +499,7 @@ const emptyForm = (): SpotFormState => ({
   tags: [],
   imageUrl: "",
   imageKey: "",
+  imageSource: "",
   status: "draft",
 });
 
@@ -510,6 +513,7 @@ function recordToForm(r: TouristSpotRecord): SpotFormState {
     tags: r.fields.tags ?? [],
     imageUrl: r.fields.image,
     imageKey: "",
+    imageSource: r.fields.imageSource || "",
     status: r.status,
   };
 }
@@ -634,6 +638,7 @@ function TouristSpotsPanel() {
         tags: form.tags,
         imageUrl: form.imageUrl.trim(),
         imageKey: form.imageKey.trim(),
+        imageSource: form.imageSource.trim(),
         status: form.status,
       };
       if (panelMode === "create") {
@@ -1064,6 +1069,34 @@ function TouristSpotsPanel() {
                       ? "Replace image"
                       : "Upload image"}
                 </label>
+              </div>
+
+              {/* Image Source */}
+              <div>
+                <label
+                  htmlFor="spot-image-source"
+                  className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5"
+                >
+                  <LuExternalLink className="h-3.5 w-3.5 text-gray-400" /> Image
+                  Source
+                  <span className="text-xs font-normal text-gray-400">
+                    (optional)
+                  </span>
+                </label>
+                <input
+                  id="spot-image-source"
+                  type="url"
+                  value={form.imageSource}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, imageSource: e.target.value }))
+                  }
+                  className={inputNormal}
+                  placeholder="e.g. https://example.com/photo-source"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  URL where the original image was sourced from (for
+                  attribution).
+                </p>
               </div>
 
               {/* Status */}
