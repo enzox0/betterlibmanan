@@ -58,6 +58,22 @@ function getPatternId(name: string, prefix: string = "img"): string {
   return `${prefix}-${safe}`;
 }
 
+function getClipId(name: string): string {
+  const safe = name.replace(/[^a-zA-Z0-9_-]/g, "_");
+  return `clip-${safe}`;
+}
+
+function computePolygonCentroid(points: [number, number][]): [number, number] {
+  if (points.length === 0) return [0, 0];
+  let x = 0,
+    y = 0;
+  for (const [px, py] of points) {
+    x += px;
+    y += py;
+  }
+  return [x / points.length, y / points.length];
+}
+
 function parseList(value: string | undefined): string[] {
   return (value ?? "")
     .split(",")
@@ -109,7 +125,6 @@ export function BarangayMapSection({
   const [geoJson, setGeoJson] = useState<FeatureCollection | null>(null);
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
-  const [showPanel, setShowPanel] = useState(false);
   const [expandedFestivalIndex, setExpandedFestivalIndex] = useState<
     number | null
   >(null);
@@ -128,6 +143,15 @@ export function BarangayMapSection({
   );
   const svgWidth = 800;
   const svgHeight = 450;
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     fetchPublicRecords().catch(() => {});
@@ -416,6 +440,41 @@ export function BarangayMapSection({
     return getFeatureBounds(selectedFeature);
   }, [selectedFeature]);
 
+  // SVG-space bounding box + centroid for the selected barangay shape
+  const selectedSvgBbox = useMemo(() => {
+    if (!selectedFeature) return null;
+    const allPoints: [number, number][] = [];
+    const collectPolygon = (polygon: Polygon) => {
+      polygon[0].forEach((coord) => {
+        const [x, y] = convertCoords(coord, bounds, svgWidth, svgHeight);
+        allPoints.push([x, y]);
+      });
+    };
+    if (selectedFeature.geometry.type === "Polygon") {
+      collectPolygon(selectedFeature.geometry.coordinates);
+    } else {
+      selectedFeature.geometry.coordinates.forEach(collectPolygon);
+    }
+    if (allPoints.length === 0) return null;
+    const xs = allPoints.map((p) => p[0]);
+    const ys = allPoints.map((p) => p[1]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const [cx, cy] = computePolygonCentroid(allPoints);
+    return {
+      minX,
+      maxX,
+      minY,
+      maxY,
+      cx,
+      cy,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
+  }, [selectedFeature, bounds, svgWidth, svgHeight]);
+
   const modalSvgWidth = 800;
   const modalSvgHeight = 600;
 
@@ -545,37 +604,69 @@ export function BarangayMapSection({
                     preserveAspectRatio="xMidYMid meet"
                   >
                     <defs>
-                      {geoJson.features.map((feature) => (
-                        <pattern
-                          key={`pattern-${feature.properties.adm4_en}`}
-                          id={getPatternId(feature.properties.adm4_en)}
-                          patternUnits="objectBoundingBox"
-                          patternContentUnits="objectBoundingBox"
-                          width="1"
-                          height="1"
-                          x="0"
-                          y="0"
-                          viewBox="0 0 1 1"
-                          preserveAspectRatio="xMidYMid slice"
-                        >
-                          <image
-                            href={getProxiedUrl(
-                              getBarangayData(feature.properties.adm4_en).image,
-                            )}
-                            preserveAspectRatio="xMidYMid slice"
-                            width="1"
-                            height="1"
-                            onError={(e) => {
-                              (e.target as SVGImageElement).setAttribute(
-                                "href",
-                                "/betterlibmanan.png",
-                              );
-                            }}
-                          />
-                        </pattern>
-                      ))}
+                      <style>{`
+                        @keyframes barangayImgExpand {
+                          from { transform: scale(0.4); opacity: 0; }
+                          to   { transform: scale(1);   opacity: 1; }
+                        }
+                      `}</style>
+                      {geoJson.features.map((feature) => {
+                        const name = feature.properties.adm4_en;
+                        const pathD = getPathString(
+                          feature.geometry,
+                          bounds,
+                          svgWidth,
+                          svgHeight,
+                        );
+                        return (
+                          <g key={`defs-${name}`}>
+                            <pattern
+                              id={getPatternId(name)}
+                              patternUnits="objectBoundingBox"
+                              patternContentUnits="objectBoundingBox"
+                              width="1"
+                              height="1"
+                              x="0"
+                              y="0"
+                              viewBox="0 0 1 1"
+                              preserveAspectRatio="xMidYMid slice"
+                            >
+                              <image
+                                href={getProxiedUrl(
+                                  getBarangayData(name).image,
+                                )}
+                                preserveAspectRatio="xMidYMid slice"
+                                width="1"
+                                height="1"
+                                onError={(e) => {
+                                  (e.target as SVGImageElement).setAttribute(
+                                    "href",
+                                    "/betterlibmanan.png",
+                                  );
+                                }}
+                              />
+                            </pattern>
+                            {/* ClipPath matching the exact polygon shape for the desktop image overlay */}
+                            <clipPath id={getClipId(name)}>
+                              <path d={pathD} />
+                            </clipPath>
+                          </g>
+                        );
+                      })}
+                      {/* Gradient for darkening the bottom of the image overlay */}
+                      <linearGradient
+                        id="imgOverlayGrad"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+                        <stop offset="100%" stopColor="rgba(0,0,0,0.6)" />
+                      </linearGradient>
                     </defs>
 
+                    {/* Base polygon layer */}
                     {geoJson.features.map((feature, index) => {
                       const isUserHovered =
                         hoveredBarangay === feature.properties.adm4_en;
@@ -589,6 +680,8 @@ export function BarangayMapSection({
                         (!isUserInteractingRef.current &&
                           isAutoHovered &&
                           !selectedBarangay);
+                      // On desktop: selected polygon gets a muted base so the image overlay reads clearly
+                      const useImageOverlay = isDesktop && isSelected;
 
                       return (
                         <path
@@ -600,15 +693,25 @@ export function BarangayMapSection({
                             svgHeight,
                           )}
                           fill={
-                            isSelected
-                              ? `url(#${getPatternId(barangayName)})`
-                              : isHovered
+                            useImageOverlay
+                              ? "#bfdbfe"
+                              : isSelected
                                 ? `url(#${getPatternId(barangayName)})`
-                                : "#93c5fd"
+                                : isHovered
+                                  ? `url(#${getPatternId(barangayName)})`
+                                  : "#93c5fd"
                           }
-                          fillOpacity={isSelected ? 1 : isHovered ? 1 : 0.4}
-                          stroke={isSelected ? "#374151" : "#1e40af"}
-                          strokeWidth={isSelected ? 3 : 1}
+                          fillOpacity={
+                            useImageOverlay
+                              ? 0.5
+                              : isSelected
+                                ? 1
+                                : isHovered
+                                  ? 1
+                                  : 0.4
+                          }
+                          stroke={isSelected ? "#1e3a8a" : "#1e40af"}
+                          strokeWidth={isSelected ? 2.5 : 1}
                           onMouseEnter={() => {
                             isUserInteractingRef.current = true;
                             setAutoHoveredBarangay(null);
@@ -631,6 +734,78 @@ export function BarangayMapSection({
                         />
                       );
                     })}
+
+                    {/* Desktop only: image clipped to the exact selected polygon, expanding from centroid */}
+                    {isDesktop &&
+                      selectedBarangay &&
+                      selectedData &&
+                      selectedSvgBbox &&
+                      (() => {
+                        const { minX, minY, width, height, cx, cy } =
+                          selectedSvgBbox;
+                        const pad = Math.max(width, height) * 0.12;
+                        return (
+                          <g
+                            key={`img-overlay-${selectedBarangay}`}
+                            clipPath={`url(#${getClipId(selectedBarangay)})`}
+                            style={{
+                              transformOrigin: `${cx}px ${cy}px`,
+                              animation:
+                                "barangayImgExpand 0.42s cubic-bezier(0.22,1,0.36,1) forwards",
+                            }}
+                          >
+                            <image
+                              href={getProxiedUrl(selectedData.image)}
+                              x={minX - pad}
+                              y={minY - pad}
+                              width={width + pad * 2}
+                              height={height + pad * 2}
+                              preserveAspectRatio="xMidYMid slice"
+                              onError={(e) => {
+                                (e.target as SVGImageElement).setAttribute(
+                                  "href",
+                                  "/betterlibmanan.png",
+                                );
+                              }}
+                            />
+                            <rect
+                              x={minX - pad}
+                              y={minY - pad}
+                              width={width + pad * 2}
+                              height={height + pad * 2}
+                              fill="url(#imgOverlayGrad)"
+                            />
+                          </g>
+                        );
+                      })()}
+
+                    {/* Desktop only: barangay name label at the bottom of the image overlay */}
+                    {isDesktop &&
+                      selectedBarangay &&
+                      selectedSvgBbox &&
+                      (() => {
+                        const { cx, maxY } = selectedSvgBbox;
+                        return (
+                          <text
+                            key={`label-${selectedBarangay}`}
+                            x={cx}
+                            y={maxY - 6}
+                            textAnchor="middle"
+                            fontSize="10"
+                            fontWeight="700"
+                            fill="white"
+                            style={{
+                              filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.9))",
+                              pointerEvents: "none",
+                              transformOrigin: `${cx}px ${maxY}px`,
+                              animation:
+                                "barangayImgExpand 0.42s cubic-bezier(0.22,1,0.36,1) forwards",
+                            }}
+                          >
+                            {selectedBarangay}
+                          </text>
+                        );
+                      })()}
                   </svg>
                 ) : (
                   <div className="text-center">
@@ -762,7 +937,7 @@ export function BarangayMapSection({
               </div>
             </motion.div>
 
-            {/* Desktop — split view: left dimmed map area clickable + right side panel (lg+) */}
+            {/* Desktop — split view: left enlarged barangay preview + right side panel (lg+) */}
             <div
               className="absolute inset-0 hidden lg:flex"
               onClick={() => {
@@ -770,8 +945,119 @@ export function BarangayMapSection({
                 setSearchQuery("");
               }}
             >
-              {/* Left region (click-to-close) — occupies everything but the panel */}
-              <div className="w-[67%] h-full" />
+              {/* Left region — enlarged isolated GeoJSON preview of the selected barangay */}
+              <div className="w-[67%] h-full flex items-center justify-center p-12">
+                {selectedFeature &&
+                  selectedData &&
+                  selectedSvgBbox &&
+                  (() => {
+                    // Build an isolated SVG viewBox tightly around the selected polygon
+                    const { minX, minY, width, height } = selectedSvgBbox;
+                    const pad = Math.max(width, height) * 0.18;
+                    const vx = minX - pad;
+                    const vy = minY - pad;
+                    const vw = width + pad * 2;
+                    const vh = height + pad * 2;
+                    const previewClipId = `preview-clip-${getClipId(selectedBarangay!)}`;
+                    const previewPatternId = `preview-pat-${getPatternId(selectedBarangay!)}`;
+                    const pathD = getPathString(
+                      selectedFeature.geometry,
+                      bounds,
+                      svgWidth,
+                      svgHeight,
+                    );
+
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.82 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.82 }}
+                        transition={{
+                          duration: 0.42,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                        className="w-full h-full flex items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <svg
+                          viewBox={`${vx} ${vy} ${vw} ${vh}`}
+                          className="max-w-full max-h-full drop-shadow-2xl"
+                          preserveAspectRatio="xMidYMid meet"
+                          style={{
+                            filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.45))",
+                          }}
+                        >
+                          <defs>
+                            <clipPath id={previewClipId}>
+                              <path d={pathD} />
+                            </clipPath>
+                            <pattern
+                              id={previewPatternId}
+                              patternUnits="userSpaceOnUse"
+                              x={minX}
+                              y={minY}
+                              width={width}
+                              height={height}
+                            >
+                              <image
+                                href={getProxiedUrl(selectedData.image)}
+                                x="0"
+                                y="0"
+                                width={width}
+                                height={height}
+                                preserveAspectRatio="xMidYMid slice"
+                                onError={(e) => {
+                                  (e.target as SVGImageElement).setAttribute(
+                                    "href",
+                                    "/betterlibmanan.png",
+                                  );
+                                }}
+                              />
+                            </pattern>
+                            <linearGradient
+                              id="previewGrad"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+                              <stop offset="75%" stopColor="rgba(0,0,0,0)" />
+                              <stop
+                                offset="100%"
+                                stopColor="rgba(0,0,0,0.65)"
+                              />
+                            </linearGradient>
+                          </defs>
+
+                          {/* Image fill clipped to polygon */}
+                          <path
+                            d={pathD}
+                            fill={`url(#${previewPatternId})`}
+                            stroke="none"
+                          />
+
+                          {/* Gradient overlay at the bottom */}
+                          <path
+                            d={pathD}
+                            fill="url(#previewGrad)"
+                            stroke="none"
+                          />
+
+                          {/* Polygon border */}
+                          <path
+                            d={pathD}
+                            fill="none"
+                            stroke="white"
+                            strokeWidth={Math.max(width, height) * 0.004}
+                            strokeLinejoin="round"
+                            opacity="0.7"
+                          />
+                        </svg>
+                      </motion.div>
+                    );
+                  })()}
+              </div>
 
               <motion.div
                 initial={{ x: "100%" }}
@@ -781,49 +1067,46 @@ export function BarangayMapSection({
                 className="w-[33%] h-full bg-white shadow-2xl overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
-                <button
-                  className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md text-neutral-700 hover:text-neutral-900 hover:bg-white transition-all shadow-sm flex items-center justify-center"
-                  onClick={() => {
-                    setSelectedBarangay(null);
-                    setSearchQuery("");
-                  }}
-                  aria-label="Close barangay details"
-                >
-                  <LuX className="w-5 h-5" aria-hidden="true" />
-                </button>
-
-                <div className="relative h-64 shrink-0">
-                  <img
-                    src={getProxiedUrl(selectedData.image)}
-                    alt={selectedBarangay}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/betterlibmanan.png";
+                {/* Compact header — no image here on desktop; the image lives in the SVG map */}
+                <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-neutral-100 shrink-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white">
+                      <LuMapPin className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <h1 className="text-base font-bold text-neutral-900 leading-tight truncate">
+                        {selectedBarangay}
+                      </h1>
+                      {selectedData.imageSource && (
+                        <a
+                          href={selectedData.imageSource}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        >
+                          <LuExternalLink
+                            className="w-2.5 h-2.5 shrink-0"
+                            aria-hidden="true"
+                          />
+                          Image source
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    className="shrink-0 w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-neutral-900 transition-all flex items-center justify-center"
+                    onClick={() => {
+                      setSelectedBarangay(null);
+                      setSearchQuery("");
                     }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <h1 className="absolute bottom-5 left-6 right-16 text-2xl font-bold text-white leading-tight">
-                    {selectedBarangay}
-                  </h1>
-                  {selectedData.imageSource && (
-                    <a
-                      href={selectedData.imageSource}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
-                    >
-                      <LuExternalLink
-                        className="w-3 h-3 shrink-0"
-                        aria-hidden="true"
-                      />
-                      Source
-                    </a>
-                  )}
+                    aria-label="Close barangay details"
+                  >
+                    <LuX className="w-4 h-4" aria-hidden="true" />
+                  </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-5">
                   <BarangayPanelContent
                     data={selectedData}
                     name={selectedBarangay}
