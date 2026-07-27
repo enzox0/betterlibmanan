@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { useAdminStore } from "../store/adminStore";
 
 export function useAdminShortcut(): void {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const isAuthenticated = useAdminStore((state) => state.isAuthenticated);
 
   useEffect(() => {
