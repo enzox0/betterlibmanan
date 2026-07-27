@@ -5,18 +5,23 @@ This is the central documentation index for BetterLibmanan, an enterprise-grade 
 ## Documentation Structure
 
 ### [Architecture](./architecture/)
+
 System architecture, design patterns, and technical decisions for the monorepo structure.
 
 ### [API Documentation](./api/)
+
 Complete REST API reference, endpoints, authentication, and integration guides.
 
 ### [Architecture Decision Records](./decisions/)
+
 Historical context and rationale for major technical decisions made throughout the project.
 
 ### [System Diagrams](./diagrams/)
+
 Visual representations of system architecture, data flows, and component interactions.
 
 ### [Runbooks](./runbooks/)
+
 Operational procedures, deployment guides, troubleshooting steps, and maintenance tasks.
 
 ## Quick Links
