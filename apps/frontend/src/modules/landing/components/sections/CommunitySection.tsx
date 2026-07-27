@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUsers,
@@ -785,7 +785,7 @@ export function CommunitySection() {
   const userToken = useUserStore((s) => s.token);
   const displayName = currentUser?.displayName ?? "Anonymous";
 
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
 
   // ── Auth modal state ────────────────────────────────────────────────────────
   const [authModalOpen, setAuthModalOpen] = useState(false);

@@ -14,30 +14,74 @@ export const R2_DNS_CONFIG = {
   },
 } as const;
 
+// Resolved at build time. Strip trailing slash and lowercase for comparison.
 const R2_CUSTOM_BASE =
   (import.meta.env.VITE_R2_PUBLIC_BASE_URL as string | undefined)
     ?.replace(/\/+$/, "")
     .toLowerCase() ?? "";
 
-const isR2Url = (url: string): boolean => {
+/**
+ * Returns true for any URL that should be served through the backend
+ * image-proxy. We proxy:
+ *
+ *  1. Any *.r2.dev URL  — native Cloudflare R2 public domain
+ *  2. Any URL whose hostname matches VITE_R2_PUBLIC_BASE_URL  — custom R2 domain
+ *  3. Any other absolute https:// URL that is NOT the current app origin
+ *     and NOT a well-known public CDN we trust to load directly (Google
+ *     Fonts, Google APIs, etc.).
+ *
+ * Rule 3 is the safety net that keeps images working across dev / staging /
+ * production even when VITE_R2_PUBLIC_BASE_URL is unset or points to a
+ * different domain than what the backend actually stored.
+ */
+const PASSTHROUGH_HOSTNAMES = new Set([
+  "fonts.googleapis.com",
+  "fonts.gstatic.com",
+  "maps.googleapis.com",
+  "maps.gstatic.com",
+]);
+
+const shouldProxy = (url: string): boolean => {
+  let parsed: URL;
   try {
-    const { hostname } = new URL(url);
-
-    if (hostname.endsWith(".r2.dev")) return true;
-
-    if (R2_CUSTOM_BASE) {
-      const customHost = new URL(R2_CUSTOM_BASE).hostname;
-      if (hostname === customHost) return true;
-    }
-
-    return false;
+    parsed = new URL(url);
   } catch {
+    // Relative paths, data URIs, blob URLs — don't proxy
     return false;
   }
+
+  // Only proxy http/https
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+
+  const { hostname } = parsed;
+
+  // Always proxy native R2 domains
+  if (hostname.endsWith(".r2.dev")) return true;
+
+  // Always proxy the configured custom R2 domain
+  if (R2_CUSTOM_BASE) {
+    try {
+      if (hostname === new URL(R2_CUSTOM_BASE).hostname) return true;
+    } catch {
+      // malformed VITE_R2_PUBLIC_BASE_URL — fall through
+    }
+  }
+
+  // Skip well-known public CDNs that don't need proxying
+  if (PASSTHROUGH_HOSTNAMES.has(hostname)) return false;
+
+  // Skip same-origin URLs (relative absolute paths like http://localhost:3000/logo.svg)
+  if (typeof window !== "undefined" && hostname === window.location.hostname) {
+    return false;
+  }
+
+  // Any other external absolute URL is treated as an uploaded asset and proxied.
+  // This is the catch-all that covers custom R2 domains not declared in env vars.
+  return true;
 };
 
 export const getProxiedUrl = (url: string): string => {
-  if (!isR2Url(url)) return url;
+  if (!shouldProxy(url)) return url;
 
   const apiUrl = (
     (import.meta.env.VITE_API_URL as string | undefined) || "/api"

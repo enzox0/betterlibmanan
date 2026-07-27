@@ -20,6 +20,7 @@ export interface TouristSpotInput {
   tags?: string[];
   imageUrl?: string;
   imageKey?: string;
+  imageSource?: string;
   status: TourismStatus;
 }
 
@@ -58,6 +59,7 @@ export async function createTouristSpot(
     tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean),
     imageUrl: (input.imageUrl ?? "").trim(),
     imageKey: (input.imageKey ?? "").trim(),
+    imageSource: (input.imageSource ?? "").trim(),
     ratings: [],
     status: input.status,
   });
@@ -97,6 +99,9 @@ export async function updateTouristSpot(
   }
   if (input.imageKey !== undefined) {
     existing.imageKey = input.imageKey.trim();
+  }
+  if (input.imageSource !== undefined) {
+    existing.imageSource = input.imageSource.trim();
   }
 
   existing.status = input.status;

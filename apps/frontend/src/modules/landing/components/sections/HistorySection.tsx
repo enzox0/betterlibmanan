@@ -43,7 +43,7 @@ export function HistorySection({ isLoading = false }: { isLoading?: boolean }) {
 
   const visibleTimeline = isExpanded
     ? historyTimeline
-    : historyTimeline.slice(0, 5);
+    : historyTimeline.slice(0, 6);
 
   return (
     <section className="bg-white py-16">

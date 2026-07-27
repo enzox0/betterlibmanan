@@ -38,6 +38,7 @@ const touristSpotSchema = z.object({
   tags: z.array(z.string().trim()).optional(),
   imageUrl: z.string().trim().url().or(z.literal("")).optional(),
   imageKey: z.string().trim().optional(),
+  imageSource: z.string().trim().max(2048).optional(),
   status: z.enum(["published", "draft"]).default("draft"),
 });
 
@@ -88,6 +89,7 @@ function toContentRecord(record: ITouristSpot | any) {
       entryFee: record.entryFee ?? "",
       tags: record.tags ?? [],
       image: record.imageUrl ?? "",
+      imageSource: record.imageSource ?? "",
     },
     createdAt: new Date(record.createdAt).toISOString(),
     updatedAt: new Date(record.updatedAt).toISOString(),

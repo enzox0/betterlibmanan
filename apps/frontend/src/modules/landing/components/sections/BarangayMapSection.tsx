@@ -976,7 +976,7 @@ export function BarangayMapSection({
                           duration: 0.42,
                           ease: [0.22, 1, 0.36, 1],
                         }}
-                        className="w-full h-full flex items-center justify-center"
+                        className="w-full h-full flex items-center justify-center relative"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <svg
@@ -1054,6 +1054,21 @@ export function BarangayMapSection({
                             opacity="0.7"
                           />
                         </svg>
+                        {selectedData.imageSource && (
+                          <a
+                            href={selectedData.imageSource}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute bottom-6 right-6 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3.5 py-2 text-xs font-semibold text-white shadow-md hover:bg-black/70 transition-colors z-10"
+                          >
+                            <LuExternalLink
+                              className="w-3.5 h-3.5 shrink-0"
+                              aria-hidden="true"
+                            />
+                            Image Source
+                          </a>
+                        )}
                       </motion.div>
                     );
                   })()}
@@ -1067,7 +1082,7 @@ export function BarangayMapSection({
                 className="w-[33%] h-full bg-white shadow-2xl overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Compact header — no image here on desktop; the image lives in the SVG map */}
+                {/* Compact header — barangay image lives in the SVG map preview on the left */}
                 <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-neutral-100 shrink-0">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white">

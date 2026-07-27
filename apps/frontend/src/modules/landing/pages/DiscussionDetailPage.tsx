@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaArrowLeft,
@@ -401,7 +402,7 @@ function DiscussionSidebar({
 
 export function DiscussionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const { toast } = useToast();
   const replyBoxRef = useRef<HTMLTextAreaElement>(null);
 

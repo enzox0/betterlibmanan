@@ -52,12 +52,19 @@ export async function proxyImage(
 
     const client = url.protocol === "https:" ? https : http;
 
-    // Create request options with explicit Host header
-    const requestOptions = {
+    // Create request options with explicit Host header and SNI servername.
+    // We connect to the resolved IP directly (bypassing potentially broken
+    // system DNS) but tell Node's TLS stack to use the original hostname for
+    // SNI so Cloudflare / R2 returns the correct certificate.
+    const requestOptions: https.RequestOptions = {
       hostname: resolvedIp,
       port: url.protocol === "https:" ? 443 : 80,
       path: url.pathname + url.search,
       method: "GET",
+      // SNI: required for Cloudflare custom domains and *.r2.dev so the
+      // server can select the right TLS certificate even when we're
+      // connecting by IP address.
+      servername: url.hostname,
       headers: {
         Host: url.hostname, // Important: send original hostname as Host header
         "User-Agent": "BetterLibmanan-ImageProxy/1.0",
@@ -85,6 +92,18 @@ export async function proxyImage(
             res.setHeader(header, value);
           }
         }
+      }
+
+      // Ensure browsers cache successfully proxied images.
+      // If the upstream didn't send a cache-control header we apply a
+      // sensible default (1 hour public cache) so repeated views don't
+      // re-hit the proxy for every render.
+      if (
+        (proxyRes.statusCode ?? 0) >= 200 &&
+        (proxyRes.statusCode ?? 0) < 300 &&
+        !proxyRes.headers["cache-control"]
+      ) {
+        res.setHeader("Cache-Control", "public, max-age=3600, immutable");
       }
 
       proxyRes.pipe(res);

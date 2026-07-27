@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { TiInfoLarge } from "react-icons/ti";
 import {
   FaTimes,
@@ -33,7 +33,7 @@ export function InfoFloatingButton({
   isMobileMenuOpen = false,
 }: InfoFloatingButtonProps) {
   if (isMobileMenuOpen) return null;
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const publicRecords = useContactStore((s) => s.publicRecords);
   const isPublicLoading = useContactStore((s) => s.isPublicLoading);

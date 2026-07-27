@@ -55,6 +55,11 @@ function getR2Client(): S3Client {
       accessKeyId,
       secretAccessKey,
     },
+    // R2 does not support the flexible checksum headers introduced in
+    // @aws-sdk/client-s3 v3.750+. Sending them causes an AccessDenied error
+    // in deployed environments. Disable them at the client level.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 
   return cachedClient;

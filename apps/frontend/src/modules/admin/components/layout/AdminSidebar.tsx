@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LuHouse,
@@ -155,7 +156,7 @@ export function AdminSidebar() {
     logout: s.logout,
     admin: s.admin,
   }));
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const isSuperAdmin = admin?.role === "superadmin";
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 

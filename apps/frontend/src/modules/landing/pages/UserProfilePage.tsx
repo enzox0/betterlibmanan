@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion } from "framer-motion";
 import {
   FaArrowLeft,
@@ -75,7 +75,7 @@ function Field({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function UserProfilePage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const { toast } = useToast();
 
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);

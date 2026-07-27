@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { FaCalendarAlt, FaArrowRight } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
@@ -33,7 +33,7 @@ export function LatestUpdatesSection({
 }: {
   isLoading?: boolean;
 }) {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const publicRecords = useLatestUpdatesStore((s) => s.publicRecords);
   const isPublicLoading = useLatestUpdatesStore((s) => s.isPublicLoading);
   const fetchPublicRecords = useLatestUpdatesStore((s) => s.fetchPublicRecords);

@@ -72,6 +72,9 @@ export default defineConfig({
           // react-icons bundles all icons into a massive chunk (~9 MB) — exclude from precache
           "**/vendor-icons-*.js",
         ],
+        // Enable navigation fallback for SPA routing
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -114,6 +117,8 @@ export default defineConfig({
         // Enable SW in dev so you can test the install prompt locally
         enabled: true,
         type: "module",
+        // Bypass the HTTPS requirement for local development
+        navigateFallback: "index.html",
       },
     }),
   ],
@@ -180,6 +185,9 @@ export default defineConfig({
   },
   server: {
     port: Number(process.env.VITE_PORT) || 3000,
+    // localhost is treated as a secure context by Chrome/Edge, so the
+    // beforeinstallprompt event fires without needing a real TLS cert.
+    // If you access via LAN IP (e.g. 192.168.x.x) you'll need HTTPS here.
     proxy: {
       "/api": {
         target: "http://localhost:5000",

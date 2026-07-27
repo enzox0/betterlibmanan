@@ -655,8 +655,8 @@ function BetterLugsLayout({
           className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm flex flex-col gap-3"
         >
           {record.fields.logo ? (
-            <img
-              src={record.fields.logo}
+            <SafeImage
+              src={record.fields.logo as string}
               alt={record.fields.name ?? record.title}
               className="h-16 w-full rounded-lg border border-gray-100 bg-white object-contain p-2"
             />

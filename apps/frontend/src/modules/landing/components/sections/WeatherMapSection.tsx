@@ -18,6 +18,7 @@ import {
   LuCalendar,
   LuPhone,
   LuUser,
+  LuExternalLink,
 } from "react-icons/lu";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 import SafeImage, { getProxiedUrl } from "../ui/SafeImage";
@@ -210,6 +211,7 @@ const MUNICIPAL_LNG = 123.0595744;
 
 const DEFAULT_BARANGAY = {
   image: "/betterlibmanan.png",
+  imageSource: "",
   description: "This barangay does not have published details yet.",
   touristAttractions: ["Details coming soon"],
   population: "N/A",
@@ -245,6 +247,7 @@ type Festival = {
 type BarangayPanelData = {
   name: string;
   image: string;
+  imageSource: string;
   description: string;
   touristAttractions: string[];
   population: string;
@@ -353,6 +356,8 @@ export function WeatherMapSection({
       map.set(key, {
         name,
         image: record.fields.image || DEFAULT_BARANGAY.image,
+        imageSource:
+          (record.fields as any).imageSource || DEFAULT_BARANGAY.imageSource,
         description: record.fields.description || DEFAULT_BARANGAY.description,
         touristAttractions: touristAttractions.length
           ? touristAttractions
@@ -979,6 +984,21 @@ export function WeatherMapSection({
                     <h1 className="absolute bottom-6 left-6 right-16 text-2xl sm:text-4xl font-bold text-white leading-tight">
                       {selectedBarangay.name}
                     </h1>
+                    {selectedBarangay.imageSource && (
+                      <a
+                        href={selectedBarangay.imageSource}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                      >
+                        <LuExternalLink
+                          className="w-3 h-3 shrink-0"
+                          aria-hidden="true"
+                        />
+                        Source
+                      </a>
+                    )}
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-5 sm:p-8">
@@ -1023,6 +1043,21 @@ export function WeatherMapSection({
                       <h1 className="absolute bottom-5 left-6 right-16 text-2xl font-bold text-white leading-tight">
                         {selectedBarangay.name}
                       </h1>
+                      {selectedBarangay.imageSource && (
+                        <a
+                          href={selectedBarangay.imageSource}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-black/70 transition-colors"
+                        >
+                          <LuExternalLink
+                            className="w-3 h-3 shrink-0"
+                            aria-hidden="true"
+                          />
+                          Source
+                        </a>
+                      )}
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6">

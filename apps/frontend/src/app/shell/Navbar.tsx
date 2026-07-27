@@ -1,4 +1,5 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -33,7 +34,7 @@ export function Navbar({
   isMobileMenuOpen,
   setIsMobileMenuOpen,
 }: NavbarProps) {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const location = useLocation();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showLangModal, setShowLangModal] = useState(false);

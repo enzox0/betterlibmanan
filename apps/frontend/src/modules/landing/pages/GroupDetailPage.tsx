@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaArrowLeft,
@@ -389,7 +390,7 @@ function JoinedGroupsPanel({
   collapsed: boolean;
   onToggle: () => void;
 }) {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
 
   // Founder-created groups are joined implicitly — include all where user is a member
   const myGroups = [...groups]
@@ -727,7 +728,7 @@ function GroupInfoSidebar({
 
 export function GroupDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const { toast } = useToast();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);

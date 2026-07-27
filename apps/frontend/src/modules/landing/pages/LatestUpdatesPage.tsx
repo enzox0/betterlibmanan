@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion } from "framer-motion";
 import { FaCalendarAlt, FaArrowLeft, FaSpinner } from "react-icons/fa";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
@@ -28,7 +28,7 @@ function formatDisplayDate(isoDate: string): string {
 }
 
 export function LatestUpdatesPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const publicRecords = useLatestUpdatesStore((s) => s.publicRecords);
   const isPublicLoading = useLatestUpdatesStore((s) => s.isPublicLoading);
   const fetchPublicRecords = useLatestUpdatesStore((s) => s.fetchPublicRecords);
