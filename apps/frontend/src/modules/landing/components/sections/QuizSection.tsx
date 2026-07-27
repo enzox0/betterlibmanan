@@ -1,11 +1,11 @@
 import { FaPlay } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 
 export function QuizSection({ isLoading = false }: { isLoading?: boolean }) {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   return (
     <section className="bg-neutral-100 py-16">
       <motion.div

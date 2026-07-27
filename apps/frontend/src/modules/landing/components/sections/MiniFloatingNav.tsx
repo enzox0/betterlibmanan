@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { FaPen, FaTools, FaUsers, FaBookOpen } from "react-icons/fa";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -59,7 +60,7 @@ export function MiniFloatingNav({
   isMobileMenuOpen = false,
 }: VerticalNavProps) {
   if (isMobileMenuOpen) return null;
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const location = useLocation();
   const [showByTimeout, setShowByTimeout] = useState(true);
   const [isCursorOnLeftSide, setIsCursorOnLeftSide] = useState(false);

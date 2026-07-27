@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { useMarqueeImagesStore } from "@/modules/admin/store/marqueeImagesStore";
 import SafeImage, { getProxiedUrl } from "../ui/SafeImage";
 
@@ -34,7 +34,7 @@ function SearchCard() {
   const [focused, setFocused] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryLabel>("All");
   const containerRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
 
   const showDropdown = focused;
 
@@ -357,7 +357,7 @@ function shuffleArray<T>(array: T[], seed: number = Math.random()): T[] {
 export function HeroSection() {
   const publicRecords = useMarqueeImagesStore((s) => s.publicRecords);
   const fetchPublicRecords = useMarqueeImagesStore((s) => s.fetchPublicRecords);
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
 
   const seedRef = useRef(Math.random());
 
