@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion } from "framer-motion";
 import {
   FaArrowLeft,
@@ -93,7 +94,7 @@ function DiscussionCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function AllDiscussionsPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const location = useLocation();
   const { toast } = useToast();
 

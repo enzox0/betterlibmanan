@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion } from "framer-motion";
 import {
   FaUsers,
@@ -116,7 +116,7 @@ function GroupCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function AllPeerGroupsPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const { toast } = useToast();
 
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
