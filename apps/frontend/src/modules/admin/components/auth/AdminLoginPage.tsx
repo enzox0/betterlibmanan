@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTransitionNavigate } from "@/app/hooks";
 import { motion } from "framer-motion";
 import { LuEye, LuEyeOff, LuLoaderCircle } from "react-icons/lu";
 import { useAdminStore } from "../../store/adminStore";
@@ -14,7 +14,7 @@ interface FormErrors {
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export function AdminLoginPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const { login, isAuthLoading } = useAdminStore((s) => ({
     login: s.login,
     isAuthLoading: s.isAuthLoading,
