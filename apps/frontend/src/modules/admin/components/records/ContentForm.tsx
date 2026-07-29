@@ -640,14 +640,14 @@ export function ContentForm({
         const payload: {
           label: string;
           value: string;
-          type?: "phone" | "email" | "address" | "fax";
+          type?: "phone" | "email" | "address" | "fax" | "facebook";
           status: ContentStatus;
         } = {
           label: fieldValues.label?.trim() ?? title.trim(),
           value: fieldValues.value?.trim() ?? "",
           type:
             (fieldValues.type?.trim() as
-              "phone" | "email" | "address" | "fax") || "phone",
+              "phone" | "email" | "address" | "fax" | "facebook") || "phone",
           status,
         };
 
