@@ -1,5 +1,14 @@
 import { Request, Response } from "express";
 import { NoteModel } from "./freedom-wall.model";
+import { writeAuditLog } from "@/modules/audit/audit.service";
+
+function getClientIp(req: Request): string {
+  return (
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown"
+  );
+}
 
 /** GET /api/freedom-wall — return all notes, newest first */
 export async function getNotes(_req: Request, res: Response): Promise<void> {
@@ -79,6 +88,23 @@ export async function deleteNote(req: Request, res: Response): Promise<void> {
     if (!note) {
       res.status(404).json({ success: false, message: "Note not found" });
       return;
+    }
+
+    // Audit: admin deleted a freedom wall note
+    if (req.admin) {
+      writeAuditLog(
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action: "DELETE",
+          module: "FreedomWall",
+          resourceId: id,
+          description: `Deleted freedom wall note (id: ${id})`,
+        },
+      );
     }
 
     res.json({ success: true, message: "Note deleted" });
