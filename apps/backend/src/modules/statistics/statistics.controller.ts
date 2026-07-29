@@ -15,10 +15,9 @@ function getClientIp(req: Request): string {
 
 function toRecord(doc: any, section: string) {
   return {
-    id: String(doc._id),
+    _id: String(doc._id),
     sectionKey: section,
     ...doc,
-    _id: undefined,
     __v: undefined,
   };
 }
