@@ -125,6 +125,86 @@ BetterLibmanan Team
   };
 }
 
+export function createPasswordChangeOtpEmail(otp: string, name: string) {
+  const text = `
+Hi ${name},
+
+You requested to change your admin account password. Use the following 6-digit code to confirm:
+
+${otp}
+
+This code will expire in 10 minutes.
+
+If you did not request a password change, please ignore this email and consider securing your account.
+
+Best regards,
+BetterLibmanan Team
+`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Password Change - BetterLibmanan</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+    }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      padding: 30px;
+      border-radius: 12px 12px 0 0;
+      text-align: center;
+    }
+    .logo { color: white; font-size: 24px; font-weight: bold; letter-spacing: 0.5px; }
+    .content {
+      background-color: white;
+      padding: 40px 30px;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+    .greeting { color: #1f2937; font-size: 20px; font-weight: 600; margin-bottom: 20px; }
+    .message { color: #6b7280; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
+    .otp-box { background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 25px; text-align: center; margin-bottom: 30px; }
+    .otp { font-size: 36px; font-weight: bold; color: #1e40af; letter-spacing: 8px; }
+    .note { color: #9ca3af; font-size: 14px; margin-bottom: 30px; }
+    .warning { background-color: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; color: #92400e; font-size: 14px; line-height: 1.5; }
+    .footer { text-align: center; margin-top: 30px; color: #9ca3af; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header"><div class="logo">BetterLibmanan</div></div>
+    <div class="content">
+      <div class="greeting">Hi ${name},</div>
+      <p class="message">
+        You requested to change your admin account password. Enter the code below to confirm the change:
+      </p>
+      <div class="otp-box"><div class="otp">${otp}</div></div>
+      <p class="note">This code will expire in 10 minutes.</p>
+      <div class="warning">
+        If you did not request a password change, please ignore this email and consider reviewing your account security.
+      </div>
+      <div class="footer"><p>Best regards,<br>BetterLibmanan Team</p></div>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+  return {
+    subject: "Confirm Password Change - BetterLibmanan",
+    text,
+    html,
+  };
+}
+
 export function createRegistrationSuccessEmail(name: string) {
   const text = `
 Hi ${name},
