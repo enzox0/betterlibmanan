@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFax } from "react-icons/fa";
+import { FaFacebookMessenger } from "react-icons/fa6";
 import { motion } from "framer-motion";
 import { Skeleton, SkeletonCard } from "@/shared/ui";
 import { useContactStore } from "@/modules/admin/store/contactStore";
@@ -10,6 +11,7 @@ export const TYPE_ICON: Record<string, IconType> = {
   email: FaEnvelope,
   address: FaMapMarkerAlt,
   fax: FaFax,
+  facebook: FaFacebookMessenger,
 };
 
 function buildHref(type: string, value: string): string {
@@ -18,6 +20,9 @@ function buildHref(type: string, value: string): string {
   }
   if (type === "email") {
     return `mailto:${value}`;
+  }
+  if (type === "facebook") {
+    return value.startsWith("http") ? value : `https://${value}`;
   }
   return "#";
 }
@@ -60,9 +65,9 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {showSkeleton
-              ? Array.from({ length: 3 }).map((_, index) => (
+              ? Array.from({ length: 4 }).map((_, index) => (
                   <SkeletonCard key={index}>
                     <Skeleton className="h-11 w-11 rounded-xl mb-4" />
                     <Skeleton className="h-5 w-24 mb-3" />
@@ -78,7 +83,7 @@ export function ContactSection({ isLoading = false }: { isLoading?: boolean }) {
                     <a
                       key={record.id}
                       href={href}
-                      className="rounded-2xl border border-neutral-200 bg-white p-6 transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
+                      className="h-full rounded-2xl border border-neutral-200 bg-white p-6 transition-all duration-200 hover:border-neutral-300 hover:shadow-md"
                     >
                       <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-100 text-neutral-700">
                         <Icon className="text-sm" />
