@@ -17,6 +17,15 @@ import {
   emitDiscussionReply,
   emitDiscussionReplyLike,
 } from "@/gateway/websocket/socket";
+import { writeAuditLog } from "@/modules/audit/audit.service";
+
+function getClientIp(req: Request): string {
+  return (
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown"
+  );
+}
 
 // ─── Discussions ──────────────────────────────────────────────────────────────
 
@@ -117,6 +126,23 @@ export async function deleteDiscussion(
       res.status(404).json({ success: false, message: "Discussion not found" });
       return;
     }
+
+    if (req.admin) {
+      writeAuditLog(
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action: "DELETE",
+          module: "Community",
+          resourceId: id,
+          description: `Deleted discussion "${doc.title}" (id: ${id})`,
+        },
+      );
+    }
+
     res.json({ success: true, message: "Discussion deleted" });
   } catch {
     res
@@ -316,6 +342,23 @@ export async function updateGroupStatus(
     if (!group) {
       res.status(404).json({ success: false, message: "Group not found" });
       return;
+    }
+
+    if (req.admin) {
+      const action = parsed.data.status === "approved" ? "APPROVE" : "REJECT";
+      writeAuditLog(
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action,
+          module: "Community",
+          resourceId: id,
+          description: `${parsed.data.status === "approved" ? "Approved" : "Rejected"} group "${group.name}" (id: ${id})`,
+        },
+      );
     }
 
     res.json({ success: true, data: group });
@@ -649,6 +692,23 @@ export async function deleteDiscussionReply(
     await DiscussionModel.findByIdAndUpdate(reply.discussionId, {
       $inc: { replies: -1 },
     });
+
+    if (req.admin) {
+      writeAuditLog(
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action: "DELETE",
+          module: "Community",
+          resourceId: id,
+          description: `Deleted discussion reply by "${reply.author}" (discussionId: ${reply.discussionId}, replyId: ${id})`,
+        },
+      );
+    }
+
     res.json({ success: true, message: "Reply deleted" });
   } catch {
     res.status(500).json({ success: false, message: "Failed to delete reply" });
@@ -845,6 +905,23 @@ export async function deleteGroupMessage(
     }
     // Notify all clients in the group room that the message was removed.
     emitGroupMessageDelete(groupId, messageId);
+
+    if (req.admin) {
+      writeAuditLog(
+        {
+          admin: req.admin,
+          ipAddress: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+        },
+        {
+          action: "DELETE",
+          module: "Community",
+          resourceId: messageId,
+          description: `Deleted group message by "${doc.author}" in group ${groupId} (messageId: ${messageId})`,
+        },
+      );
+    }
+
     res.json({ success: true, message: "Message deleted" });
   } catch {
     res
