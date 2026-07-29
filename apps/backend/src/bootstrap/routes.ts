@@ -28,6 +28,7 @@ import { socialLinksRouter } from "@/modules/social-links";
 import { legislativeRouter } from "@/modules/legislative";
 import { transparencyRouter } from "@/modules/transparency/transparency.routes";
 import { statisticsRouter } from "@/modules/statistics";
+import { sectionSourcesRouter } from "@/modules/section-sources/section-sources.routes";
 import { proxyImage } from "@/modules/files/image-proxy.controller";
 
 /**
@@ -127,6 +128,9 @@ apiRouter.use("/transparency", transparencyRouter);
 
 // Statistics — municipal demographics, finance, barangay populations, etc.
 apiRouter.use("/statistics", statisticsRouter);
+
+// Section Sources — admin-managed citation/attribution for public page sections
+apiRouter.use("/section-sources", sectionSourcesRouter);
 
 // Image Proxy — proxies images (especially R2) using Node.js DNS overrides
 apiRouter.get("/properties/image-proxy", proxyImage);
