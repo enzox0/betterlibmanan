@@ -30,9 +30,14 @@ import {
   LuUpload,
   LuFileJson,
   LuInfo,
+  LuLink,
 } from "react-icons/lu";
 import { useTransparencyStore } from "../store/transparencyStore";
 import { useAdminStore } from "../store/adminStore";
+import {
+  SectionSourcesPanel,
+  TRANSPARENCY_SECTIONS,
+} from "../components/SectionSourcesPanel";
 import type {
   DpwhProjectRecord,
   FinancialReportRecord,
@@ -89,7 +94,7 @@ const FUNDS = [
   "Local Government Unit",
 ];
 
-type TransparencyTab = "projects" | "infrastructure" | "budget";
+type TransparencyTab = "projects" | "infrastructure" | "budget" | "sources";
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Roads: <LuConstruction className="h-4 w-4" />,
@@ -1956,18 +1961,11 @@ function BudgetPanel() {
     }
   }
 
-  const QUARTER_LABELS: Record<string, string> = {
-    Q1: "Jan – Mar",
-    Q2: "Apr – Jun",
-    Q3: "Jul – Sep",
-    Q4: "Oct – Dec",
-  };
-
   return (
     <div className="space-y-6">
       <SectionCard
         title="Financial Reports"
-        description="Quarterly budget and financial transparency data for the public page"
+        description="Budget and financial transparency data for the public page"
         action={
           <button
             ref={addBtnRef}
@@ -1997,9 +1995,6 @@ function BudgetPanel() {
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="text-sm font-bold text-white bg-gray-900 px-2.5 py-0.5 rounded-lg">
                       {r.fiscalYear}
-                    </span>
-                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
-                      {r.quarter} · {QUARTER_LABELS[r.quarter]}
                     </span>
                     <AnimatePresence>
                       {savedIds.has(r.id) && (
@@ -2079,7 +2074,7 @@ function BudgetPanel() {
                 ? "Add Financial Report"
                 : "Edit Financial Report"
             }
-            subtitle="Quarterly budget data for the public Budget & Finance page"
+            subtitle="Budget data for the public Budget & Finance page"
             onClose={closePanel}
             returnFocusRef={addBtnRef}
             formId="report-form"
@@ -2120,16 +2115,15 @@ function BudgetPanel() {
                     onChange={(e) =>
                       setForm((f) => ({
                         ...f,
-                        quarter: e.target.value as "Q1" | "Q2" | "Q3" | "Q4",
+                        quarter: e.target.value as ReportFormState["quarter"],
                       }))
                     }
                     className={inputNormal}
                   >
-                    {(["Q1", "Q2", "Q3", "Q4"] as const).map((q) => (
-                      <option key={q} value={q}>
-                        {q} · {QUARTER_LABELS[q]}
-                      </option>
-                    ))}
+                    <option value="Q1">Q1</option>
+                    <option value="Q2">Q2</option>
+                    <option value="Q3">Q3</option>
+                    <option value="Q4">Q4</option>
                   </select>
                 </div>
               </div>
@@ -2283,7 +2277,7 @@ function BudgetPanel() {
         )}
         {deleteTarget && (
           <DeleteConfirmDialog
-            label={`${deleteTarget.fiscalYear} ${deleteTarget.quarter}`}
+            label={`${deleteTarget.fiscalYear}`}
             onClose={() => setDeleteTarget(null)}
             onConfirm={() =>
               store
@@ -2331,6 +2325,7 @@ function SummaryCard({
 
 export function TransparencyModulePage() {
   const store = useTransparencyStore();
+  const accessToken = useAdminStore((s) => s.accessToken) ?? "";
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TransparencyTab>("projects");
 
@@ -2377,6 +2372,11 @@ export function TransparencyModulePage() {
       label: "Budget & Finance",
       icon: <LuBanknote className="h-3.5 w-3.5" />,
       count: store.financialReports.length,
+    },
+    {
+      key: "sources",
+      label: "Sources",
+      icon: <LuLink className="h-3.5 w-3.5" />,
     },
   ];
 
@@ -2518,6 +2518,12 @@ export function TransparencyModulePage() {
               {activeTab === "projects" && <ProjectsPanel />}
               {activeTab === "infrastructure" && <InfrastructurePanel />}
               {activeTab === "budget" && <BudgetPanel />}
+              {activeTab === "sources" && (
+                <SectionSourcesPanel
+                  sections={TRANSPARENCY_SECTIONS}
+                  accessToken={accessToken}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
@@ -17,7 +17,21 @@ import {
   LuActivity,
   LuClock,
   LuCalendar,
+  LuRefreshCw,
 } from "react-icons/lu";
+// ── Section stores ─────────────────────────────────────────────────────────
+import { useLatestUpdatesStore } from "../store/latestUpdatesStore";
+import { useAtAGlanceStore } from "../store/atAGlanceStore";
+import { useBarangayMapStore } from "../store/barangayMapStore";
+import { useBetterLugsStore } from "../store/betterLugsStore";
+import { useContactStore } from "../store/contactStore";
+import { useEmergencyContactsStore } from "../store/emergencyContactsStore";
+import { useHistoryStore } from "../store/historyStore";
+import { useMarqueeImagesStore } from "../store/marqueeImagesStore";
+import { useMunicipalHallStore } from "../store/municipalHallStore";
+import { usePopularServicesStore } from "../store/popular-services.store";
+import { useQuizStore } from "../store/quizStore";
+import type { ContentRecord } from "../types/admin.types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -86,7 +100,6 @@ function GreetingCard({ name, greeting }: { name: string; greeting: string }) {
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -2, transition: { duration: 0.15 } }}
     >
-      {/* Text content */}
       <div className="min-w-0 flex-1">
         <p className="text-sm text-blue-500 font-medium leading-tight">
           {greeting},
@@ -108,16 +121,12 @@ function GreetingCard({ name, greeting }: { name: string; greeting: string }) {
           </span>
         </div>
       </div>
-
-      {/* Lottie illustration */}
       <div
         className="flex-shrink-0 flex h-24 w-24 items-center justify-center"
         aria-hidden="true"
       >
         <DotLottieReact src={adminLottie} loop autoplay className="h-24 w-24" />
       </div>
-
-      {/* Subtle corner glow */}
       <div
         className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-blue-200/30 blur-2xl"
         aria-hidden="true"
@@ -150,7 +159,6 @@ function QuickLink({
       to={to}
       className="group relative flex items-center gap-4 rounded-2xl border border-gray-100 bg-white px-4 py-4 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
-      {/* Left accent bar */}
       <span
         className={`absolute left-0 top-0 h-full w-1 rounded-l-2xl ${accentBar}`}
         aria-hidden="true"
@@ -250,7 +258,6 @@ function SectionRow({ displayName, published, draft, total }: SectionRowProps) {
             {published}/{total}
           </span>
         </div>
-        {/* Progress bar */}
         <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
           <motion.div
             className="h-full rounded-full bg-blue-500"
@@ -276,39 +283,163 @@ function SectionRow({ displayName, published, draft, total }: SectionRowProps) {
   );
 }
 
+// ─── Skeleton loader ──────────────────────────────────────────────────────────
+
+function SkeletonRow() {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 animate-pulse">
+      <div className="h-1.5 w-1.5 rounded-full bg-gray-200 flex-shrink-0" />
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="h-2.5 w-3/4 rounded bg-gray-100" />
+        <div className="h-2 w-1/3 rounded bg-gray-100" />
+      </div>
+      <div className="h-4 w-12 rounded-full bg-gray-100 flex-shrink-0" />
+    </div>
+  );
+}
+
+// ─── Hook: aggregate all section stores ───────────────────────────────────────
+
+/**
+ * Fetches all section admin records in parallel on mount and returns a flat
+ * combined array along with a loading / error state.
+ */
+function useDashboardData(accessToken: string | null) {
+  const latestUpdates = useLatestUpdatesStore((s) => s.adminRecords);
+  const atAGlance = useAtAGlanceStore((s) => s.adminRecords);
+  const barangayMap = useBarangayMapStore((s) => s.adminRecords);
+  const betterLugs = useBetterLugsStore((s) => s.adminRecords);
+  const contact = useContactStore((s) => s.adminRecords);
+  const emergencyContacts = useEmergencyContactsStore((s) => s.adminRecords);
+  const history = useHistoryStore((s) => s.adminRecords);
+  const marqueeImages = useMarqueeImagesStore((s) => s.adminRecords);
+  const municipalHall = useMunicipalHallStore((s) => s.adminRecords);
+  const popularServices = usePopularServicesStore((s) => s.adminRecords);
+  const quiz = useQuizStore((s) => s.adminRecords);
+
+  const fetchLatestUpdates = useLatestUpdatesStore((s) => s.fetchAdminRecords);
+  const fetchAtAGlance = useAtAGlanceStore((s) => s.fetchAdminRecords);
+  const fetchBarangayMap = useBarangayMapStore((s) => s.fetchAdminRecords);
+  const fetchBetterLugs = useBetterLugsStore((s) => s.fetchAdminRecords);
+  const fetchContact = useContactStore((s) => s.fetchAdminRecords);
+  const fetchEmergencyContacts = useEmergencyContactsStore(
+    (s) => s.fetchAdminRecords,
+  );
+  const fetchHistory = useHistoryStore((s) => s.fetchAdminRecords);
+  const fetchMarqueeImages = useMarqueeImagesStore((s) => s.fetchAdminRecords);
+  const fetchMunicipalHall = useMunicipalHallStore((s) => s.fetchAdminRecords);
+  const fetchPopularServices = usePopularServicesStore(
+    (s) => s.fetchAdminRecords,
+  );
+  const fetchQuiz = useQuizStore((s) => s.fetchAdminRecords);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    setIsLoading(true);
+    setFetchError(null);
+
+    Promise.allSettled([
+      fetchLatestUpdates(accessToken),
+      fetchAtAGlance(accessToken),
+      fetchBarangayMap(accessToken),
+      fetchBetterLugs(accessToken),
+      fetchContact(accessToken),
+      fetchEmergencyContacts(accessToken),
+      fetchHistory(accessToken),
+      fetchMarqueeImages(accessToken),
+      fetchMunicipalHall(accessToken),
+      fetchPopularServices(accessToken),
+      fetchQuiz(accessToken),
+    ])
+      .then((results) => {
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) {
+          setFetchError(
+            `${failed} section(s) failed to load. Showing partial data.`,
+          );
+        }
+      })
+      .finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
+
+  // Combine all records tagged with their sectionKey
+  const allRecords: ContentRecord[] = useMemo(
+    () => [
+      ...latestUpdates,
+      ...atAGlance,
+      ...barangayMap,
+      ...betterLugs,
+      ...contact,
+      ...emergencyContacts,
+      ...history,
+      ...marqueeImages,
+      ...municipalHall,
+      ...popularServices,
+      ...quiz,
+    ],
+    [
+      latestUpdates,
+      atAGlance,
+      barangayMap,
+      betterLugs,
+      contact,
+      emergencyContacts,
+      history,
+      marqueeImages,
+      municipalHall,
+      popularServices,
+      quiz,
+    ],
+  );
+
+  return { allRecords, isLoading, fetchError };
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function AdminDashboardPage() {
-  const records = useAdminStore((s) => s.records);
   const admin = useAdminStore((s) => s.admin);
+  const accessToken = useAdminStore((s) => s.accessToken);
 
-  const allRecords = Object.values(records).flat();
+  const { allRecords, isLoading, fetchError } = useDashboardData(accessToken);
+
   const totalRecords = allRecords.length;
   const publishedCount = allRecords.filter(
     (r) => r.status === "published",
   ).length;
   const draftCount = allRecords.filter((r) => r.status === "draft").length;
-  const totalSections = mockSections.length;
-  void totalSections; // kept for section breakdown below
 
   // 8 most recently updated records
-  const recentActivity = [...allRecords]
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    .slice(0, 8);
+  const recentActivity = useMemo(
+    () =>
+      [...allRecords]
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, 8),
+    [allRecords],
+  );
 
-  // Per-section breakdown (only sections with records)
-  const sectionBreakdown = mockSections
-    .map((s) => {
-      const recs = records[s.key] ?? [];
-      return {
-        key: s.key,
-        displayName: s.displayName,
-        total: recs.length,
-        published: recs.filter((r) => r.status === "published").length,
-        draft: recs.filter((r) => r.status === "draft").length,
-      };
-    })
-    .filter((s) => s.total > 0);
+  // Per-section breakdown (only sections that have records)
+  const sectionBreakdown = useMemo(
+    () =>
+      mockSections
+        .map((s) => {
+          const recs = allRecords.filter((r) => r.sectionKey === s.key);
+          return {
+            key: s.key,
+            displayName: s.displayName,
+            total: recs.length,
+            published: recs.filter((r) => r.status === "published").length,
+            draft: recs.filter((r) => r.status === "draft").length,
+          };
+        })
+        .filter((s) => s.total > 0),
+    [allRecords],
+  );
 
   // Greeting
   const hour = new Date().getHours();
@@ -347,44 +478,62 @@ export function AdminDashboardPage() {
             Overview of your content, activity, and quick access to all modules.
           </p>
         </div>
-        {/* Live indicator */}
-        <div className="flex-shrink-0 flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 mt-1">
-          <span
-            className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"
-            aria-hidden="true"
-          />
-          <span className="text-[11px] font-semibold text-green-700">Live</span>
+        <div className="flex items-center gap-2 mt-1">
+          {isLoading && (
+            <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <LuRefreshCw
+                className="h-3 w-3 animate-spin"
+                aria-hidden="true"
+              />
+              Loading…
+            </span>
+          )}
+          <div className="flex-shrink-0 flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5">
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"
+              aria-hidden="true"
+            />
+            <span className="text-[11px] font-semibold text-green-700">
+              Live
+            </span>
+          </div>
         </div>
       </motion.div>
+
+      {/* ── Error banner ────────────────────────────────────────────────────── */}
+      {fetchError && (
+        <motion.div
+          variants={itemVariants}
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700"
+          role="alert"
+        >
+          {fetchError}
+        </motion.div>
+      )}
 
       {/* ── Greeting + Stats row ─────────────────────────────────────────────── */}
       <motion.div
         variants={itemVariants}
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
       >
-        {/* Greeting panel — 40% (2 of 5 cols on lg) */}
         <div className="sm:col-span-2 lg:col-span-2">
           <GreetingCard name={adminName} greeting={greeting} />
         </div>
-
-        {/* Total Records — 20% */}
         <StatsCard
           label="Total Records"
-          value={totalRecords}
+          value={isLoading && totalRecords === 0 ? "—" : totalRecords}
           trend="up"
           accentColor="blue"
         />
-        {/* Published — 20% */}
         <StatsCard
           label="Published"
-          value={publishedCount}
+          value={isLoading && publishedCount === 0 ? "—" : publishedCount}
           trend="up"
           accentColor="green"
         />
-        {/* Drafts — 20% */}
         <StatsCard
           label="Drafts"
-          value={draftCount}
+          value={isLoading && draftCount === 0 ? "—" : draftCount}
           trend="neutral"
           accentColor="yellow"
         />
@@ -408,29 +557,39 @@ export function AdminDashboardPage() {
             ))}
           </div>
 
-          {/* Section Breakdown — placed under Quick Access on wide screens */}
-          {sectionBreakdown.length > 0 && (
-            <div className="space-y-2.5 pt-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  Section Breakdown
-                </h2>
-                <div className="flex items-center gap-2 ml-auto text-[10px] text-gray-400 font-medium">
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-400 inline-block" />
-                    published
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block" />
-                    draft
-                  </span>
-                </div>
+          {/* Section Breakdown */}
+          <div className="space-y-2.5 pt-1">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-700">
+                Section Breakdown
+              </h2>
+              <div className="flex items-center gap-2 ml-auto text-[10px] text-gray-400 font-medium">
+                <span className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400 inline-block" />
+                  published
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block" />
+                  draft
+                </span>
               </div>
-              <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-                <div
-                  className="h-1 bg-gradient-to-r from-blue-600 to-blue-800"
-                  aria-hidden="true"
-                />
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+              <div
+                className="h-1 bg-gradient-to-r from-blue-600 to-blue-800"
+                aria-hidden="true"
+              />
+              {isLoading && sectionBreakdown.length === 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-50 py-1">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <SkeletonRow key={i} />
+                  ))}
+                </div>
+              ) : sectionBreakdown.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-gray-400">
+                  No records yet.
+                </p>
+              ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-50 py-1">
                   {sectionBreakdown.map((s) => (
                     <SectionRow
@@ -442,12 +601,12 @@ export function AdminDashboardPage() {
                     />
                   ))}
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </motion.div>
 
-        {/* Right column: Recent Activity only */}
+        {/* Right column: Recent Activity */}
         <motion.div variants={itemVariants} className="space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -464,13 +623,14 @@ export function AdminDashboardPage() {
             </span>
           </div>
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-            {/* Accent bar */}
             <div
               className="h-1 bg-gradient-to-r from-blue-600 to-blue-800"
               aria-hidden="true"
             />
             <div className="divide-y divide-gray-50">
-              {recentActivity.length === 0 ? (
+              {isLoading && recentActivity.length === 0 ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+              ) : recentActivity.length === 0 ? (
                 <p className="px-4 py-8 text-center text-sm text-gray-400">
                   No activity yet.
                 </p>

@@ -20,10 +20,15 @@ import {
   LuRefreshCw,
   LuLoader,
   LuTriangleAlert,
+  LuLink,
 } from "react-icons/lu";
 import { useStatisticsStore } from "../store/statisticsStore";
 import { useAdminStore } from "../store/adminStore";
 import { useToast } from "@/context/ToastContext";
+import {
+  SectionSourcesPanel,
+  STATS_SECTIONS,
+} from "../components/SectionSourcesPanel";
 import type {
   MunicipalStatRecord,
   FinanceStatRecord,
@@ -109,7 +114,8 @@ type StatsTab =
   | "barangays"
   | "economy"
   | "poverty"
-  | "competitiveness";
+  | "competitiveness"
+  | "sources";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -416,6 +422,11 @@ const STATS_TABS: { key: StatsTab; label: string; icon: React.ReactNode }[] = [
     key: "competitiveness",
     label: "Competitiveness",
     icon: <LuStar className="h-3.5 w-3.5" />,
+  },
+  {
+    key: "sources",
+    label: "Sources",
+    icon: <LuLink className="h-3.5 w-3.5" />,
   },
 ];
 
@@ -2794,10 +2805,14 @@ function PovertyPanel({
       }
     >
       <div className="divide-y divide-gray-50">
-        {entries.length === 0 && (
-          <EmptyState onAdd={openCreate} label="poverty entries" />
-        )}
         <AnimatePresence>
+          {entries.length === 0 && (
+            <EmptyState
+              key="empty"
+              onAdd={openCreate}
+              label="poverty entries"
+            />
+          )}
           {entries.map((entry) => (
             <motion.div
               key={entry._id}
@@ -2828,6 +2843,7 @@ function PovertyPanel({
                     <AnimatePresence>
                       {savedIds.has(entry._id) && (
                         <motion.span
+                          key={`saved-${entry._id}`}
                           className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600 ring-1 ring-green-200"
                           initial={{ opacity: 0, scale: 0.85 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -3454,6 +3470,7 @@ export function StatisticsModulePage() {
     economy: economyIndicators.length + economySectors.length,
     poverty: povertyEntries.length,
     competitiveness: competitivenessItems.length,
+    sources: STATS_SECTIONS.length,
   };
 
   return (
@@ -3662,6 +3679,12 @@ export function StatisticsModulePage() {
                   onCreate={createCompetitivenessItem}
                   onUpdate={updateCompetitivenessItem}
                   onDelete={deleteCompetitivenessItem}
+                />
+              )}
+              {activeTab === "sources" && (
+                <SectionSourcesPanel
+                  sections={STATS_SECTIONS}
+                  accessToken={accessToken ?? ""}
                 />
               )}
             </motion.div>

@@ -18,6 +18,8 @@ import {
   LuUser,
   LuLoader,
   LuLoaderCircle,
+  LuEye,
+  LuEyeOff,
 } from "react-icons/lu";
 import SafeImage from "@/modules/landing/components/ui/SafeImage";
 import { useAdminStore } from "../store/adminStore";
@@ -25,6 +27,7 @@ import {
   getMeRequest,
   updateMeRequest,
   changeMyPasswordRequest,
+  requestPasswordChangeOtpRequest,
   getMyActivityRequest,
   uploadAvatarRequest,
   type ActivityLogEntry,
@@ -214,6 +217,79 @@ function ActivityIcon({ type }: { type: string }) {
     return <LuCircleCheck className={base} aria-hidden="true" />;
   if (type === "trash") return <LuTrash2 className={base} aria-hidden="true" />;
   return <LuLogIn className={base} aria-hidden="true" />;
+}
+
+// ─── Password Field ───────────────────────────────────────────────────────────
+
+const PW_INPUT_BASE =
+  "w-full rounded-lg border px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all";
+const PW_INPUT_NORMAL = `${PW_INPUT_BASE} border-gray-200 bg-gray-50`;
+const PW_INPUT_ERROR = `${PW_INPUT_BASE} border-red-300 bg-red-50`;
+
+function PasswordField({
+  id,
+  label,
+  value,
+  show,
+  onToggle,
+  onChange,
+  placeholder,
+  error,
+  required = false,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  show: boolean;
+  onToggle: () => void;
+  onChange: (v: string) => void;
+  placeholder: string;
+  error?: string;
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="block text-sm font-medium text-gray-700 mb-1.5"
+      >
+        {label}{" "}
+        {required && (
+          <span className="text-red-500" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          aria-invalid={!!error}
+          className={`${error ? PW_INPUT_ERROR : PW_INPUT_NORMAL} pr-10`}
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={show ? "Hide password" : "Show password"}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+        >
+          {show ? (
+            <LuEyeOff className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <LuEye className="h-4 w-4" aria-hidden="true" />
+          )}
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 // ─── Edit Profile Modal ───────────────────────────────────────────────────────
@@ -645,11 +721,20 @@ function ChangePasswordModal({
   onClose,
   accessToken,
 }: ChangePasswordModalProps) {
+  // Step 1: collect passwords → request OTP
+  // Step 2: enter OTP → confirm change
+  const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
+  const [otp, setOtp] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNext, setShowNext] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function setField(key: keyof typeof form, val: string) {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -661,7 +746,7 @@ function ChangePasswordModal({
       });
   }
 
-  function validate() {
+  function validateStep1() {
     const next: Record<string, string> = {};
     if (!form.current) next.current = "Current password is required.";
     if (!form.next) next.next = "New password is required.";
@@ -672,18 +757,73 @@ function ChangePasswordModal({
     return Object.keys(next).length === 0;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function startCooldown() {
+    setResendCooldown(60);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((v) => {
+        if (v <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return v - 1;
+      });
+    }, 1000);
+  }
+
+  async function handleRequestOtp() {
+    if (!validateStep1()) return;
+    setSubmitting(true);
+    setApiError(null);
+    try {
+      await requestPasswordChangeOtpRequest(
+        { currentPassword: form.current, newPassword: form.next },
+        accessToken,
+      );
+      setStep(2);
+      setOtp("");
+      startCooldown();
+    } catch (err: any) {
+      setApiError(
+        err?.response?.data?.message ??
+          "Failed to send code. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleResendOtp() {
+    if (resendCooldown > 0) return;
+    setSubmitting(true);
+    setApiError(null);
+    try {
+      await requestPasswordChangeOtpRequest(
+        { currentPassword: form.current, newPassword: form.next },
+        accessToken,
+      );
+      startCooldown();
+    } catch (err: any) {
+      setApiError(err?.response?.data?.message ?? "Failed to resend code.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleConfirm(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+    if (otp.length !== 6) {
+      setErrors({ otp: "Enter the 6-digit code sent to your email." });
+      return;
+    }
     setSubmitting(true);
     setApiError(null);
     try {
       await changeMyPasswordRequest(
-        { currentPassword: form.current, newPassword: form.next },
+        { currentPassword: form.current, newPassword: form.next, otp },
         accessToken,
       );
       setSuccess(true);
-      setTimeout(onClose, 1400);
+      setTimeout(onClose, 1600);
     } catch (err: any) {
       setApiError(
         err?.response?.data?.message ??
@@ -694,10 +834,12 @@ function ChangePasswordModal({
     }
   }
 
-  const inputBase =
-    "w-full rounded-lg border px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all";
-  const inputNormal = `${inputBase} border-gray-200 bg-gray-50`;
-  const inputError = `${inputBase} border-red-300 bg-red-50`;
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
 
   return ReactDOM.createPortal(
     <AnimatePresence>
@@ -738,7 +880,9 @@ function ChangePasswordModal({
                 Change Password
               </h2>
               <p className="mt-0.5 text-xs text-gray-400">
-                Choose a strong, unique password.
+                {step === 1
+                  ? "Choose a strong, unique password."
+                  : "Enter the 6-digit code sent to your email."}
               </p>
             </div>
             <button
@@ -764,8 +908,15 @@ function ChangePasswordModal({
               </p>
               <p className="text-xs text-gray-400">Closing automatically…</p>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} noValidate>
+          ) : step === 1 ? (
+            /* ── Step 1: Enter passwords ── */
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleRequestOtp();
+              }}
+              noValidate
+            >
               <div className="px-6 py-5 space-y-4">
                 {apiError && (
                   <div
@@ -779,81 +930,39 @@ function ChangePasswordModal({
                     {apiError}
                   </div>
                 )}
-                <div>
-                  <label
-                    htmlFor="cp-current"
-                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                  >
-                    Current Password{" "}
-                    <span className="text-red-500" aria-hidden="true">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    id="cp-current"
-                    type="password"
-                    value={form.current}
-                    onChange={(e) => setField("current", e.target.value)}
-                    placeholder="Your current password"
-                    aria-invalid={!!errors.current}
-                    className={errors.current ? inputError : inputNormal}
-                  />
-                  {errors.current && (
-                    <p role="alert" className="mt-1 text-xs text-red-600">
-                      {errors.current}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label
-                    htmlFor="cp-next"
-                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                  >
-                    New Password{" "}
-                    <span className="text-red-500" aria-hidden="true">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    id="cp-next"
-                    type="password"
-                    value={form.next}
-                    onChange={(e) => setField("next", e.target.value)}
-                    placeholder="Min. 8 characters"
-                    aria-invalid={!!errors.next}
-                    className={errors.next ? inputError : inputNormal}
-                  />
-                  {errors.next && (
-                    <p role="alert" className="mt-1 text-xs text-red-600">
-                      {errors.next}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label
-                    htmlFor="cp-confirm"
-                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                  >
-                    Confirm Password{" "}
-                    <span className="text-red-500" aria-hidden="true">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    id="cp-confirm"
-                    type="password"
-                    value={form.confirm}
-                    onChange={(e) => setField("confirm", e.target.value)}
-                    placeholder="Repeat new password"
-                    aria-invalid={!!errors.confirm}
-                    className={errors.confirm ? inputError : inputNormal}
-                  />
-                  {errors.confirm && (
-                    <p role="alert" className="mt-1 text-xs text-red-600">
-                      {errors.confirm}
-                    </p>
-                  )}
-                </div>
+                <PasswordField
+                  id="cp-current"
+                  label="Current Password"
+                  value={form.current}
+                  show={showCurrent}
+                  onToggle={() => setShowCurrent((v) => !v)}
+                  onChange={(v) => setField("current", v)}
+                  placeholder="Your current password"
+                  error={errors.current}
+                  required
+                />
+                <PasswordField
+                  id="cp-next"
+                  label="New Password"
+                  value={form.next}
+                  show={showNext}
+                  onToggle={() => setShowNext((v) => !v)}
+                  onChange={(v) => setField("next", v)}
+                  placeholder="Min. 8 characters"
+                  error={errors.next}
+                  required
+                />
+                <PasswordField
+                  id="cp-confirm"
+                  label="Confirm Password"
+                  value={form.confirm}
+                  show={showConfirm}
+                  onToggle={() => setShowConfirm((v) => !v)}
+                  onChange={(v) => setField("confirm", v)}
+                  placeholder="Repeat new password"
+                  error={errors.confirm}
+                  required
+                />
               </div>
               <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80">
                 <button
@@ -869,14 +978,129 @@ function ChangePasswordModal({
                   disabled={submitting}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-60"
                 >
-                  {submitting && (
+                  {submitting ? (
                     <LuLoader
                       className="h-3.5 w-3.5 animate-spin"
                       aria-hidden="true"
                     />
+                  ) : (
+                    <LuMail className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
-                  Update Password
+                  Send Verification Code
                 </button>
+              </div>
+            </form>
+          ) : (
+            /* ── Step 2: Enter OTP ── */
+            <form onSubmit={handleConfirm} noValidate>
+              <div className="px-6 py-5 space-y-4">
+                {apiError && (
+                  <div
+                    className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-700"
+                    role="alert"
+                  >
+                    <LuLoaderCircle
+                      className="h-4 w-4 shrink-0"
+                      aria-hidden="true"
+                    />
+                    {apiError}
+                  </div>
+                )}
+
+                <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 text-xs text-blue-700 leading-relaxed">
+                  A 6-digit verification code was sent to your registered email
+                  address. Enter it below to confirm the password change.
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="cp-otp"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                  >
+                    Verification Code{" "}
+                    <span className="text-red-500" aria-hidden="true">
+                      *
+                    </span>
+                  </label>
+                  <input
+                    id="cp-otp"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+                      setOtp(v);
+                      if (errors.otp)
+                        setErrors((prev) => {
+                          const n = { ...prev };
+                          delete n.otp;
+                          return n;
+                        });
+                    }}
+                    placeholder="000000"
+                    aria-invalid={!!errors.otp}
+                    className={`${errors.otp ? PW_INPUT_ERROR : PW_INPUT_NORMAL} text-center tracking-[0.4em] text-lg font-bold`}
+                    autoComplete="one-time-code"
+                    autoFocus
+                  />
+                  {errors.otp && (
+                    <p role="alert" className="mt-1 text-xs text-red-600">
+                      {errors.otp}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-400">
+                  <span>Didn't receive the code?</span>
+                  <button
+                    type="button"
+                    onClick={() => void handleResendOtp()}
+                    disabled={resendCooldown > 0 || submitting}
+                    className="font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
+                  >
+                    {resendCooldown > 0
+                      ? `Resend in ${resendCooldown}s`
+                      : "Resend code"}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep(1);
+                    setApiError(null);
+                    setOtp("");
+                  }}
+                  disabled={submitting}
+                  className="text-xs font-semibold text-gray-500 hover:text-gray-700 focus:outline-none disabled:opacity-50"
+                >
+                  ← Back
+                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={submitting}
+                    className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || otp.length !== 6}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-60"
+                  >
+                    {submitting && (
+                      <LuLoader
+                        className="h-3.5 w-3.5 animate-spin"
+                        aria-hidden="true"
+                      />
+                    )}
+                    Update Password
+                  </button>
+                </div>
               </div>
             </form>
           )}

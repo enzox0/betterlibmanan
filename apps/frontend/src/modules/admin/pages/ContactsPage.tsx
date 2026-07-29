@@ -76,6 +76,12 @@ const CONTACT_TYPE_META: Record<
     bg: "bg-violet-50",
     hint: "mailto:address@domain.com",
   },
+  facebook: {
+    label: "Facebook",
+    color: "text-sky-700",
+    bg: "bg-sky-50",
+    hint: "https://facebook.com/your-page",
+  },
   address: {
     label: "Address",
     color: "text-emerald-600",
@@ -711,7 +717,8 @@ function ContactInfoSection() {
         <div className="divide-y divide-gray-50">
           {contacts.map((c) => {
             const contactType = (f(c, "type") || "phone") as ContactType;
-            const meta = CONTACT_TYPE_META[contactType];
+            const meta =
+              CONTACT_TYPE_META[contactType] ?? CONTACT_TYPE_META["phone"];
             return (
               <div
                 key={c.id}
@@ -1699,6 +1706,726 @@ function MedicalPanel() {
   );
 }
 
+// ─── Offices Panel ───────────────────────────────────────────────────────────
+
+function OfficesPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const records = useOfficeDirectoryStore((s) => s.records);
+  const isLoading = useOfficeDirectoryStore((s) => s.isLoading);
+  const error = useOfficeDirectoryStore((s) => s.error);
+  const { fetchRecords, createRecord, updateRecord, deleteRecord } =
+    useOfficeDirectoryStore();
+
+  const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [search, setSearch] = useState("");
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+  const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
+    {},
+  );
+
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [order, setOrder] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function getEditRef(id: string) {
+    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
+    return editRefs.current[id];
+  }
+
+  useEffect(() => {
+    fetchRecords().catch(() => {});
+  }, []);
+
+  const filtered = search.trim()
+    ? records.filter((r) =>
+        f(r, "name").toLowerCase().includes(search.toLowerCase()),
+      )
+    : records;
+
+  function openCreate() {
+    setName("");
+    setNumber("");
+    setOrder("");
+    setErrors({});
+    setEditTarget(null);
+    setPanelMode("create");
+  }
+  function openEdit(c: ContentRecord) {
+    setName(f(c, "name"));
+    setNumber(f(c, "number"));
+    setOrder(String((c.fields as any).order ?? ""));
+    setErrors({});
+    setEditTarget(c);
+    setPanelMode("edit");
+  }
+  function closePanel() {
+    setPanelMode(null);
+    setEditTarget(null);
+  }
+
+  async function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    const e: Record<string, string> = {};
+    if (!name.trim()) e.name = "Name is required.";
+    if (!number.trim()) e.number = "Number is required.";
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: name.trim(),
+        number: number.trim(),
+        order: order.trim() ? Number(order) : undefined,
+      };
+      if (panelMode === "create") {
+        await createRecord(payload, accessToken!);
+        toast("Office added.", "success");
+      } else if (editTarget) {
+        await updateRecord(editTarget.id, payload, accessToken!);
+        toast("Office saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteRecord(record.id, accessToken!);
+      toast("Office removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  const returnFocusRef = (
+    panelMode === "create"
+      ? addBtnRef
+      : editTarget
+        ? getEditRef(editTarget.id)
+        : addBtnRef
+  ) as React.RefObject<HTMLButtonElement>;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4">
+        <div>
+          <p className="text-sm font-semibold text-gray-800">
+            Office Directory
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {records.length} entr{records.length === 1 ? "y" : "ies"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <LuSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search offices…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all w-40"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchRecords().catch(() => {})}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            ref={addBtnRef}
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+          >
+            <LuPlus className="h-4 w-4" /> Add Office
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <ErrorBanner
+          message={error}
+          onRetry={() => fetchRecords().catch(() => {})}
+        />
+      )}
+
+      {isLoading && records.length === 0 ? (
+        <div className="overflow-x-auto px-5 pb-5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["Office / Department", "Number", "Order", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 3 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <TableSkeleton cols={4} />
+          </table>
+        </div>
+      ) : records.length === 0 ? (
+        <EmptyState
+          icon={<LuBuilding2 className="h-6 w-6 text-gray-300" />}
+          title="No offices yet"
+          sub="Add municipal office entries with their direct contact numbers."
+          onAdd={openCreate}
+          addLabel="Add Office"
+        />
+      ) : (
+        <div className="overflow-x-auto px-5 pb-5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {["Office / Department", "Number", "Order", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${i === 3 ? "text-right" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <motion.tbody
+              className="divide-y divide-gray-50"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+            >
+              <AnimatePresence>
+                {(filtered.length > 0 ? filtered : records).map((c) => (
+                  <motion.tr
+                    key={c.id}
+                    variants={rowVariants}
+                    exit="exit"
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-5 py-3 font-medium text-gray-900">
+                      {f(c, "name")}
+                    </td>
+                    <td className="px-5 py-3 font-mono text-blue-600 whitespace-nowrap">
+                      {f(c, "number")}
+                    </td>
+                    <td className="px-5 py-3 text-gray-400 text-xs">
+                      {(c.fields as any).order ?? "—"}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          ref={
+                            getEditRef(
+                              c.id,
+                            ) as React.RefObject<HTMLButtonElement>
+                          }
+                          type="button"
+                          onClick={() => openEdit(c)}
+                          className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                          aria-label={`Edit ${f(c, "name")}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(c)}
+                          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all"
+                          aria-label={`Remove ${f(c, "name")}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </motion.tbody>
+          </table>
+          {search.trim() && filtered.length === 0 && (
+            <SearchEmpty query={search} />
+          )}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {panelMode && (
+          <SlidePanel
+            title={panelMode === "create" ? "Add Office" : "Edit Office"}
+            subtitle="Shown on the public Contact page office directory"
+            accentColor="from-blue-600 to-blue-800"
+            onClose={closePanel}
+            returnFocusRef={returnFocusRef}
+            formId="off-form"
+            submitLabel={panelMode === "create" ? "Add Office" : "Save Changes"}
+            isSubmitting={isSubmitting}
+          >
+            <form
+              id="off-form"
+              onSubmit={handleSubmit}
+              noValidate
+              className="space-y-4"
+            >
+              <div>
+                <label
+                  htmlFor="off-name"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Office / Department <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="off-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setErrors((p) => ({ ...p, name: "" }));
+                  }}
+                  className={errors.name ? inputError : inputNormal}
+                  placeholder="e.g. Office of the Mayor"
+                />
+                <FieldError id="off-name-err" msg={errors.name} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="off-number"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                  >
+                    Contact Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="off-number"
+                    type="text"
+                    value={number}
+                    onChange={(e) => {
+                      setNumber(e.target.value);
+                      setErrors((p) => ({ ...p, number: "" }));
+                    }}
+                    className={errors.number ? inputError : inputNormal}
+                    placeholder="09XXXXXXXXX"
+                  />
+                  <FieldError id="off-number-err" msg={errors.number} />
+                </div>
+                <div>
+                  <label
+                    htmlFor="off-order"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                  >
+                    Display Order
+                  </label>
+                  <input
+                    id="off-order"
+                    type="number"
+                    min={0}
+                    value={order}
+                    onChange={(e) => setOrder(e.target.value)}
+                    className={inputNormal}
+                    placeholder="0"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">
+                    Lower numbers appear first.
+                  </p>
+                </div>
+              </div>
+            </form>
+          </SlidePanel>
+        )}
+        {deleteTarget && (
+          <DeleteDialog
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Social Panel ─────────────────────────────────────────────────────────────
+
+function SocialPanel() {
+  const { toast } = useToast();
+  const accessToken = useAdminStore((s) => s.accessToken);
+  const records = useSocialLinksStore((s) => s.records);
+  const isLoading = useSocialLinksStore((s) => s.isLoading);
+  const error = useSocialLinksStore((s) => s.error);
+  const { fetchRecords, createRecord, updateRecord, deleteRecord } =
+    useSocialLinksStore();
+
+  const [panelMode, setPanelMode] = useState<null | "create" | "edit">(null);
+  const [editTarget, setEditTarget] = useState<ContentRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContentRecord | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+  const editRefs = useRef<Record<string, React.RefObject<HTMLButtonElement>>>(
+    {},
+  );
+
+  const [name, setName] = useState("");
+  const [href, setHref] = useState("");
+  const [platform, setPlatform] = useState<SocialLinkPlatform>("facebook");
+  const [order, setOrder] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function getEditRef(id: string) {
+    if (!editRefs.current[id]) editRefs.current[id] = { current: null };
+    return editRefs.current[id];
+  }
+
+  useEffect(() => {
+    fetchRecords().catch(() => {});
+  }, []);
+
+  function openCreate() {
+    setName("");
+    setHref("");
+    setPlatform("facebook");
+    setOrder("");
+    setErrors({});
+    setEditTarget(null);
+    setPanelMode("create");
+  }
+  function openEdit(c: ContentRecord) {
+    setName(f(c, "name"));
+    setHref(f(c, "href"));
+    setPlatform((f(c, "platform") as SocialLinkPlatform) || "facebook");
+    setOrder(String((c.fields as any).order ?? ""));
+    setErrors({});
+    setEditTarget(c);
+    setPanelMode("edit");
+  }
+  function closePanel() {
+    setPanelMode(null);
+    setEditTarget(null);
+  }
+
+  async function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    const e: Record<string, string> = {};
+    if (!name.trim()) e.name = "Name is required.";
+    if (!href.trim()) e.href = "URL is required.";
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: name.trim(),
+        href: href.trim(),
+        platform,
+        order: order.trim() ? Number(order) : undefined,
+      };
+      if (panelMode === "create") {
+        await createRecord(payload, accessToken!);
+        toast("Social link added.", "success");
+      } else if (editTarget) {
+        await updateRecord(editTarget.id, payload, accessToken!);
+        toast("Social link saved.", "success");
+      }
+      closePanel();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || "Failed to save.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDelete(record: ContentRecord) {
+    setIsDeleting(true);
+    try {
+      await deleteRecord(record.id, accessToken!);
+      toast("Social link removed.", "success");
+      setDeleteTarget(null);
+    } catch {
+      toast("Failed to remove.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  const returnFocusRef = (
+    panelMode === "create"
+      ? addBtnRef
+      : editTarget
+        ? getEditRef(editTarget.id)
+        : addBtnRef
+  ) as React.RefObject<HTMLButtonElement>;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
+        <div>
+          <p className="text-sm font-semibold text-gray-800">
+            Social Media Links
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {records.length} entr{records.length === 1 ? "y" : "ies"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fetchRecords().catch(() => {})}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+            aria-label="Refresh"
+          >
+            <LuRefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            ref={addBtnRef}
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+          >
+            <LuPlus className="h-4 w-4" /> Add Link
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <ErrorBanner
+          message={error}
+          onRetry={() => fetchRecords().catch(() => {})}
+        />
+      )}
+
+      {isLoading && records.length === 0 ? (
+        <SkeletonRows count={3} />
+      ) : records.length === 0 ? (
+        <EmptyState
+          icon={<LuShare2 className="h-6 w-6 text-gray-300" />}
+          title="No social links yet"
+          sub="Add Facebook, Instagram, YouTube and other social media pages."
+          onAdd={openCreate}
+          addLabel="Add Link"
+        />
+      ) : (
+        <div className="divide-y divide-gray-50 px-1 pb-4">
+          <AnimatePresence>
+            {records.map((c) => {
+              const plat = (f(c, "platform") || "other") as SocialLinkPlatform;
+              const meta =
+                SOCIAL_PLATFORM_META[plat] ?? SOCIAL_PLATFORM_META["other"];
+              return (
+                <motion.div
+                  key={c.id}
+                  variants={rowVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="flex items-center gap-4 px-4 py-3"
+                >
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.bg}`}
+                  >
+                    <span className={`text-xs font-bold ${meta.color}`}>
+                      {meta.label[0]}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {f(c, "name")}
+                    </p>
+                    <p className={`text-xs font-medium ${meta.color}`}>
+                      {meta.label}
+                    </p>
+                    <p className="text-xs text-gray-400 font-mono truncate">
+                      {f(c, "href")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      ref={
+                        getEditRef(c.id) as React.RefObject<HTMLButtonElement>
+                      }
+                      type="button"
+                      onClick={() => openEdit(c)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
+                      aria-label={`Edit ${f(c, "name")}`}
+                    >
+                      <LuPencil className="h-3.5 w-3.5" /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(c)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 transition-all"
+                      aria-label={`Remove ${f(c, "name")}`}
+                    >
+                      <LuTrash2 className="h-3.5 w-3.5" /> Remove
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {panelMode && (
+          <SlidePanel
+            title={
+              panelMode === "create" ? "Add Social Link" : "Edit Social Link"
+            }
+            subtitle="Shown on the public Contact page"
+            accentColor="from-blue-600 to-blue-800"
+            onClose={closePanel}
+            returnFocusRef={returnFocusRef}
+            formId="sl-form"
+            submitLabel={panelMode === "create" ? "Add Link" : "Save Changes"}
+            isSubmitting={isSubmitting}
+          >
+            <form
+              id="sl-form"
+              onSubmit={handleSubmit}
+              noValidate
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="sl-name"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                  >
+                    Display Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="sl-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setErrors((p) => ({ ...p, name: "" }));
+                    }}
+                    className={errors.name ? inputError : inputNormal}
+                    placeholder="e.g. Libmanan Official"
+                  />
+                  <FieldError id="sl-name-err" msg={errors.name} />
+                </div>
+                <div>
+                  <label
+                    htmlFor="sl-platform"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                  >
+                    Platform
+                  </label>
+                  <select
+                    id="sl-platform"
+                    value={platform}
+                    onChange={(e) =>
+                      setPlatform(e.target.value as SocialLinkPlatform)
+                    }
+                    className={inputNormal}
+                  >
+                    {SOCIAL_PLATFORMS.map((k) => (
+                      <option key={k} value={k}>
+                        {SOCIAL_PLATFORM_META[k].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="sl-href"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="sl-href"
+                  type="url"
+                  value={href}
+                  onChange={(e) => {
+                    setHref(e.target.value);
+                    setErrors((p) => ({ ...p, href: "" }));
+                  }}
+                  className={errors.href ? inputError : inputNormal}
+                  placeholder="https://facebook.com/libmanan"
+                />
+                <FieldError id="sl-href-err" msg={errors.href} />
+              </div>
+              <div>
+                <label
+                  htmlFor="sl-order"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Display Order
+                </label>
+                <input
+                  id="sl-order"
+                  type="number"
+                  min={0}
+                  value={order}
+                  onChange={(e) => setOrder(e.target.value)}
+                  className={inputNormal}
+                  placeholder="0"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Lower numbers appear first.
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
+                  Preview
+                </p>
+                <span
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${SOCIAL_PLATFORM_META[platform].color} ${SOCIAL_PLATFORM_META[platform].bg}`}
+                >
+                  {SOCIAL_PLATFORM_META[platform].label}
+                  {name && ` — ${name}`}
+                </span>
+              </div>
+            </form>
+          </SlidePanel>
+        )}
+        {deleteTarget && (
+          <DeleteDialog
+            label={f(deleteTarget, "name")}
+            isDeleting={isDeleting}
+            onClose={() => {
+              if (!isDeleting) setDeleteTarget(null);
+            }}
+            onConfirm={() => handleDelete(deleteTarget)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Main Contacts Page ──────────────────────────────────────────────────────
 
 export function ContactsPage() {
@@ -1707,13 +2434,19 @@ export function ContactsPage() {
   const contactRecords = useContactStore((s) => s.adminRecords);
   const emergencyRecords = useEmergencyContactsStore((s) => s.adminRecords);
   const medicalRecords = useMedicalContactsStore((s) => s.adminRecords);
+  const officeRecords = useOfficeDirectoryStore((s) => s.records);
+  const socialRecords = useSocialLinksStore((s) => s.records);
   const isContactLoading = useContactStore((s) => s.isAdminLoading);
   const isEmergencyLoading = useEmergencyContactsStore((s) => s.isAdminLoading);
   const isMedicalLoading = useMedicalContactsStore((s) => s.isAdminLoading);
+  const isOfficesLoading = useOfficeDirectoryStore((s) => s.isLoading);
+  const isSocialLoading = useSocialLinksStore((s) => s.isLoading);
   const { fetchAdminRecords: fetchContactRecords } = useContactStore();
   const { fetchAdminRecords: fetchEmergencyRecords } =
     useEmergencyContactsStore();
   const { fetchAdminRecords: fetchMedicalRecords } = useMedicalContactsStore();
+  const { fetchRecords: fetchOfficeRecords } = useOfficeDirectoryStore();
+  const { fetchRecords: fetchSocialRecords } = useSocialLinksStore();
 
   const [activeTab, setActiveTab] = useState<DirectoryTab>("emergency");
 
@@ -1727,25 +2460,33 @@ export function ContactsPage() {
   const tabCounts: Record<DirectoryTab, number> = {
     emergency: emergencyRecords.length,
     medical: medicalRecords.length,
-    offices: 0,
-    social: 0,
+    offices: officeRecords.length,
+    social: socialRecords.length,
   };
-
-  const totalContacts =
-    contactRecords.length + emergencyRecords.length + medicalRecords.length;
 
   useEffect(() => {
     if (!accessToken) return;
     fetchContactRecords(accessToken).catch(() => {});
     fetchEmergencyRecords(accessToken).catch(() => {});
     fetchMedicalRecords(accessToken).catch(() => {});
+    fetchOfficeRecords().catch(() => {});
+    fetchSocialRecords().catch(() => {});
   }, [accessToken]);
+
+  const isAnyLoading =
+    isContactLoading ||
+    isEmergencyLoading ||
+    isMedicalLoading ||
+    isOfficesLoading ||
+    isSocialLoading;
 
   function refresh() {
     if (!accessToken) return;
     fetchContactRecords(accessToken).catch(() => {});
     fetchEmergencyRecords(accessToken).catch(() => {});
     fetchMedicalRecords(accessToken).catch(() => {});
+    fetchOfficeRecords().catch(() => {});
+    fetchSocialRecords().catch(() => {});
     toast("Refreshed", "success");
   }
 
@@ -1766,11 +2507,11 @@ export function ContactsPage() {
         </div>
         <button
           onClick={refresh}
-          disabled={isContactLoading || isEmergencyLoading || isMedicalLoading}
+          disabled={isAnyLoading}
           className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 shadow-sm transition-colors shrink-0 disabled:opacity-50"
         >
           <LuRefreshCw
-            className={`h-4 w-4 ${isContactLoading || isEmergencyLoading || isMedicalLoading ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${isAnyLoading ? "animate-spin" : ""}`}
           />{" "}
           Refresh
         </button>
@@ -1780,7 +2521,7 @@ export function ContactsPage() {
       <ContactInfoSection />
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCard
           label="Main Contacts"
           value={contactRecords.length}
@@ -1798,6 +2539,12 @@ export function ContactsPage() {
           value={medicalRecords.length}
           color="bg-emerald-50"
           icon={<LuLink className="h-5 w-5 text-emerald-600" />}
+        />
+        <SummaryCard
+          label="Offices"
+          value={officeRecords.length}
+          color="bg-indigo-50"
+          icon={<LuBuilding2 className="h-5 w-5 text-indigo-600" />}
         />
       </div>
 
@@ -1867,16 +2614,8 @@ export function ContactsPage() {
             >
               {activeTab === "emergency" && <EmergencyPanel />}
               {activeTab === "medical" && <MedicalPanel />}
-              {activeTab === "offices" && (
-                <div className="p-8 text-center text-gray-500">
-                  Offices panel coming soon
-                </div>
-              )}
-              {activeTab === "social" && (
-                <div className="p-8 text-center text-gray-500">
-                  Social links panel coming soon
-                </div>
-              )}
+              {activeTab === "offices" && <OfficesPanel />}
+              {activeTab === "social" && <SocialPanel />}
             </motion.div>
           </AnimatePresence>
         </div>

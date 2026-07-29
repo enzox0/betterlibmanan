@@ -17,6 +17,7 @@ import {
   LuCalendar,
   LuClock,
 } from "react-icons/lu";
+import { FaFacebookMessenger } from "react-icons/fa6";
 import SafeImage from "@/modules/landing/components/ui/SafeImage";
 import { StatsCard } from "../components/overview/StatsCard";
 import { useAdminStore } from "../store/adminStore";
@@ -449,6 +450,10 @@ const CONTACT_TYPE_META: Record<
     icon: <LuPhone className="h-4 w-4" aria-hidden="true" />,
     color: "bg-purple-50 text-purple-600",
   },
+  facebook: {
+    icon: <FaFacebookMessenger className="h-4 w-4" aria-hidden="true" />,
+    color: "bg-blue-50 text-blue-700",
+  },
 };
 
 /** Contact — grouped contact info list with type icons */
@@ -469,8 +474,8 @@ function ContactLayout({
   return (
     <div className="flex flex-col gap-2">
       {records.map((record) => {
-        const type = record.fields.type ?? "phone";
-        const meta = CONTACT_TYPE_META[type] ?? CONTACT_TYPE_META.phone;
+        const rawType = String(record.fields.type ?? "phone").toLowerCase();
+        const meta = CONTACT_TYPE_META[rawType] ?? CONTACT_TYPE_META.phone;
         return (
           <div
             key={record.id}

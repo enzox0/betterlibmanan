@@ -549,8 +549,6 @@ function ExecutivePanel() {
     const e: Record<string, string> = {};
     if (!execTitle.trim()) e.title = "Title is required.";
     if (!name.trim()) e.name = "Name is required.";
-    if (!email.trim()) e.email = "Email is required.";
-    if (!phone.trim()) e.phone = "Phone is required.";
     if (Object.keys(e).length) {
       setErrors(e);
       return;
@@ -813,7 +811,10 @@ function ExecutivePanel() {
                     htmlFor="exec-email"
                     className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
-                    Email <span className="text-red-500">*</span>
+                    Email{" "}
+                    <span className="text-xs font-normal text-gray-400">
+                      (optional)
+                    </span>
                   </label>
                   <input
                     id="exec-email"
@@ -821,9 +822,8 @@ function ExecutivePanel() {
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      setErrors((p) => ({ ...p, email: "" }));
                     }}
-                    className={errors.email ? inputError : inputNormal}
+                    className={inputNormal}
                     placeholder="mayor@libmanan.gov.ph"
                   />
                   <FieldError id="exec-email-err" msg={errors.email} />
@@ -833,7 +833,10 @@ function ExecutivePanel() {
                     htmlFor="exec-phone"
                     className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
-                    Phone <span className="text-red-500">*</span>
+                    Phone{" "}
+                    <span className="text-xs font-normal text-gray-400">
+                      (optional)
+                    </span>
                   </label>
                   <input
                     id="exec-phone"
@@ -841,9 +844,8 @@ function ExecutivePanel() {
                     value={phone}
                     onChange={(e) => {
                       setPhone(e.target.value);
-                      setErrors((p) => ({ ...p, phone: "" }));
                     }}
-                    className={errors.phone ? inputError : inputNormal}
+                    className={inputNormal}
                     placeholder="(054) 871-0000"
                   />
                   <FieldError id="exec-phone-err" msg={errors.phone} />

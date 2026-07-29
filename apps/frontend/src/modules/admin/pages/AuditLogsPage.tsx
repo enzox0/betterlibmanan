@@ -48,6 +48,14 @@ const ACTION_META: Record<AuditAction, { label: string; classes: string }> = {
     label: "Deactivate",
     classes: "bg-orange-50 text-orange-700 ring-1 ring-orange-200",
   },
+  APPROVE: {
+    label: "Approve",
+    classes: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+  },
+  REJECT: {
+    label: "Reject",
+    classes: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
+  },
 };
 
 function ActionBadge({ action }: { action: AuditAction }) {
@@ -158,6 +166,10 @@ export function AuditLogsPage() {
             <option value="">All Modules</option>
             <option value="Auth">Auth</option>
             <option value="AccountManagement">Account Management</option>
+            <option value="MyAccount">My Account</option>
+            <option value="AdminRegistrations">Admin Registrations</option>
+            <option value="Community">Community</option>
+            <option value="FreedomWall">Freedom Wall</option>
           </select>
           <input
             type="date"
