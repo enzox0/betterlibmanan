@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaSearch,
@@ -14,9 +14,17 @@ import {
   FaExternalLinkAlt,
   FaStream,
   FaFilter,
+  FaArrowDown,
+  FaArrowUp,
+  FaEquals,
+  FaWallet,
 } from "react-icons/fa";
 import React from "react";
 import CountUp from "@/shared/ui/CountUp";
+import {
+  fetchPublicSources,
+  type SectionSourceRecord,
+} from "@/modules/admin/services/section-sources.api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,6 +69,34 @@ interface FinancialReport {
     percentage: number;
   }>;
   reportDate: string;
+}
+
+// ── Source Attribution ─────────────────────────────────────────────────────
+
+function SourceAttribution({
+  source,
+}: {
+  source: SectionSourceRecord | undefined;
+}) {
+  if (!source) return null;
+  return (
+    <div className="mt-6 text-center">
+      <div className="inline-flex items-center gap-2 text-xs text-gray-400">
+        <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-400">
+          i
+        </span>
+        Source:
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+        >
+          {source.label} <FaExternalLinkAlt size={8} />
+        </a>
+      </div>
+    </div>
+  );
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -286,7 +322,8 @@ function ProjectModal({
           />
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+            className="absolute right-4 top-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+            aria-label="Close"
           >
             <FaTimes size={14} />
           </button>
@@ -551,9 +588,11 @@ const DEFAULT_COL = {
 function InfrastructureCard({
   project,
   index,
+  dpwhSource,
 }: {
   project: Project;
   index: number;
+  dpwhSource?: SectionSourceRecord;
 }) {
   const col = CATEGORY_COLORS[project.category] ?? DEFAULT_COL;
   const catLabel =
@@ -605,7 +644,7 @@ function InfrastructureCard({
             {project.location.province}, {project.location.region}
           </span>
         </div>
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 grid grid-cols-3 divide-x divide-neutral-200">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-neutral-200">
           <div className="px-4 py-3">
             <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">
               Type of Work
@@ -651,15 +690,27 @@ function InfrastructureCard({
       </div>
       <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-          <a
-            href="https://transparency.dpwh.gov.ph/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline inline-flex items-center gap-1"
-          >
-            <FaExternalLinkAlt size={9} />
-            Source: DPWH Transparency Portal
-          </a>
+          {dpwhSource ? (
+            <a
+              href={dpwhSource.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline inline-flex items-center gap-1"
+            >
+              <FaExternalLinkAlt size={9} />
+              Source: {dpwhSource.label}
+            </a>
+          ) : (
+            <a
+              href="https://transparency.dpwh.gov.ph/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline inline-flex items-center gap-1"
+            >
+              <FaExternalLinkAlt size={9} />
+              Source: DPWH Transparency Portal
+            </a>
+          )}
         </div>
         {project.status === "Completed" && project.completionDate && (
           <span className="text-[11px] text-gray-500 font-mono">
@@ -671,11 +722,25 @@ function InfrastructureCard({
   );
 }
 
-function InfrastructureSection({ projects }: { projects: Project[] }) {
+const INFRA_PAGE_SIZE = 10;
+
+function InfrastructureSection({
+  projects,
+  dpwhSource,
+}: {
+  projects: Project[];
+  dpwhSource?: SectionSourceRecord;
+}) {
+  const [visible, setVisible] = useState(INFRA_PAGE_SIZE);
+
   const filtered = projects.filter(
     (p) => p.category === "Flood Control and Drainage",
   );
   if (filtered.length === 0) return null;
+
+  const shown = filtered.slice(0, visible);
+  const hasMore = visible < filtered.length;
+
   return (
     <section className="py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -693,14 +758,44 @@ function InfrastructureSection({ projects }: { projects: Project[] }) {
             Flood Control and Drainage Projects
           </h2>
           <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-            Major flood control and drainage projects serving the community
+            Showing {shown.length} of {filtered.length} projects
           </p>
         </motion.div>
+
         <div className="space-y-4">
-          {filtered.map((p, i) => (
-            <InfrastructureCard key={p.id} project={p} index={i} />
+          {shown.map((p, i) => (
+            <InfrastructureCard
+              key={p.id}
+              project={p}
+              index={i}
+              dpwhSource={dpwhSource}
+            />
           ))}
         </div>
+
+        {/* View more / collapse */}
+        {filtered.length > INFRA_PAGE_SIZE && (
+          <div className="mt-8 text-center">
+            {hasMore ? (
+              <button
+                onClick={() => setVisible((v) => v + INFRA_PAGE_SIZE)}
+                className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-6 py-2.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 transition-colors"
+              >
+                View more
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                  +{Math.min(INFRA_PAGE_SIZE, filtered.length - visible)}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setVisible(INFRA_PAGE_SIZE)}
+                className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-6 py-2.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-neutral-50 transition-colors"
+              >
+                Show less
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -709,25 +804,20 @@ function InfrastructureSection({ projects }: { projects: Project[] }) {
 // ── Budget & Financial Section ────────────────────────────────────────────────
 
 const DONUT_COLORS = [
-  "#1d4ed8",
-  "#0ea5e9",
-  "#10b981",
-  "#f59e0b",
-  "#8b5cf6",
+  "#0ea5e9", // sky-500  – Local Sources / General Public Services
+  "#10b981", // emerald  – External / Social
+  "#f59e0b", // amber    – Economic
+  "#8b5cf6", // violet   – Debt
   "#ef4444",
   "#ec4899",
   "#14b8a6",
+  "#1d4ed8",
 ];
 
-function DonutChart({
-  items,
-  centerLabel,
-}: {
-  items: Array<{ label: string; percentage: number }>;
-  centerLabel?: string;
-}) {
-  const size = 130;
-  const stroke = 24;
+// SVG donut chart
+function DonutChart({ items }: { items: Array<{ percentage: number }> }) {
+  const size = 200;
+  const stroke = 36;
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const segments: React.ReactNode[] = [];
@@ -751,50 +841,59 @@ function DonutChart({
     cum += dash;
   });
   return (
-    <div className="relative flex items-center justify-center shrink-0">
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="-rotate-90"
-      >
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="#f1f5f9"
-          strokeWidth={stroke}
-        />
-        {segments}
-      </svg>
-      {centerLabel && (
-        <span
-          className="absolute text-[9px] font-bold text-gray-400 uppercase tracking-wide"
-          style={{ transform: "rotate(90deg)" }}
-        >
-          {centerLabel}
-        </span>
-      )}
-    </div>
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="-rotate-90"
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="#e2e8f0"
+        strokeWidth={stroke}
+      />
+      {segments}
+    </svg>
   );
 }
 
-const QUARTER_LABELS: Record<string, string> = {
-  Q1: "Jan – Mar",
-  Q2: "Apr – Jun",
-  Q3: "Jul – Sep",
-  Q4: "Oct – Dec",
-};
-
-const STAT_META = [
-  { label: "Total Income", color: "bg-green-500", icon: "↓" },
-  { label: "Total Expenditures", color: "bg-amber-500", icon: "↑" },
-  { label: "Net Operating Income", color: "bg-blue-500", icon: "≈" },
-  { label: "Fund Balance (End)", color: "bg-violet-500", icon: "⊟" },
+const KPI_META = [
+  {
+    key: "totalIncome" as const,
+    label: "Total Income",
+    icon: FaArrowDown,
+    iconBg: "bg-emerald-500",
+  },
+  {
+    key: "totalExpenditures" as const,
+    label: "Total Expenditures",
+    icon: FaArrowUp,
+    iconBg: "bg-amber-500",
+  },
+  {
+    key: "netOperatingIncome" as const,
+    label: "Net Operating Income",
+    icon: FaEquals,
+    iconBg: "bg-blue-500",
+  },
+  {
+    key: "fundBalance" as const,
+    label: "Fund Balance (End)",
+    icon: FaWallet,
+    iconBg: "bg-violet-500",
+  },
 ];
 
-function BudgetSection({ reports }: { reports: FinancialReport[] }) {
+function BudgetSection({
+  reports,
+  source,
+}: {
+  reports: FinancialReport[];
+  source?: SectionSourceRecord;
+}) {
   const [activeYear, setActiveYear] = useState("");
 
   const byYear = reports.reduce<Record<string, FinancialReport[]>>((acc, r) => {
@@ -804,204 +903,209 @@ function BudgetSection({ reports }: { reports: FinancialReport[] }) {
   }, {});
   const years = Object.keys(byYear).sort((a, b) => b.localeCompare(a));
 
+  // Init active year
   useEffect(() => {
-    if (years.length > 0 && !activeYear) setActiveYear(years[0]);
-  }, [years, activeYear]);
+    if (years.length > 0 && !activeYear) {
+      setActiveYear(years[0]);
+    }
+  }, [years.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (reports.length === 0) return null;
 
-  const yearReports = (byYear[activeYear] ?? []).sort((a, b) =>
-    a.quarter.localeCompare(b.quarter),
-  );
-  // Get the latest quarterly report or sum all quarters for the year
-  const report = yearReports[yearReports.length - 1];
+  const yearReports = byYear[activeYear] ?? [];
+  // Use the first report for the active year (or the only one)
+  const report = yearReports[0];
   if (!report) return null;
 
-  // Calculate total income, IRA share, local share
-  const iraSource = report.incomeSources.find((s) =>
-    s.source.toLowerCase().includes("ira"),
-  );
-  const localSources = report.incomeSources.filter(
-    (s) => !s.source.toLowerCase().includes("ira"),
-  );
-
-  const totalIncome = report.totalIncome;
-  const iraAmount = iraSource?.amount ?? totalIncome * 0.5945; // Default to 59.45% if not found
-  const localAmount =
-    localSources.reduce((sum, s) => sum + s.amount, 0) ?? totalIncome * 0.4055;
-  const iraPercentage = iraSource?.percentage ?? 59.45;
-  const localPercentage =
-    localSources.reduce((sum, s) => sum + s.percentage, 0) ?? 40.55;
+  const fmtM = (n: number) =>
+    `₱${(n / 1_000_000).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} M`;
 
   return (
-    <section className="py-14 sm:py-20">
+    <section className="bg-gray-50 py-10 sm:py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-10"
-        >
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-3">
-            <FaMoneyBillWave size={10} /> Finance
-          </p>
-          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl leading-tight">
-            Municipal Income
-          </h2>
-          <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-            Financial standing for fiscal year {report.fiscalYear}
-          </p>
-        </motion.div>
-
-        {/* Fiscal year pills */}
-        {years.length > 1 && (
-          <div className="flex flex-wrap gap-2 justify-center mb-8">
-            {years.map((yr) => (
-              <button
-                key={yr}
-                onClick={() => setActiveYear(yr)}
-                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  activeYear === yr
-                    ? "bg-neutral-900 text-white shadow-sm"
-                    : "bg-white border border-neutral-200 text-gray-600 hover:bg-neutral-50"
-                }`}
-              >
-                FY {yr}
-              </button>
-            ))}
+        {/* ── Section header ── */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-2">
+              <FaChartLine size={10} /> Financial Report
+            </p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+              Statement of Receipts &amp; Expenditures
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              FY {report.fiscalYear} financial performance
+            </p>
           </div>
-        )}
 
-        {/* Cards row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {/* Annual Income card */}
+          {/* Year pills */}
+          {years.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              {years.map((yr) => (
+                <button
+                  key={yr}
+                  onClick={() => setActiveYear(yr)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                    activeYear === yr
+                      ? "bg-blue-700 text-white"
+                      : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  FY {yr}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── 4 KPI cards ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {KPI_META.map(({ key, label, icon: Icon, iconBg }) => (
+            <motion.div
+              key={key}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35 }}
+              className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex items-center gap-3"
+            >
+              <div className={`${iconBg} rounded-xl p-2.5 shrink-0`}>
+                <Icon size={14} className="text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm sm:text-base font-black text-gray-900 leading-none truncate">
+                  {fmtM(report[key])}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">
+                  {label}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ── Two-column donut charts ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Income Sources */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0 }}
-            className="rounded-xl border border-neutral-200 bg-gradient-to-br from-blue-900 to-blue-800 text-white p-6 shadow-sm"
+            transition={{ duration: 0.4 }}
+            className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5"
           >
-            <p className="flex items-center gap-1.5 text-xs font-medium text-blue-200 mb-3">
-              <FaChartLine size={11} /> Annual Income
+            <p className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-4">
+              <FaMoneyBillWave size={11} className="text-blue-500" />
+              Income Sources
             </p>
-            <p className="text-3xl font-black leading-none">
-              ₱{(totalIncome / 1_000_000).toFixed(2)} M
-            </p>
-            <p className="text-xs text-blue-200 mt-2">
-              {new Intl.NumberFormat("en-PH", {
-                style: "currency",
-                currency: "PHP",
-                minimumFractionDigits: 0,
-              }).format(totalIncome)}
-            </p>
+            {report.incomeSources.length > 0 ? (
+              <>
+                <div className="flex justify-center mb-4">
+                  <DonutChart
+                    items={report.incomeSources.map((s) => ({
+                      percentage: s.percentage,
+                    }))}
+                  />
+                </div>
+                <div className="space-y-3">
+                  {report.incomeSources.map((s, i) => (
+                    <div
+                      key={s.source}
+                      className="flex items-start justify-between gap-2"
+                    >
+                      <div className="flex items-start gap-2 min-w-0">
+                        <span
+                          className="mt-1 h-2 w-2 rounded-full shrink-0"
+                          style={{
+                            background: DONUT_COLORS[i % DONUT_COLORS.length],
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 leading-snug truncate">
+                            {s.source}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-bold text-gray-900">
+                          {fmtM(s.amount)}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {s.percentage.toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-gray-400 text-center py-8">
+                No income source data
+              </p>
+            )}
           </motion.div>
 
-          {/* IRA Share card */}
+          {/* Expenditure Allocation */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: 0.07 }}
-            className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
+            className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5"
           >
-            <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-3">
-              <FaMoneyBillWave size={11} /> IRA Share
+            <p className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-4">
+              <FaChartLine size={11} className="text-amber-500" />
+              Expenditure Allocation
             </p>
-            <p className="text-3xl font-black text-gray-900 leading-none">
-              ₱{(iraAmount / 1_000_000).toFixed(2)} M
-            </p>
-            <p className="text-xs text-gray-500 mt-2">
-              Internal Revenue Allotment
-            </p>
-          </motion.div>
-
-          {/* IRA Dependency card */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.14 }}
-            className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
-          >
-            <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-3">
-              <FaChartLine size={11} /> IRA Dependency
-            </p>
-            <p className="text-3xl font-black text-gray-900 leading-none">
-              {iraPercentage.toFixed(2)}%
-            </p>
-            <p className="text-xs text-gray-500 mt-2">National Tax Share</p>
+            {report.expenditureAllocations.length > 0 ? (
+              <>
+                <div className="flex justify-center mb-4">
+                  <DonutChart
+                    items={report.expenditureAllocations.map((s) => ({
+                      percentage: s.percentage,
+                    }))}
+                  />
+                </div>
+                <div className="space-y-3">
+                  {report.expenditureAllocations.map((s, i) => (
+                    <div
+                      key={s.category}
+                      className="flex items-start justify-between gap-2"
+                    >
+                      <div className="flex items-start gap-2 min-w-0">
+                        <span
+                          className="mt-1 h-2 w-2 rounded-full shrink-0"
+                          style={{
+                            background: DONUT_COLORS[i % DONUT_COLORS.length],
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 leading-snug truncate">
+                            {s.category}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-bold text-gray-900">
+                          {fmtM(s.amount)}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {s.percentage.toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-gray-400 text-center py-8">
+                No expenditure data
+              </p>
+            )}
           </motion.div>
         </div>
-
-        {/* Income Composition */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.21 }}
-          className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
-        >
-          <p className="text-xs font-bold text-gray-700 mb-4">
-            Income Composition
-          </p>
-
-          {/* Progress bar */}
-          <div className="w-full h-10 rounded-lg overflow-hidden flex">
-            <div
-              className="bg-gradient-to-r from-blue-600 to-blue-500 flex items-center justify-end px-4"
-              style={{ width: `${iraPercentage}%` }}
-            >
-              <span className="text-xs font-bold text-white">
-                IRA {iraPercentage.toFixed(2)}%
-              </span>
-            </div>
-            <div
-              className="bg-gradient-to-r from-emerald-500 to-emerald-400 flex items-center justify-start px-4"
-              style={{ width: `${localPercentage}%` }}
-            >
-              <span className="text-xs font-bold text-white">
-                Local {localPercentage.toFixed(2)}%
-              </span>
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="flex items-center gap-6 mt-4 justify-center">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-blue-600" />
-              <span className="text-xs text-gray-600 font-medium">
-                Internal Revenue Allotment
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-emerald-500" />
-              <span className="text-xs text-gray-600 font-medium">
-                Local Sources
-              </span>
-            </div>
-          </div>
-        </motion.div>
 
         {/* Source */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center gap-2 text-xs text-gray-500">
-            <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
-              i
-            </span>
-            Source:
-            <a
-              href="https://blgf.gov.ph/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline inline-flex items-center gap-1"
-            >
-              Bureau of Local Government Finance (BLGF){" "}
-              <FaExternalLinkAlt size={8} />
-            </a>
-          </div>
-        </div>
+        <SourceAttribution source={source} />
       </div>
     </section>
   );
@@ -1029,6 +1133,12 @@ export function TransparencyPage() {
   const [financialReports, setFinancialReports] = useState<FinancialReport[]>(
     [],
   );
+  const [filtersSticky, setFiltersSticky] = useState(false);
+  const [sources, setSources] = useState<SectionSourceRecord[]>([]);
+  const dpwhSentinelRef = useRef<HTMLDivElement>(null);
+
+  const getSource = (key: SectionSourceRecord["section"]) =>
+    sources.find((s) => s.section === key);
 
   // Debounce search
   useEffect(() => {
@@ -1054,7 +1164,22 @@ export function TransparencyPage() {
     fetchFinancialReports()
       .then(setFinancialReports)
       .catch(() => {});
+    fetchPublicSources()
+      .then(setSources)
+      .catch(() => {});
   }, [load]);
+
+  // Stick the filter bar only while the DPWH section is in view
+  useEffect(() => {
+    const sentinel = dpwhSentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFiltersSticky(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setPage(1);
@@ -1069,16 +1194,23 @@ export function TransparencyPage() {
     ...Array.from(new Set(projects.map((p) => p.status))),
   ];
 
-  const filtered = projects.filter((p) => {
-    const q = debouncedSearch.toLowerCase();
-    return (
-      (p.description.toLowerCase().includes(q) ||
-        p.contractor.toLowerCase().includes(q) ||
-        p.contractId.toLowerCase().includes(q)) &&
-      (category === "All" || p.category === category) &&
-      (status === "All" || p.status === status)
-    );
-  });
+  const filtered = projects
+    .filter((p) => {
+      const q = debouncedSearch.toLowerCase();
+      return (
+        (p.description.toLowerCase().includes(q) ||
+          p.contractor.toLowerCase().includes(q) ||
+          p.contractId.toLowerCase().includes(q)) &&
+        (category === "All" || p.category === category) &&
+        (status === "All" || p.status === status)
+      );
+    })
+    .sort((a, b) => {
+      // Sort latest to oldest: by infraYear desc, then startDate desc
+      const yearDiff = (b.infraYear ?? "").localeCompare(a.infraYear ?? "");
+      if (yearDiff !== 0) return yearDiff;
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+    });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const start = (page - 1) * ITEMS_PER_PAGE;
@@ -1101,7 +1233,7 @@ export function TransparencyPage() {
         >
           <div className="text-center">
             <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
-              Budget & Financial Transparency
+              Budget &amp; Financial Transparency
             </h1>
             <p className="mt-3 text-sm text-gray-400 sm:text-base max-w-xl mx-auto">
               Tracking municipal finances and projects for accountability
@@ -1111,9 +1243,14 @@ export function TransparencyPage() {
       </section>
 
       {/* ── Budget & Financial Transparency ──────────────────────────── */}
-      <BudgetSection reports={financialReports} />
+      <BudgetSection
+        reports={financialReports}
+        source={getSource("transparency-financial-reports")}
+      />
 
       {/* ── DPWH Header ──────────────────────────────────────────────── */}
+      {/* Sentinel: filter bar becomes sticky only when this section is visible */}
+      <div ref={dpwhSentinelRef} className="h-0 w-full" aria-hidden="true" />
       <section className="bg-white py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -1136,7 +1273,7 @@ export function TransparencyPage() {
           </motion.div>
 
           {/* KPIs */}
-          <div className="flex flex-wrap justify-center gap-6 sm:gap-12">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-y-6 gap-x-6 sm:gap-12">
             {[
               { label: "Projects", value: summary.totalProjects },
               { label: "Completed", value: summary.completed },
@@ -1176,12 +1313,19 @@ export function TransparencyPage() {
       </section>
 
       {/* ── Filters ───────────────────────────────────────────────────── */}
-      <section className="bg-neutral-100 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-2 items-center">
-              {/* Category tabs */}
-              <div className="flex flex-wrap gap-1">
+      <section
+        className={`bg-neutral-100 border-b border-gray-200 z-10 shadow-sm transition-all ${
+          filtersSticky ? "sticky top-0" : ""
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2.5">
+          {/* Row 1 on mobile: search full-width. Row 1 on desktop: everything in one line */}
+          {/* Mobile: two rows stacked. Desktop: single flex row */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+            {/* Row 1 (mobile top / desktop left): scrollable category tabs + status + clear */}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              {/* Scrollable category tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0">
                 {categories.map((c) => {
                   const count =
                     c === "All"
@@ -1191,15 +1335,15 @@ export function TransparencyPage() {
                     <button
                       key={c}
                       onClick={() => setCategory(c)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors whitespace-nowrap shrink-0 ${
                         category === c
                           ? "bg-gray-900 text-white"
                           : "bg-white text-gray-600 hover:bg-gray-100"
                       }`}
                     >
-                      {c}
+                      {c === "All" ? "All" : c.split(" ")[0]}
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                        className={`text-[10px] font-bold px-1 py-0.5 rounded-full ${
                           category === c
                             ? "bg-white/20 text-white"
                             : "bg-gray-200 text-gray-500"
@@ -1211,16 +1355,20 @@ export function TransparencyPage() {
                   );
                 })}
               </div>
-              {/* Status filter */}
-              <div className="relative">
+
+              {/* Divider (hidden on very small) */}
+              <div className="h-4 w-px bg-gray-300 shrink-0 hidden xs:block" />
+
+              {/* Status dropdown */}
+              <div className="relative shrink-0">
                 <FaFilter
-                  size={10}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={9}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                 />
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="appearance-none rounded-lg border border-gray-200 bg-white py-1.5 pl-7 pr-6 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  className="appearance-none rounded-lg border border-gray-200 bg-white py-1 pl-6 pr-5 text-[11px] font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 >
                   {statuses.map((s) => (
                     <option key={s} value={s}>
@@ -1229,20 +1377,24 @@ export function TransparencyPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Clear */}
               {(category !== "All" || status !== "All") && (
                 <button
                   onClick={() => {
                     setCategory("All");
                     setStatus("All");
                   }}
-                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-700 transition-colors shrink-0"
                 >
-                  <FaTimes size={9} /> Clear
+                  <FaTimes size={9} />
+                  <span className="hidden sm:inline">Clear</span>
                 </button>
               )}
             </div>
-            {/* Search */}
-            <div className="relative w-full sm:w-64">
+
+            {/* Row 2 (mobile) / right side (desktop): search */}
+            <div className="relative w-full sm:w-52 shrink-0">
               <FaSearch
                 size={11}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -1252,7 +1404,7 @@ export function TransparencyPage() {
                 placeholder="Search projects, contractors…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 rounded-lg border border-gray-200 bg-white text-xs text-gray-700 placeholder-gray-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full pl-9 pr-8 py-1.5 rounded-lg border border-gray-200 bg-white text-xs text-gray-700 placeholder-gray-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
               {search && (
                 <button
@@ -1272,7 +1424,7 @@ export function TransparencyPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
             {/* Table meta row */}
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/60">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/60 flex-wrap gap-1">
               <p className="text-xs text-gray-500">
                 Showing{" "}
                 <span className="font-semibold text-gray-800">
@@ -1286,8 +1438,8 @@ export function TransparencyPage() {
                 projects
               </p>
               {debouncedSearch && (
-                <p className="text-xs text-gray-400">
-                  Results for "
+                <p className="text-xs text-gray-400 truncate max-w-[50%]">
+                  "
                   <span className="font-semibold text-gray-700">
                     {debouncedSearch}
                   </span>
@@ -1296,8 +1448,9 @@ export function TransparencyPage() {
               )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[700px]">
+            {/* ── Desktop table (hidden on mobile) ── */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-900 text-white">
                     <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider w-[40%]">
@@ -1375,7 +1528,6 @@ export function TransparencyPage() {
                           onClick={() => setSelected(p)}
                           className="cursor-pointer hover:bg-blue-50/40 transition-colors group"
                         >
-                          {/* Description */}
                           <td className="px-4 py-3.5 max-w-xs">
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
@@ -1393,24 +1545,20 @@ export function TransparencyPage() {
                               </div>
                             </div>
                           </td>
-                          {/* Contractor */}
                           <td className="px-4 py-3.5">
                             <p className="text-xs text-gray-700 leading-snug">
                               {p.contractor || "TBD"}
                             </p>
                           </td>
-                          {/* Cost */}
                           <td className="px-4 py-3.5 text-right whitespace-nowrap">
                             <p className="text-xs font-bold text-gray-900">
                               {formatCurrency(p.budget)}
                             </p>
                             {p.progress > 0 && <ProgressBar pct={p.progress} />}
                           </td>
-                          {/* Status */}
                           <td className="px-4 py-3.5 text-center">
                             <StatusBadge status={p.status} />
                           </td>
-                          {/* Completion date */}
                           <td className="px-4 py-3.5 text-right whitespace-nowrap">
                             <span className="text-xs text-gray-600">
                               {formatDate(p.completionDate)}
@@ -1422,6 +1570,114 @@ export function TransparencyPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* ── Mobile card list (hidden on sm+) ── */}
+            <div className="block sm:hidden">
+              {loading ? (
+                <div className="divide-y divide-gray-100">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="px-4 py-4 animate-pulse space-y-2">
+                      <div className="flex gap-2">
+                        <div className="h-4 w-12 rounded bg-gray-200" />
+                        <div className="h-4 w-20 rounded bg-gray-200" />
+                      </div>
+                      <div className="h-3 w-full rounded bg-gray-200" />
+                      <div className="h-3 w-3/4 rounded bg-gray-100" />
+                      <div className="flex gap-2 mt-1">
+                        <div className="h-5 w-16 rounded-full bg-gray-200" />
+                        <div className="h-5 w-24 rounded bg-gray-200" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : error ? (
+                <div className="py-12 text-center px-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-1">
+                    Something went wrong
+                  </p>
+                  <p className="text-xs text-gray-400 mb-4">{error}</p>
+                  <button
+                    onClick={load}
+                    className="rounded-xl bg-gray-900 px-5 py-2 text-xs font-semibold text-white"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="py-12 text-center px-4">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-gray-300">
+                      <FaSearch size={12} className="text-gray-400" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-600">
+                      No projects found
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSearch("");
+                        setCategory("All");
+                        setStatus("All");
+                      }}
+                      className="mt-1 text-xs font-semibold text-blue-600"
+                    >
+                      Clear all filters
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  <div className="divide-y divide-gray-100">
+                    {visible.map((p, idx) => (
+                      <motion.button
+                        key={p.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, delay: idx * 0.02 }}
+                        onClick={() => setSelected(p)}
+                        className="w-full text-left px-4 py-4 hover:bg-blue-50/40 active:bg-blue-50 transition-colors"
+                      >
+                        {/* Top row: contract ID + category chip + status */}
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                          <span className="text-[10px] font-mono text-gray-400">
+                            {p.contractId}
+                          </span>
+                          <CategoryChip category={p.category} />
+                          <StatusBadge status={p.status} />
+                        </div>
+                        {/* Description */}
+                        <p className="text-xs font-semibold text-gray-900 leading-snug mb-2">
+                          {p.description}
+                        </p>
+                        {/* Bottom row: location + cost + completion */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                            <FaMapMarkerAlt size={8} />
+                            <span>{p.location.province}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[11px] font-bold text-gray-800">
+                              {formatCurrency(p.budget)}
+                            </span>
+                            {p.completionDate && (
+                              <span className="text-[10px] text-gray-400">
+                                {formatDate(p.completionDate)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Progress */}
+                        {p.progress > 0 && (
+                          <div className="mt-2">
+                            <ProgressBar pct={p.progress} />
+                          </div>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </AnimatePresence>
+              )}
             </div>
 
             {/* Pagination */}
@@ -1440,24 +1696,31 @@ export function TransparencyPage() {
           </div>
 
           {/* Attribution */}
-          {!loading && !error && filtered.length > 0 && (
-            <div className="mt-6 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs text-gray-500 shadow-sm">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[9px] font-bold text-white">
-                  i
-                </span>
-                Source:
-                <a
-                  href="https://transparency.dpwh.gov.ph/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline inline-flex items-center gap-1"
-                >
-                  DPWH Transparency Portal <FaExternalLinkAlt size={8} />
-                </a>
-              </div>
-            </div>
-          )}
+          {!loading &&
+            !error &&
+            filtered.length > 0 &&
+            (() => {
+              const dpwhSrc = getSource("transparency-dpwh-projects");
+              return (
+                <div className="mt-6 flex justify-center">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs text-gray-500 shadow-sm">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[9px] font-bold text-white shrink-0">
+                      i
+                    </span>
+                    Source:
+                    <a
+                      href={dpwhSrc?.url ?? "https://transparency.dpwh.gov.ph/"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                    >
+                      {dpwhSrc?.label ?? "DPWH Transparency Portal"}{" "}
+                      <FaExternalLinkAlt size={8} />
+                    </a>
+                  </div>
+                </div>
+              );
+            })()}
         </div>
       </section>
 
@@ -1469,7 +1732,10 @@ export function TransparencyPage() {
       </AnimatePresence>
 
       {/* ── Infrastructure Investments ────────────────────────────────── */}
-      <InfrastructureSection projects={projects} />
+      <InfrastructureSection
+        projects={projects}
+        dpwhSource={getSource("transparency-dpwh-projects")}
+      />
     </div>
   );
 }

@@ -13,6 +13,10 @@ import {
   fetchPublicStatistics,
   type PublicStatisticsBundle,
 } from "../api/statistics.public.api";
+import {
+  fetchPublicSources,
+  type SectionSourceRecord,
+} from "@/modules/admin/services/section-sources.api";
 import CountUp from "@/shared/ui/CountUp";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -238,6 +242,34 @@ function AreaSparkline({
   );
 }
 
+// ── Source Attribution ─────────────────────────────────────────────────────
+
+function SourceAttribution({
+  source,
+}: {
+  source: SectionSourceRecord | undefined;
+}) {
+  if (!source) return null;
+  return (
+    <p className="text-[11px] text-gray-400 mt-4 text-center">
+      <span className="inline-flex items-center gap-2">
+        <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
+          i
+        </span>
+        Source:
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+        >
+          {source.label} <FaExternalLinkAlt size={8} />
+        </a>
+      </span>
+    </p>
+  );
+}
+
 // ── Constants ───────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 20;
@@ -336,6 +368,7 @@ export function StatisticsPage() {
   const [search, setSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [sources, setSources] = useState<SectionSourceRecord[]>([]);
 
   useEffect(() => {
     fetchPublicStatistics()
@@ -344,7 +377,15 @@ export function StatisticsPage() {
         setFetchError(err?.message ?? "Failed to load statistics."),
       )
       .finally(() => setIsLoading(false));
+    // Fetch sources in background — non-blocking
+    fetchPublicSources()
+      .then(setSources)
+      .catch(() => {});
   }, []);
+
+  // Helper to get the source for a given section key
+  const getSource = (key: SectionSourceRecord["section"]) =>
+    sources.find((s) => s.section === key);
 
   // Derived state - compute these regardless of loading/error state to follow Rules of Hooks
   const sortedBrgy = useMemo(() => {
@@ -573,23 +614,7 @@ export function StatisticsPage() {
               </motion.div>
             </>
           )}
-          <p className="text-[11px] text-gray-400 mt-4 text-center">
-            <span className="inline-flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
-                i
-              </span>
-              Source:
-              <a
-                href="https://blgf.gov.ph/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              >
-                Bureau of Local Government Finance (BLGF) — 2023 SRE Data{" "}
-                <FaExternalLinkAlt size={8} />
-              </a>
-            </span>
-          </p>
+          <SourceAttribution source={getSource("stats-finance")} />
         </div>
       </section>
 
@@ -610,7 +635,9 @@ export function StatisticsPage() {
               Population Trends
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Historical growth from 1990 to 2024
+              {populationHistory.length >= 2
+                ? `Historical growth from ${populationHistory[0].year} to ${populationHistory[populationHistory.length - 1].year}`
+                : "Historical population growth"}
             </p>
           </motion.div>
           {populationHistory.length === 0 ? (
@@ -684,23 +711,7 @@ export function StatisticsPage() {
               })()}
             </motion.div>
           )}
-          <p className="text-[11px] text-gray-400 mt-3 text-center">
-            <span className="inline-flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
-                i
-              </span>
-              Source:
-              <a
-                href="https://psa.gov.ph/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              >
-                Philippine Statistics Authority (PSA){" "}
-                <FaExternalLinkAlt size={8} />
-              </a>
-            </span>
-          </p>
+          <SourceAttribution source={getSource("stats-population")} />
         </div>
       </section>
 
@@ -896,23 +907,7 @@ export function StatisticsPage() {
               )}
             </>
           )}
-          <p className="text-[11px] text-gray-400 mt-4 text-center">
-            <span className="inline-flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
-                i
-              </span>
-              Source:
-              <a
-                href="https://psa.gov.ph/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              >
-                Philippine Statistics Authority (PSA) — 2024 Census; PhilAtlas
-                barangay profiles <FaExternalLinkAlt size={8} />
-              </a>
-            </span>
-          </p>
+          <SourceAttribution source={getSource("stats-barangays")} />
         </div>
       </section>
 
@@ -1019,23 +1014,7 @@ export function StatisticsPage() {
               </motion.div>
             </div>
           )}
-          <p className="text-[11px] text-gray-400 mt-4 text-center">
-            <span className="inline-flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
-                i
-              </span>
-              Source:
-              <a
-                href="https://blgf.gov.ph/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              >
-                Bureau of Local Government Finance (BLGF) - 2023{" "}
-                <FaExternalLinkAlt size={8} />
-              </a>
-            </span>
-          </p>
+          <SourceAttribution source={getSource("stats-economy")} />
         </div>
       </section>
 
@@ -1123,23 +1102,7 @@ export function StatisticsPage() {
               ))}
             </div>
           )}
-          <p className="text-[11px] text-gray-400 mt-4 text-center">
-            <span className="inline-flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
-                i
-              </span>
-              Source:
-              <a
-                href="https://psa.gov.ph/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              >
-                Philippine Statistics Authority (PSA) — 2021 Poverty Estimates{" "}
-                <FaExternalLinkAlt size={8} />
-              </a>
-            </span>
-          </p>
+          <SourceAttribution source={getSource("stats-poverty")} />
         </div>
       </section>
 
@@ -1235,23 +1198,7 @@ export function StatisticsPage() {
               </div>
             </div>
           )}
-          <p className="text-[11px] text-gray-400 mt-4 text-center">
-            <span className="inline-flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[9px] font-bold text-gray-500">
-                i
-              </span>
-              Source:
-              <a
-                href="https://cmci.dti.gov.ph/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              >
-                DTI Cities and Municipalities Competitiveness Index (CMCI){" "}
-                <FaExternalLinkAlt size={8} />
-              </a>
-            </span>
-          </p>
+          <SourceAttribution source={getSource("stats-competitiveness")} />
         </div>
       </section>
     </div>
