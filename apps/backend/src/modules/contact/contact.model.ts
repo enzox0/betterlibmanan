@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export type ContactStatus = "published" | "draft";
-export type ContactType = "phone" | "email" | "address" | "fax";
+export type ContactType = "phone" | "email" | "address" | "fax" | "facebook";
 
 export interface IContact extends Document {
   label: string;
@@ -43,7 +43,7 @@ const ContactSchema = new Schema<IContact>(
     },
     type: {
       type: String,
-      enum: ["phone", "email", "address", "fax"],
+      enum: ["phone", "email", "address", "fax", "facebook"],
       default: "phone",
     },
     order: {

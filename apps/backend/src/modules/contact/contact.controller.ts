@@ -15,7 +15,7 @@ const contactSchema = z.object({
   value: z.string().trim().min(1).max(500),
   href: z.string().trim().max(500).optional().default(""),
   description: z.string().trim().max(500).optional().default(""),
-  type: z.enum(["phone", "email", "address", "fax"]).optional(),
+  type: z.enum(["phone", "email", "address", "fax", "facebook"]).optional(),
   order: z.number().int().optional().default(0),
   status: z.enum(["published", "draft"]).default("draft"),
 });
