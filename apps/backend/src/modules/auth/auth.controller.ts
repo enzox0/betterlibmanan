@@ -7,6 +7,8 @@ import {
   logoutAll,
   updateMe,
   changeMyPassword,
+  changeMyPasswordWithOtp,
+  requestPasswordChangeOtp,
   uploadAvatar,
 } from "./auth.service";
 import { AdminModel } from "./admin.model";
@@ -280,6 +282,15 @@ const changePasswordSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(128),
+  otp: z.string().length(6, "OTP must be exactly 6 digits"),
+});
+
+const requestPasswordChangeOtpSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128),
 });
 
 /**
@@ -335,8 +346,63 @@ export async function handleUpdateMe(
 }
 
 /**
+ * POST /api/auth/me/password/otp
+ * Request a 6-digit OTP to confirm a password change.
+ * Body: { currentPassword, newPassword }
+ * Requires: Bearer access token
+ */
+export async function handleRequestPasswordChangeOtp(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.admin) {
+      res.status(401).json({ success: false, message: "Not authenticated" });
+      return;
+    }
+
+    const parsed = requestPasswordChangeOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map((e) => e.message);
+      res.status(400).json({ success: false, message: errors[0], errors });
+      return;
+    }
+
+    // Verify the current password is correct before sending the OTP,
+    // so we don't leak whether an email exists or send codes unnecessarily.
+    const admin = await AdminModel.findById(req.admin.sub).select("+password");
+    if (!admin || !admin.isActive) {
+      res.status(404).json({ success: false, message: "Account not found" });
+      return;
+    }
+    const isValid = await admin.comparePassword(parsed.data.currentPassword);
+    if (!isValid) {
+      res
+        .status(401)
+        .json({ success: false, message: "Current password is incorrect" });
+      return;
+    }
+
+    await requestPasswordChangeOtp(req.admin.sub, parsed.data.newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: "Verification code sent to your registered email address",
+    });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+/**
  * POST /api/auth/me/password
- * Change the authenticated admin's own password.
+ * Change the authenticated admin's own password (OTP required).
+ * Body: { currentPassword, newPassword, otp }
  * Requires: Bearer access token
  */
 export async function handleChangeMyPassword(
@@ -357,9 +423,10 @@ export async function handleChangeMyPassword(
       return;
     }
 
-    await changeMyPassword(req.admin.sub, {
+    await changeMyPasswordWithOtp(req.admin.sub, {
       currentPassword: parsed.data.currentPassword,
       newPassword: parsed.data.newPassword,
+      otp: parsed.data.otp,
     });
 
     // Audit

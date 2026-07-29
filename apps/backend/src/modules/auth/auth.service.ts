@@ -9,6 +9,9 @@ import {
   type UploadBase64ImageInput,
   type UploadedObject,
 } from "@/shared/storage";
+import { mailer } from "@/shared/mailer";
+import { config } from "@/shared/config";
+import { createPasswordChangeOtpEmail } from "@/shared/mailer/templates";
 
 // ─── JWT configuration ────────────────────────────────────────────────────────
 
@@ -325,6 +328,121 @@ export interface UploadAvatarInput {
 export interface ChangeMyPasswordInput {
   currentPassword: string;
   newPassword: string;
+}
+
+// ─── In-memory OTP store for password changes ─────────────────────────────────
+
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+interface PasswordChangeOtpEntry {
+  otp: string;
+  /** SHA-256 hash of the new password, so we can bind the OTP to the exact intended change */
+  newPasswordHash: string;
+  expiresAt: number;
+}
+
+// keyed by adminId
+const passwordChangeOtpStore = new Map<string, PasswordChangeOtpEntry>();
+
+function generateOtp(): string {
+  return crypto.randomInt(100000, 999999).toString();
+}
+
+/**
+ * Generate and email a 6-digit OTP that must be supplied when calling
+ * changeMyPassword.  The OTP is bound to a hash of the intended new password
+ * so it cannot be replayed for a different password.
+ */
+export async function requestPasswordChangeOtp(
+  adminId: string,
+  newPassword: string,
+): Promise<void> {
+  const admin = await AdminModel.findById(adminId).select(
+    "email displayName isActive",
+  );
+  if (!admin || !admin.isActive) {
+    const err: any = new Error("Account not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const otp = generateOtp();
+  const newPasswordHash = crypto
+    .createHash("sha256")
+    .update(newPassword)
+    .digest("hex");
+
+  // Overwrite any previous pending OTP for this admin
+  passwordChangeOtpStore.set(adminId, {
+    otp,
+    newPasswordHash,
+    expiresAt: Date.now() + OTP_TTL_MS,
+  });
+
+  const emailContent = createPasswordChangeOtpEmail(otp, admin.displayName);
+  await mailer.sendMail({
+    from: config.smtp.from,
+    to: admin.email,
+    subject: emailContent.subject,
+    text: emailContent.text,
+    html: emailContent.html,
+  });
+}
+
+/**
+ * Verify the OTP submitted by the admin and, if valid, perform the password
+ * change.  Clears the OTP entry on success or too many retries.
+ */
+export async function changeMyPasswordWithOtp(
+  adminId: string,
+  input: ChangeMyPasswordInput & { otp: string },
+): Promise<void> {
+  const entry = passwordChangeOtpStore.get(adminId);
+
+  if (!entry) {
+    const err: any = new Error(
+      "No OTP requested. Please request a verification code first.",
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (Date.now() > entry.expiresAt) {
+    passwordChangeOtpStore.delete(adminId);
+    const err: any = new Error(
+      "OTP has expired. Please request a new verification code.",
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (entry.otp !== input.otp) {
+    const err: any = new Error("Invalid OTP. Please check and try again.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Verify the OTP is bound to the same new password that was submitted when
+  // the OTP was requested, preventing replay with a different password.
+  const submittedHash = crypto
+    .createHash("sha256")
+    .update(input.newPassword)
+    .digest("hex");
+  if (entry.newPasswordHash !== submittedHash) {
+    const err: any = new Error(
+      "OTP does not match the intended password. Please request a new code.",
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // OTP is valid — perform the actual password change
+  await changeMyPassword(adminId, {
+    currentPassword: input.currentPassword,
+    newPassword: input.newPassword,
+  });
+
+  passwordChangeOtpStore.delete(adminId);
 }
 
 export async function uploadAvatar(
