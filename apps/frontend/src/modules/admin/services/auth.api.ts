@@ -112,6 +112,12 @@ export interface UploadedAvatar {
 export interface ChangeMyPasswordPayload {
   currentPassword: string;
   newPassword: string;
+  otp: string;
+}
+
+export interface RequestPasswordChangeOtpPayload {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface ActivityLogEntry {
@@ -143,6 +149,15 @@ export async function changeMyPasswordRequest(
   accessToken: string,
 ): Promise<void> {
   await apiClient.post("/me/password", payload, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export async function requestPasswordChangeOtpRequest(
+  payload: RequestPasswordChangeOtpPayload,
+  accessToken: string,
+): Promise<void> {
+  await apiClient.post("/me/password/otp", payload, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

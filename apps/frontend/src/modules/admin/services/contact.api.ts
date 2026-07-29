@@ -11,7 +11,7 @@ const apiClient = attachAdminUnauthorizedInterceptor(
   }),
 );
 
-export type ContactType = "phone" | "email" | "address" | "fax";
+export type ContactType = "phone" | "email" | "address" | "fax" | "facebook";
 
 export interface ContactPayload {
   label: string;

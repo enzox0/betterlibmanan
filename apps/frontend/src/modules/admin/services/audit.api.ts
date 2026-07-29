@@ -25,7 +25,9 @@ export type AuditAction =
   | "UPDATE"
   | "DELETE"
   | "ACTIVATE"
-  | "DEACTIVATE";
+  | "DEACTIVATE"
+  | "APPROVE"
+  | "REJECT";
 
 export interface AuditLog {
   _id: string;
