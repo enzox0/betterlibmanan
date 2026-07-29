@@ -73,7 +73,7 @@ export const mockSections: SectionSchema[] = [
         label: "Type",
         type: "select",
         required: false,
-        options: ["phone", "email", "address", "fax"],
+        options: ["phone", "email", "address", "fax", "facebook"],
       },
     ],
   },
